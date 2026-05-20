@@ -32,22 +32,22 @@ const stack = [
   {
     title: "Create your account",
     text: "Sign up securely to start your professional security training journey.",
-    Icon: UserRound,
+    emoji: "🔐",
   },
   {
     title: "Enroll in a course",
     text: "Choose your training program and unlock all modules instantly.",
-    Icon: CreditCard,
+    emoji: "🔑",
   },
   {
     title: "Track your progress",
     text: "Learn at your own pace and easily resume right where you left off.",
-    Icon: BookOpenCheck,
+    emoji: "🛡️",
   },
   {
     title: "Watch & get certified",
     text: "Complete high-quality video lessons from any device and earn your certificate.",
-    Icon: BadgeCheck,
+    emoji: "🔒",
   },
 ];
 
@@ -517,7 +517,7 @@ export default function Home() {
           </motion.div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {stack.map(({ title, text, Icon }, index) => (
+            {stack.map(({ title, text, emoji }, index) => (
               <motion.div
                 key={title}
                 initial={{ opacity: 0, y: 32 }}
@@ -526,8 +526,8 @@ export default function Home() {
                 transition={{ duration: 0.55, delay: index * 0.08 }}
                 className="rounded-[1.25rem] border border-[#18aee5]/13 bg-[#eef8ff] p-6 shadow-[0_18px_45px_rgba(0,74,143,0.08)] transition hover:-translate-y-1 hover:bg-white"
               >
-                <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-white text-[#0067b1] shadow-sm">
-                  <Icon size={22} />
+                <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-white shadow-sm text-2xl">
+                  {emoji}
                 </div>
                 <h3 className="text-xl font-black">{title}</h3>
                 <p className="mt-2 text-sm font-bold leading-6 text-[#53647c]">
