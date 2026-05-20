@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
@@ -170,12 +171,23 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <a
-              href="mailto:admin@ssta.net.au"
-              className="hidden rounded-full bg-[#0067b1] px-5 py-3 text-sm font-black text-white shadow-[0_14px_35px_rgba(0,103,177,0.26)] transition hover:-translate-y-0.5 hover:bg-[#123e95] sm:inline-flex"
-            >
-              Enquire now
-            </a>
+            <Show when="signed-out">
+              <SignInButton>
+                <button className="hidden rounded-full font-bold text-sm text-[#0067b1] transition hover:text-[#123e95] sm:inline-flex px-3">
+                  Log in
+                </button>
+              </SignInButton>
+              <SignUpButton>
+                <button className="hidden rounded-full bg-[#0067b1] px-5 py-3 text-sm font-black text-white shadow-[0_14px_35px_rgba(0,103,177,0.26)] transition hover:-translate-y-0.5 hover:bg-[#123e95] sm:inline-flex">
+                  Sign up
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <div className="hidden sm:inline-flex items-center">
+                <UserButton />
+              </div>
+            </Show>
             <button
               className="inline-flex size-11 items-center justify-center rounded-full border border-[#18aee5]/22 bg-white/82 text-[#0067b1] shadow-sm backdrop-blur md:hidden"
               aria-label={isOpen ? "Close menu" : "Open menu"}
