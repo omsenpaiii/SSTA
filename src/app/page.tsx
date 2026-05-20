@@ -380,13 +380,21 @@ export default function Home() {
                     {course.description}
                   </p>
                   <div className="mt-6">
-                    <CheckoutButton courseSlug={course.slug}>
-                      Unlock with Stripe
-                    </CheckoutButton>
+                    <CheckoutButton courseSlug={course.slug} />
                   </div>
                 </div>
               </motion.article>
             ))}
+          </div>
+
+          <div className="mt-16 flex justify-center">
+            <Link 
+              href="/courses" 
+              className="group inline-flex items-center gap-2 rounded-full border-2 border-[#18aee5]/20 bg-[#eef8ff] px-8 py-4 text-base font-black text-[#0067b1] transition-all hover:border-[#18aee5]/40 hover:bg-[#18aee5]/10 hover:pr-6"
+            >
+              View all courses 
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </Link>
           </div>
         </div>
       </section>
