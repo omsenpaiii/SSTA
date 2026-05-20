@@ -90,7 +90,7 @@ const navLinks = [
   { name: "Home", href: "#" },
   { name: "Courses", href: "#courses" },
   { name: "Video Library", href: "#video" },
-  { name: "Contact", href: "#contact" },
+  { name: "Enroll", href: "/enroll" },
 ];
 
 const reveal = {
@@ -131,7 +131,7 @@ export default function Home() {
             onClick={() => setIsOpen(false)}
           >
             <span
-              className={`grid size-12 place-items-center overflow-hidden rounded-full border transition-all duration-300 ${
+              className={`relative block size-12 shrink-0 overflow-hidden rounded-full border transition-all duration-300 ${
                 isScrolled
                   ? "border-[#18aee5]/18 bg-white shadow-sm"
                   : "border-transparent bg-white/72 shadow-[0_12px_34px_rgba(0,103,177,0.08)] backdrop-blur"
@@ -143,7 +143,7 @@ export default function Home() {
                 width={64}
                 height={51}
                 priority
-                className="h-full w-full scale-[1.35] object-cover transition duration-300 group-hover:scale-[1.45]"
+                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[48%] -translate-y-[45%] object-contain transition duration-300 group-hover:w-[178%]"
               />
             </span>
             <span className="hidden sm:block">
@@ -541,46 +541,85 @@ export default function Home() {
 
       <footer
         id="contact"
-        className="relative overflow-hidden bg-[#020d24] px-5 py-14 text-white sm:px-8"
+        className="relative overflow-hidden bg-[#020d24] px-5 py-16 text-white sm:px-8"
       >
-        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_center,#0067b1_0%,transparent_70%)]" />
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.65 }}
-          className="relative mx-auto grid max-w-7xl gap-8 md:grid-cols-[1fr_1.2fr] md:items-center"
-        >
-          <div className="flex items-center gap-4">
-            <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-              <Image
-                src="/ssta-logo.jpg"
-                alt="SSTA logo"
-                width={86}
-                height={69}
-                className="h-full w-full scale-[1.35] object-cover"
-              />
-            </span>
-            <div>
-              <p className="text-xl font-black">
-                Select Security Training Academy
-              </p>
-              <p className="text-sm font-bold text-sky-100/70">Code: 40873</p>
+        <div className="absolute left-1/2 top-0 h-[1px] w-1/2 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#18aee5]/50 to-transparent" />
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top,#0067b1_0%,transparent_70%)]" />
+
+        <div className="relative mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.65 }}
+            className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between"
+          >
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-4">
+                <span className="relative block size-16 shrink-0 overflow-hidden rounded-full bg-white shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  <Image
+                    src="/ssta-logo.jpg"
+                    alt="SSTA logo"
+                    width={86}
+                    height={69}
+                    className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[48%] -translate-y-[45%] object-contain"
+                  />
+                </span>
+                <div>
+                  <h2 className="text-2xl font-black text-white">
+                    Select Security
+                  </h2>
+                  <p className="text-sm font-bold tracking-widest text-[#18aee5]">
+                    TRAINING ACADEMY
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-sky-100/50">RTO Code: 40873</p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="grid gap-4 text-sm font-bold text-sky-50/82 sm:grid-cols-3">
-            <a className="flex items-center gap-3" href="mailto:admin@ssta.net.au">
-              <Mail size={18} className="text-[#f5b800]" /> admin@ssta.net.au
-            </a>
-            <a className="flex items-center gap-3" href="tel:+610431696558">
-              <Phone size={18} className="text-[#f5b800]" /> +61 0431 696 558
-            </a>
-            <p className="flex items-center gap-3">
-              <MapPin size={18} className="shrink-0 text-[#f5b800]" />
-              Level 1, 1287 North Road Huntingdale 3166
+
+            <div className="flex flex-col gap-4 text-sm font-bold text-sky-50/80 sm:flex-row sm:gap-8">
+              <a
+                className="group flex items-center gap-3 rounded-2xl bg-white/5 p-4 transition hover:bg-white/10"
+                href="mailto:admin@ssta.net.au"
+              >
+                <div className="flex size-10 items-center justify-center rounded-full bg-[#0067b1] transition-colors group-hover:bg-[#18aee5]">
+                  <Mail size={18} className="text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs uppercase tracking-wider text-sky-200/60">Email us</span>
+                  <span className="text-white">admin@ssta.net.au</span>
+                </div>
+              </a>
+              <a
+                className="group flex items-center gap-3 rounded-2xl bg-white/5 p-4 transition hover:bg-white/10"
+                href="tel:+610431696558"
+              >
+                <div className="flex size-10 items-center justify-center rounded-full bg-[#f5b800] transition-colors group-hover:bg-[#ffc824]">
+                  <Phone size={18} className="text-[#020d24]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs uppercase tracking-wider text-sky-200/60">Call us</span>
+                  <span className="text-white">+61 0431 696 558</span>
+                </div>
+              </a>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.65, delay: 0.2 }}
+            className="mt-12 flex flex-col items-center justify-between border-t border-white/10 pt-8 sm:flex-row"
+          >
+            <p className="flex items-center gap-2 text-sm font-bold text-sky-100/60">
+              <MapPin size={16} /> Level 1, 1287 North Road, Huntingdale 3166
             </p>
-          </div>
-        </motion.div>
+            <p className="mt-4 text-xs font-bold text-sky-100/40 sm:mt-0">
+              © {new Date().getFullYear()} SSTA. All rights reserved.
+            </p>
+          </motion.div>
+        </div>
       </footer>
     </main>
   );
