@@ -30,23 +30,23 @@ const lessons = featuredCourse.lessons;
 
 const stack = [
   {
-    title: "Clerk login",
-    text: "Students sign in before buying or resuming lessons.",
+    title: "Create your account",
+    text: "Sign up securely to start your professional security training journey.",
     Icon: UserRound,
   },
   {
-    title: "Stripe checkout",
-    text: "A one-time $100 payment unlocks the selected course.",
+    title: "Enroll in a course",
+    text: "Choose your training program and unlock all modules instantly.",
     Icon: CreditCard,
   },
   {
-    title: "Supabase progress",
-    text: "Access and watch history can be stored per student.",
+    title: "Track your progress",
+    text: "Learn at your own pace and easily resume right where you left off.",
     Icon: BookOpenCheck,
   },
   {
-    title: "Embedded video",
-    text: "YouTube or Drive links can play directly inside lessons.",
+    title: "Watch & get certified",
+    text: "Complete high-quality video lessons from any device and earn your certificate.",
     Icon: BadgeCheck,
   },
 ];
@@ -143,7 +143,7 @@ export default function Home() {
                 width={64}
                 height={51}
                 priority
-                className="h-10 w-auto object-contain transition duration-300 group-hover:scale-105"
+                className="h-full w-full scale-[1.35] object-cover transition duration-300 group-hover:scale-[1.45]"
               />
             </span>
             <span className="hidden sm:block">
@@ -156,7 +156,7 @@ export default function Home() {
             </span>
           </a>
 
-          <nav className="hidden items-center gap-9 rounded-full border border-white/60 bg-white/42 px-7 py-3 text-sm font-black text-[#123e95]/82 shadow-sm backdrop-blur-md md:flex">
+          <nav className="hidden items-center gap-9 px-4 py-3 text-sm font-black text-[#123e95]/90 md:flex">
             {navLinks.map((link) => (
               <a
                 key={link.name}
@@ -506,15 +506,13 @@ export default function Home() {
             transition={{ duration: 0.65 }}
           >
             <p className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
-              Purchase flow
+              Your Learning Journey
             </p>
             <h2 className="text-4xl font-black tracking-normal sm:text-5xl">
-              Sleek learning flow, ready for real payments.
+              Start your training in minutes.
             </h2>
             <p className="mt-5 text-lg font-bold leading-8 text-[#53647c]">
-              The interface is ready for Clerk authentication, Stripe Checkout,
-              and Supabase records for course access, progress, video URLs, and
-              enrolments.
+              Our platform makes it easy to get started. From account creation to course completion, everything is designed for a smooth and straightforward learning experience.
             </p>
           </motion.div>
 
@@ -554,13 +552,15 @@ export default function Home() {
           className="relative mx-auto grid max-w-7xl gap-8 md:grid-cols-[1fr_1.2fr] md:items-center"
         >
           <div className="flex items-center gap-4">
-            <Image
-              src="/ssta-logo.jpg"
-              alt="SSTA logo"
-              width={86}
-              height={69}
-              className="h-16 w-auto rounded-full bg-white object-contain"
-            />
+            <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
+              <Image
+                src="/ssta-logo.jpg"
+                alt="SSTA logo"
+                width={86}
+                height={69}
+                className="h-full w-full scale-[1.35] object-cover"
+              />
+            </span>
             <div>
               <p className="text-xl font-black">
                 Select Security Training Academy
