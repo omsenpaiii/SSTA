@@ -143,7 +143,7 @@ export default function Home() {
                 width={64}
                 height={51}
                 priority
-                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[48%] -translate-y-[45%] object-contain transition duration-300 group-hover:w-[178%]"
+                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain transition duration-300 group-hover:w-[178%]"
               />
             </span>
             <span className="hidden sm:block">
@@ -562,7 +562,7 @@ export default function Home() {
                     alt="SSTA logo"
                     width={86}
                     height={69}
-                    className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[48%] -translate-y-[45%] object-contain"
+                    className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
                   />
                 </span>
                 <div>

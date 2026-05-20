@@ -21,7 +21,7 @@ export default function EnrollPage() {
                 alt="SSTA logo"
                 width={86}
                 height={69}
-                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[48%] -translate-y-[45%] object-contain"
+                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
               />
             </span>
             <div>
