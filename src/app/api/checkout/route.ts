@@ -3,21 +3,16 @@ import { z } from "zod";
 import { currentUser } from "@clerk/nextjs/server";
 import { getAppUrl } from "@/lib/app-url";
 import { getCourse } from "@/lib/courses";
+import { getEnrollmentLead } from "@/lib/enrollment";
 import { isClerkConfigured } from "@/lib/clerk";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 
 const checkoutSchema = z.object({
   courseSlug: z.string().min(1),
+  enrollmentId: z.string().uuid().optional(),
 });
 
 export async function POST(request: Request) {
-  if (!isClerkConfigured()) {
-    return NextResponse.json(
-      { error: "Clerk is not configured yet." },
-      { status: 503 },
-    );
-  }
-
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Stripe is not configured yet." },
@@ -25,11 +20,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = await currentUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const user = isClerkConfigured() ? await currentUser() : null;
 
   const body = checkoutSchema.safeParse(await request.json());
 
@@ -43,6 +34,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Course not found." }, { status: 404 });
   }
 
+  const enrollment = body.data.enrollmentId
+    ? await getEnrollmentLead(body.data.enrollmentId)
+    : null;
+
+  if (body.data.enrollmentId && !enrollment) {
+    return NextResponse.json({ error: "Enrollment not found." }, { status: 404 });
+  }
+
+  if (enrollment && enrollment.course_slug !== course.slug) {
+    return NextResponse.json(
+      { error: "Enrollment does not match selected course." },
+      { status: 400 },
+    );
+  }
+
   const stripe = getStripe();
 
   if (!stripe) {
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   const appUrl = getAppUrl();
-  const email = user.primaryEmailAddress?.emailAddress;
+  const email = enrollment?.email ?? user?.primaryEmailAddress?.emailAddress;
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
@@ -72,8 +78,9 @@ export async function POST(request: Request) {
       },
     ],
     metadata: {
-      clerkUserId: user.id,
+      clerkUserId: user?.id ?? "",
       courseSlug: course.slug,
+      enrollmentId: enrollment?.id ?? "",
     },
     success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/cancel?course=${course.slug}`,

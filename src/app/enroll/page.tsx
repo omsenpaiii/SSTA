@@ -9,11 +9,15 @@ export default function EnrollPage() {
       {/* Premium Minimal Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="group flex items-center gap-3 transition-opacity hover:opacity-80">
-            <ArrowLeft className="text-[#0067b1]" size={20} />
+          <Link
+            href="/"
+            className="group flex items-center justify-center gap-3 transition-opacity hover:opacity-80 min-h-12 min-w-12 p-2.5 -ml-2.5 rounded-full hover:bg-slate-100/50"
+            aria-label="Back to Home"
+          >
+            <ArrowLeft className="text-[#0067b1] shrink-0" size={20} />
             <span className="font-black text-[#020d24] text-sm hidden sm:block">Back to Home</span>
           </Link>
-          
+
           <div className="flex items-center gap-3">
             <span className="relative block size-10 shrink-0 overflow-hidden rounded-full bg-white shadow-sm border border-slate-100">
               <Image
@@ -29,7 +33,7 @@ export default function EnrollPage() {
               <p className="text-[10px] font-bold text-slate-500 uppercase">RTO Code: 40873</p>
             </div>
           </div>
-          
+
           <div className="w-[100px] flex justify-end">
             <ShieldCheck className="text-[#f5b800]" size={24} />
           </div>

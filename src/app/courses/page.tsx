@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { courses } from "@/lib/courses";
+import { courses, type Course } from "@/lib/courses";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowLeft, Clock, ShieldCheck } from "lucide-react";
@@ -9,17 +9,37 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
+function getStoredCourses() {
+  if (typeof window === "undefined") {
+    return courses;
+  }
+
+  const stored = localStorage.getItem("ssta_courses");
+  if (!stored) {
+    return courses;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as Course[]) : courses;
+  } catch (error) {
+    console.error("Error parsing courses from localStorage:", error);
+    return courses;
+  }
+}
+
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
+  const [activeCourses] = useState<Course[]>(getStoredCourses);
 
   const categories = ["All", "Most Popular", "New Cohort", "Practical"];
 
   // Filter logic
-  const filteredCourses = courses.filter((course) => {
-    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredCourses = activeCourses.filter((course) => {
+    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           course.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     if (selectedFilter === "All") return matchesSearch;
     return matchesSearch && course.label.toLowerCase() === selectedFilter.toLowerCase();
   });
@@ -29,11 +49,15 @@ export default function CoursesPage() {
       {/* Header matching enroll page */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link href="/" className="group flex items-center gap-3 transition-opacity hover:opacity-80">
-            <ArrowLeft className="text-[#0067b1]" size={20} />
+          <Link
+            href="/"
+            className="group flex items-center justify-center gap-3 transition-opacity hover:opacity-80 min-h-12 min-w-12 p-2.5 -ml-2.5 rounded-full hover:bg-slate-100/50"
+            aria-label="Back to Home"
+          >
+            <ArrowLeft className="text-[#0067b1] shrink-0" size={20} />
             <span className="font-black text-[#020d24] text-sm hidden sm:block">Back to Home</span>
           </Link>
-          
+
           <div className="flex items-center gap-3">
             <span className="relative block size-10 shrink-0 overflow-hidden rounded-full bg-white shadow-sm border border-slate-100">
               <Image
@@ -49,7 +73,7 @@ export default function CoursesPage() {
               <p className="text-[10px] font-bold text-slate-500 uppercase">RTO Code: 40873</p>
             </div>
           </div>
-          
+
           <div className="w-[100px] flex justify-end">
             <ShieldCheck className="text-[#f5b800]" size={24} />
           </div>
@@ -71,7 +95,7 @@ export default function CoursesPage() {
               All Training Programs
             </h1>
             <p className="text-lg font-bold text-[#53647c] max-w-2xl mx-auto">
-              Find the right certification to advance your career. 
+              Find the right certification to advance your career.
             </p>
           </div>
 
@@ -79,8 +103,8 @@ export default function CoursesPage() {
           <div className="max-w-3xl mx-auto mb-16 flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative w-full md:w-96">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <Input 
-                type="text" 
+              <Input
+                type="text"
                 placeholder="Search for courses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -88,12 +112,12 @@ export default function CoursesPage() {
               />
             </div>
 
-            <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar">
+            <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar scroll-smooth">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedFilter(cat)}
-                  className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-bold transition-all ${
+                  className={`shrink-0 rounded-full h-12 px-6 text-sm font-bold transition-all flex items-center justify-center cursor-pointer ${
                     selectedFilter === cat
                       ? "bg-[#020d24] text-white shadow-md"
                       : "bg-white text-slate-500 hover:bg-slate-100 hover:text-[#020d24]"
@@ -127,11 +151,11 @@ export default function CoursesPage() {
                         className="object-cover transition-transform duration-700 hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#020d24]/90 via-[#020d24]/20 to-transparent" />
-                      
+
                       <div className="absolute left-6 top-6 rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0067b1] shadow-md">
                         {course.label}
                       </div>
-                      
+
                       <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
                         <h3 className="text-xl font-black leading-tight text-white line-clamp-2">
                           {course.title}
@@ -141,7 +165,7 @@ export default function CoursesPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-1 flex-col p-6">
                       <div className="mb-4 flex items-center gap-2 text-sm font-bold text-[#0067b1]">
                         <Clock size={16} />
@@ -165,9 +189,9 @@ export default function CoursesPage() {
               </div>
               <h3 className="text-xl font-black text-[#020d24] mb-2">No courses found</h3>
               <p className="text-slate-500 font-semibold max-w-md">
-                We couldn't find any courses matching your search "{searchQuery}". Try adjusting your filters.
+                We couldn&apos;t find any courses matching your search &quot;{searchQuery}&quot;. Try adjusting your filters.
               </p>
-              <button 
+              <button
                 onClick={() => { setSearchQuery(""); setSelectedFilter("All"); }}
                 className="mt-6 text-[#0067b1] font-bold hover:underline"
               >

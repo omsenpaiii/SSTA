@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,13 +36,13 @@ const steps = [
 export function EnrollmentForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
     trigger,
-    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -59,7 +59,7 @@ export function EnrollmentForm() {
     mode: "onTouched",
   });
 
-  const formValues = watch();
+  const formValues = useWatch({ control });
   const selectedCourse = courses.find((c) => c.slug === formValues.courseId);
 
   const nextStep = async () => {
@@ -77,12 +77,54 @@ export function EnrollmentForm() {
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
-    // Simulate API call for Supabase lead creation & Stripe redirect
-    setTimeout(() => {
+    setSubmitError(null);
+
+    try {
+      const enrollmentResponse = await fetch("/api/enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      const enrollmentResult = (await enrollmentResponse.json()) as {
+        enrollmentId?: string;
+        courseSlug?: string;
+        error?: string;
+      };
+
+      if (!enrollmentResponse.ok || !enrollmentResult.enrollmentId) {
+        throw new Error(
+          enrollmentResult.error ?? "Unable to submit enrollment details.",
+        );
+      }
+
+      const checkoutResponse = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseSlug: enrollmentResult.courseSlug ?? data.courseId,
+          enrollmentId: enrollmentResult.enrollmentId,
+        }),
+      });
+
+      const checkoutResult = (await checkoutResponse.json()) as {
+        url?: string;
+        error?: string;
+      };
+
+      if (!checkoutResponse.ok || !checkoutResult.url) {
+        throw new Error(checkoutResult.error ?? "Unable to start checkout.");
+      }
+
+      window.location.assign(checkoutResult.url);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Unable to submit enrollment details.",
+      );
       setIsSubmitting(false);
-      // Fallback checkout redirect mimicking real behavior
-      window.location.href = `/api/checkout?course=${data.courseId}`;
-    }, 1500);
+    }
   };
 
   const getFieldsForStep = (stepIndex: number): (keyof FormValues)[] => {
@@ -98,7 +140,7 @@ export function EnrollmentForm() {
     <div className="w-full max-w-2xl mx-auto">
       {/* Progress Bar */}
       <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex justify-between items-center mb-2 relative">
           {steps.map((step, index) => (
             <div
               key={step.id}
@@ -160,7 +202,7 @@ export function EnrollmentForm() {
               >
                 {currentStep === 0 && (
                   <div className="grid gap-5">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName" className="font-bold text-[#020d24]">First Name</Label>
                         <Input
@@ -195,7 +237,7 @@ export function EnrollmentForm() {
                       {errors.email && <p className="text-xs text-red-500 font-bold">{errors.email.message}</p>}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="phone" className="font-bold text-[#020d24]">Phone Number</Label>
                         <Input
@@ -239,7 +281,7 @@ export function EnrollmentForm() {
                       />
                       {errors.usi && <p className="text-xs text-red-500 font-bold">{errors.usi.message}</p>}
                       <a href="https://www.usi.gov.au/students/get-a-usi" target="_blank" rel="noreferrer" className="text-xs text-[#18aee5] hover:underline font-bold">
-                        Don't have a USI? Get one here.
+                        Don&apos;t have a USI? Get one here.
                       </a>
                     </div>
 
@@ -365,6 +407,13 @@ export function EnrollmentForm() {
               </Button>
             )}
           </CardFooter>
+          {submitError ? (
+            <div className="px-6 pb-6">
+              <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                {submitError}
+              </p>
+            </div>
+          ) : null}
         </form>
       </Card>
     </div>

@@ -9,6 +9,7 @@ The code is wired for:
 - Clerk authentication
 - Stripe one-time course checkout
 - Supabase student profiles, enrolments, and lesson progress
+- Supabase enrollment leads with SMTP intake notifications
 - Embedded YouTube or Google Drive lesson URLs
 
 The app builds without live keys so it can be deployed first, then configured in
@@ -26,12 +27,20 @@ Required for full production behavior:
 - `CLERK_SECRET_KEY`
 - `NEXT_PUBLIC_CLERK_SIGN_IN_URL`
 - `NEXT_PUBLIC_CLERK_SIGN_UP_URL`
+- `SSTA_ADMIN_EMAILS`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `STRIPE_SECRET_KEY`
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASSWORD`
+- `SMTP_FROM`
+- `ENROLLMENT_TO_EMAIL`
 
 ## Supabase
 
@@ -42,6 +51,7 @@ against the SSTA Supabase project. It creates:
 - `courses`
 - `course_lessons`
 - `course_enrollments`
+- `enrollment_leads`
 - `lesson_progress`
 
 It also enables RLS and seeds the first set of courses and lessons.
@@ -60,8 +70,9 @@ Listen for:
 checkout.session.completed
 ```
 
-The webhook grants course access in Supabase after a successful one-time
-payment.
+The enrollment form stores a lead in Supabase, emails the configured intake
+mailbox, then redirects to Stripe. The webhook marks the enrollment paid and
+grants course access in Supabase after a successful one-time payment.
 
 ## Development
 

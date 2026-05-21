@@ -36,6 +36,22 @@ create table if not exists public.course_lessons (
   unique (course_slug, lesson_key)
 );
 
+create table if not exists public.enrollment_leads (
+  id uuid primary key default gen_random_uuid(),
+  first_name text not null,
+  last_name text not null,
+  email text not null,
+  phone text not null,
+  date_of_birth date not null,
+  usi text not null,
+  address text not null,
+  course_slug text not null references public.courses(slug) on delete restrict,
+  payment_status text not null default 'pending' check (payment_status in ('pending', 'paid', 'failed', 'cancelled')),
+  stripe_session_id text unique,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.course_enrollments (
   id uuid primary key default gen_random_uuid(),
   clerk_user_id text not null references public.student_profiles(clerk_user_id) on delete cascade,
@@ -66,6 +82,7 @@ create table if not exists public.lesson_progress (
 alter table public.student_profiles enable row level security;
 alter table public.courses enable row level security;
 alter table public.course_lessons enable row level security;
+alter table public.enrollment_leads enable row level security;
 alter table public.course_enrollments enable row level security;
 alter table public.lesson_progress enable row level security;
 

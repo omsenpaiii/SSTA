@@ -7,10 +7,7 @@ import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
-  BadgeCheck,
-  BookOpenCheck,
   Clock3,
-  CreditCard,
   Lock,
   Mail,
   MapPin,
@@ -20,15 +17,11 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  UserRound,
   Video,
   X,
 } from "lucide-react";
 import { CheckoutButton } from "@/components/CheckoutButton";
-import { courses, getFeaturedCourse } from "@/lib/courses";
-
-const featuredCourse = getFeaturedCourse();
-const lessons = featuredCourse.lessons;
+import { courses, type Course, type CourseLesson } from "@/lib/courses";
 
 const stack = [
   {
@@ -100,6 +93,55 @@ const reveal = {
   visible: { opacity: 1, y: 0 },
 };
 
+function getEmbedUrl(url: string, provider: "youtube" | "google-drive"): string {
+  if (!url) return "";
+  if (provider === "youtube") {
+    if (url.includes("/embed/")) return url;
+    const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    return ytMatch && ytMatch[1] ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0` : url;
+  } else if (provider === "google-drive") {
+    if (url.includes("/preview")) return url;
+    const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    return driveMatch && driveMatch[1] ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : url;
+  }
+  return url;
+}
+
+function getStoredCourses() {
+  if (typeof window === "undefined") {
+    return courses;
+  }
+
+  const stored = localStorage.getItem("ssta_courses");
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed as Course[];
+      }
+    } catch (error) {
+      console.error("Error parsing courses from localStorage:", error);
+    }
+  }
+
+  localStorage.setItem("ssta_courses", JSON.stringify(courses));
+  return courses;
+}
+
+function getInitialFeaturedCourse() {
+  const storedCourses = getStoredCourses();
+  return (
+    storedCourses.find((course) => course.slug === "certificate-ii-security-operations") ??
+    storedCourses[0] ??
+    courses[0]
+  );
+}
+
+function getInitialPreviewLesson() {
+  const featured = getInitialFeaturedCourse();
+  return featured.lessons.find((lesson) => lesson.isPreview) ?? featured.lessons[0];
+}
+
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -107,12 +149,22 @@ export default function Home() {
   const heroWordY = useTransform(scrollYProgress, [0, 0.35], [0, 90]);
   const collageY = useTransform(scrollYProgress, [0, 0.35], [0, -70]);
 
+  const [activeCourses] = useState<Course[]>(getStoredCourses);
+  const [featuredCourse] = useState<Course>(getInitialFeaturedCourse);
+  const [activeVideoUrl, setActiveVideoUrl] = useState(() => {
+    const lesson = getInitialPreviewLesson();
+    return lesson ? getEmbedUrl(lesson.videoUrl, lesson.videoProvider) : "https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0";
+  });
+  const [activeLessonId, setActiveLessonId] = useState<string>(() => getInitialPreviewLesson()?.id ?? "welcome");
+
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 22);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const lessons: CourseLesson[] = featuredCourse.lessons || [];
 
   return (
     <main className="min-h-screen overflow-hidden bg-white text-[#020d24]">
@@ -184,7 +236,7 @@ export default function Home() {
               </SignUpButton>
             </Show>
             <Show when="signed-in">
-              <div className="hidden sm:inline-flex items-center">
+              <div className="flex items-center">
                 <UserButton />
               </div>
             </Show>
@@ -226,6 +278,28 @@ export default function Home() {
                 >
                   Enquire now
                 </a>
+
+                <Show when="signed-out">
+                  <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[#18aee5]/12 pt-4 px-1">
+                    <SignInButton>
+                      <button className="flex h-12 items-center justify-center rounded-full border-2 border-[#0067b1] text-sm font-black text-[#0067b1] transition hover:bg-[#eef8ff] hover:text-[#123e95] cursor-pointer">
+                        Log in 🔑
+                      </button>
+                    </SignInButton>
+                    <SignUpButton>
+                      <button className="flex h-12 items-center justify-center rounded-full bg-[#0067b1] text-sm font-black text-white shadow-[0_10px_25px_rgba(0,103,177,0.2)] transition hover:bg-[#123e95] cursor-pointer">
+                        Sign up 🔐
+                      </button>
+                    </SignUpButton>
+                  </div>
+                </Show>
+
+                <Show when="signed-in">
+                  <div className="mt-4 flex items-center justify-between border-t border-[#18aee5]/12 pt-4 px-4 py-1">
+                    <span className="text-base font-black text-[#123e95]">My Account 👤</span>
+                    <UserButton />
+                  </div>
+                </Show>
               </div>
             </motion.div>
           )}
@@ -355,7 +429,7 @@ export default function Home() {
           </motion.div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {courses.map((course, index) => (
+            {activeCourses.map((course, index) => (
               <motion.article
                 key={course.title}
                 initial={{ opacity: 0, y: 38 }}
@@ -401,11 +475,11 @@ export default function Home() {
           </div>
 
           <div className="mt-16 flex justify-center">
-            <Link 
-              href="/courses" 
+            <Link
+              href="/courses"
               className="group inline-flex items-center gap-2 rounded-full border-2 border-[#18aee5]/20 bg-[#eef8ff] px-8 py-4 text-base font-black text-[#0067b1] transition-all hover:border-[#18aee5]/40 hover:bg-[#18aee5]/10 hover:pr-6"
             >
-              View all courses 
+              View all courses
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
@@ -441,8 +515,8 @@ export default function Home() {
             </div>
             <div className="overflow-hidden rounded-[1.5rem] border-[10px] border-white bg-[#020d24] shadow-[0_30px_90px_rgba(0,74,143,0.16)]">
               <iframe
-                className="aspect-video w-full"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0"
+                className="aspect-video w-full bg-slate-950"
+                src={activeVideoUrl}
                 title="SSTA course preview"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
@@ -460,24 +534,38 @@ export default function Home() {
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-black text-[#0067b1]">
-                  Certificate II sample
+                  {featuredCourse.title} sample
                 </p>
                 <h3 className="text-2xl font-black">Lesson access</h3>
               </div>
               <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-sm font-black text-[#d96f00]">
-                $100 once
+                ${featuredCourse.priceAud} once
               </span>
             </div>
 
             <div className="space-y-3">
               {lessons.map((lesson, index) => (
                 <motion.div
-                  key={lesson.title}
+                  key={lesson.id || lesson.title}
                   initial={{ opacity: 0, y: 18 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.45, delay: index * 0.08 }}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-[#18aee5]/10 bg-white p-4 shadow-sm"
+                  onClick={() => {
+                    if (lesson.isPreview) {
+                      setActiveVideoUrl(getEmbedUrl(lesson.videoUrl, lesson.videoProvider));
+                      setActiveLessonId(lesson.id);
+                    }
+                  }}
+                  className={`flex items-center justify-between gap-4 rounded-2xl border p-4 shadow-sm transition-all ${
+                    lesson.isPreview
+                      ? "cursor-pointer hover:border-[#18aee5]/40 hover:bg-[#eef8ff]/30 active:scale-[0.98]"
+                      : "opacity-80"
+                  } ${
+                    activeLessonId === lesson.id
+                      ? "border-[#0067b1] bg-[#eef8ff]/60 ring-2 ring-[#0067b1]/20"
+                      : "border-[#18aee5]/10 bg-white"
+                  }`}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div
@@ -577,15 +665,15 @@ export default function Home() {
           >
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-4">
-                <span className="relative block size-16 shrink-0 overflow-hidden rounded-full bg-white shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  <Image
-                    src="/ssta-logo.jpg"
-                    alt="SSTA logo"
-                    width={86}
-                    height={69}
-                    className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
-                  />
-                </span>
+              <Link href="/admin" className="relative block size-16 shrink-0 overflow-hidden rounded-full bg-white shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-transform hover:scale-105 active:scale-95">
+                <Image
+                  src="/ssta-logo.jpg"
+                  alt="SSTA logo"
+                  width={86}
+                  height={69}
+                  className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
+                />
+              </Link>
                 <div>
                   <h2 className="text-2xl font-black text-white">
                     Select Security
@@ -613,14 +701,14 @@ export default function Home() {
               </a>
               <a
                 className="group flex items-center gap-3 rounded-2xl bg-white/5 p-4 transition hover:bg-white/10"
-                href="tel:+610431696558"
+                href="tel:+61427978810"
               >
                 <div className="flex size-10 items-center justify-center rounded-full bg-[#f5b800] transition-colors group-hover:bg-[#ffc824]">
                   <Phone size={18} className="text-[#020d24]" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs uppercase tracking-wider text-sky-200/60">Call us</span>
-                  <span className="text-white">+61 0431 696 558</span>
+                  <span className="text-white">+61 0427 978 810</span>
                 </div>
               </a>
             </div>

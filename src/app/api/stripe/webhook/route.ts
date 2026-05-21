@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { grantCourseAccess } from "@/lib/access";
+import { markEnrollmentPaid } from "@/lib/enrollment";
 import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
@@ -34,6 +35,14 @@ export async function POST(request: Request) {
     const session = event.data.object;
     const clerkUserId = session.metadata?.clerkUserId;
     const courseSlug = session.metadata?.courseSlug;
+    const enrollmentId = session.metadata?.enrollmentId;
+
+    if (enrollmentId && session.payment_status === "paid") {
+      await markEnrollmentPaid({
+        enrollmentId,
+        stripeSessionId: session.id,
+      });
+    }
 
     if (clerkUserId && courseSlug && session.payment_status === "paid") {
       await grantCourseAccess({

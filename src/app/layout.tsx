@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "SSTA | Select Security Training Academy",
   description:
     "Online security training courses from Select Security Training Academy.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
