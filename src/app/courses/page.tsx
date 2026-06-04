@@ -1,137 +1,83 @@
 "use client";
 
 import { useState } from "react";
-import { courses, type Course } from "@/lib/courses";
-import { CheckoutButton } from "@/components/CheckoutButton";
-import { Input } from "@/components/ui/input";
-import { Search, ArrowLeft, Clock, ShieldCheck } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-
-function getStoredCourses() {
-  if (typeof window === "undefined") {
-    return courses;
-  }
-
-  const stored = localStorage.getItem("ssta_courses");
-  if (!stored) {
-    return courses;
-  }
-
-  try {
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as Course[]) : courses;
-  } catch (error) {
-    console.error("Error parsing courses from localStorage:", error);
-    return courses;
-  }
-}
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Clock, Search, ShieldCheck } from "lucide-react";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { Input } from "@/components/ui/input";
+import { courseCategories, courses, type Course } from "@/lib/courses";
 
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
-  const [activeCourses] = useState<Course[]>(getStoredCourses);
+  const [activeCourses] = useState<Course[]>(courses);
 
-  const categories = ["All", "Most Popular", "New Cohort", "Practical"];
-
-  // Filter logic
+  const categories = ["All", ...courseCategories.map((category) => category.title)];
   const filteredCourses = activeCourses.filter((course) => {
-    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          course.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      course.title.toLowerCase().includes(query) ||
+      course.description.toLowerCase().includes(query) ||
+      course.code.toLowerCase().includes(query);
 
     if (selectedFilter === "All") return matchesSearch;
-    return matchesSearch && course.label.toLowerCase() === selectedFilter.toLowerCase();
+    return matchesSearch && course.category === selectedFilter;
   });
 
   return (
     <main className="min-h-screen bg-slate-50 selection:bg-[#18aee5]/30">
-      {/* Header matching enroll page */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link
-            href="/"
-            className="group flex items-center justify-center gap-3 transition-opacity hover:opacity-80 min-h-12 min-w-12 p-2.5 -ml-2.5 rounded-full hover:bg-slate-100/50"
-            aria-label="Back to Home"
-          >
-            <ArrowLeft className="text-[#0067b1] shrink-0" size={20} />
-            <span className="font-black text-[#020d24] text-sm hidden sm:block">Back to Home</span>
-          </Link>
+      <SiteHeader />
 
-          <div className="flex items-center gap-3">
-            <span className="relative block size-10 shrink-0 overflow-hidden rounded-full bg-white shadow-sm border border-slate-100">
-              <Image
-                src="/ssta-logo.jpg"
-                alt="SSTA logo"
-                width={86}
-                height={69}
-                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
-              />
-            </span>
-            <div>
-              <p className="text-sm font-black tracking-widest text-[#0067b1] uppercase">SSTA</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase">RTO Code: 40873</p>
-            </div>
-          </div>
-
-          <div className="w-[100px] flex justify-end">
-            <ShieldCheck className="text-[#f5b800]" size={24} />
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <section className="relative isolate px-5 py-12 sm:px-8 sm:py-20 overflow-hidden min-h-[calc(100vh-80px)]">
-        {/* Decorative Background Elements */}
-        <div className="absolute top-[-10%] right-[-5%] h-[500px] w-[500px] rounded-full bg-[#18aee5]/10 blur-3xl -z-10" />
-        <div className="absolute bottom-[-10%] left-[-5%] h-[500px] w-[500px] rounded-full bg-[#f5b800]/10 blur-3xl -z-10" />
-
+      <section className="relative isolate overflow-hidden px-5 py-16 sm:px-8 sm:py-24">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_15%,rgba(245,184,0,0.18),transparent_24%),radial-gradient(circle_at_85%_10%,rgba(24,174,229,0.16),transparent_28%),linear-gradient(180deg,#ffffff_0%,#eef8ff_100%)]" />
         <div className="mx-auto max-w-7xl">
-          <div className="text-center mb-12">
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#0067b1]/20 bg-[#0067b1]/5 px-4 py-1.5 text-xs font-black text-[#0067b1] shadow-sm mb-6 uppercase tracking-wider">
-              COURSE CATALOGUE
+          <div className="mb-12 max-w-3xl">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#0067b1]/20 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#0067b1] shadow-sm">
+              <ShieldCheck size={15} /> SSTA Course Catalogue
             </p>
-            <h1 className="text-4xl sm:text-5xl font-black text-[#020d24] tracking-tight leading-tight mb-4">
-              All Training Programs
+            <h1 className="text-5xl font-black leading-tight tracking-normal text-[#020d24] sm:text-6xl">
+              Find the right security training pathway.
             </h1>
-            <p className="text-lg font-bold text-[#53647c] max-w-2xl mx-auto">
-              Find the right certification to advance your career.
+            <p className="mt-5 text-lg font-bold leading-8 text-[#53647c]">
+              Browse detailed course pages with overview, fees, entry requirements, unit tables,
+              delivery strategy and one unlocked preview lesson.
             </p>
           </div>
 
-          {/* Search and Filters */}
-          <div className="max-w-3xl mx-auto mb-16 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full md:w-96">
+          <div className="mb-12 grid gap-4 rounded-[1.5rem] border border-[#18aee5]/14 bg-white p-4 shadow-[0_22px_70px_rgba(0,74,143,0.08)] lg:grid-cols-[360px_1fr]">
+            <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <Input
                 type="text"
-                placeholder="Search for courses..."
+                placeholder="Search courses or codes..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 h-12 rounded-full border-slate-200 bg-white font-semibold focus-visible:ring-[#18aee5] shadow-sm text-base"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-12 rounded-full border-slate-200 bg-slate-50 pl-11 text-base font-semibold focus-visible:ring-[#18aee5]"
               />
             </div>
 
-            <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 hide-scrollbar scroll-smooth">
-              {categories.map((cat) => (
+            <div className="flex gap-2 overflow-x-auto pb-1 lg:justify-end">
+              {categories.map((category) => (
                 <button
-                  key={cat}
-                  onClick={() => setSelectedFilter(cat)}
-                  className={`shrink-0 rounded-full h-12 px-6 text-sm font-bold transition-all flex items-center justify-center cursor-pointer ${
-                    selectedFilter === cat
+                  key={category}
+                  onClick={() => setSelectedFilter(category)}
+                  className={`h-12 shrink-0 rounded-full px-5 text-sm font-black transition ${
+                    selectedFilter === category
                       ? "bg-[#020d24] text-white shadow-md"
-                      : "bg-white text-slate-500 hover:bg-slate-100 hover:text-[#020d24]"
+                      : "bg-[#eef8ff] text-[#0067b1] hover:bg-[#18aee5]/15"
                   }`}
                 >
-                  {cat}
+                  {category}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Grid Layout */}
           {filteredCourses.length > 0 ? (
-            <motion.div layout className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <motion.div layout className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
               <AnimatePresence>
                 {filteredCourses.map((course) => (
                   <motion.article
@@ -141,41 +87,39 @@ export default function CoursesPage() {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                     key={course.slug}
-                    className="flex flex-col overflow-hidden rounded-[1.5rem] border border-[#18aee5]/15 bg-white shadow-[0_24px_50px_rgba(0,103,177,0.06)] hover:shadow-[0_30px_60px_rgba(0,103,177,0.12)] transition-shadow"
+                    className="group flex flex-col overflow-hidden rounded-[1.5rem] border border-[#18aee5]/15 bg-white shadow-[0_24px_50px_rgba(0,103,177,0.08)] transition hover:-translate-y-1 hover:shadow-[0_30px_70px_rgba(0,103,177,0.14)]"
                   >
-                    <div className="relative h-56 w-full shrink-0 overflow-hidden">
-                      <Image
-                        src={course.image}
-                        alt={course.title}
-                        fill
-                        className="object-cover transition-transform duration-700 hover:scale-105"
-                      />
+                    <div className="relative h-60 w-full shrink-0 overflow-hidden">
+                      <Image src={course.image} alt={course.title} fill sizes="(min-width:1024px) 33vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#020d24]/90 via-[#020d24]/20 to-transparent" />
-
-                      <div className="absolute left-6 top-6 rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0067b1] shadow-md">
-                        {course.label}
+                      <div className="absolute left-5 top-5 rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[#0067b1] shadow-md">
+                        {course.category}
                       </div>
-
-                      <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between gap-4">
-                        <h3 className="text-xl font-black leading-tight text-white line-clamp-2">
-                          {course.title}
-                        </h3>
-                        <div className="rounded-full bg-[#f5b800] px-3 py-1 text-sm font-black text-[#020d24]">
-                          ${course.priceAud}
-                        </div>
+                      <div className="absolute bottom-5 left-5 right-5">
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-[#f5b800]">{course.code}</p>
+                        <h2 className="mt-1 text-2xl font-black leading-tight text-white">{course.title}</h2>
                       </div>
                     </div>
 
                     <div className="flex flex-1 flex-col p-6">
-                      <div className="mb-4 flex items-center gap-2 text-sm font-bold text-[#0067b1]">
-                        <Clock size={16} />
-                        {course.duration}
+                      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm font-bold text-[#0067b1]">
+                        <span className="inline-flex items-center gap-2"><Clock size={16} /> {course.duration}</span>
+                        <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">${course.priceAud}</span>
                       </div>
-                      <p className="flex-1 text-sm font-bold leading-relaxed text-[#53647c]">
-                        {course.description}
-                      </p>
-                      <div className="mt-6">
-                        <CheckoutButton courseSlug={course.slug} />
+                      <p className="flex-1 text-sm font-bold leading-7 text-[#53647c]">{course.description}</p>
+                      <div className="mt-6 flex flex-wrap gap-3">
+                        <Link
+                          href={`/course/${course.slug}`}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#0067b1] px-5 text-sm font-black text-white transition hover:bg-[#123e95]"
+                        >
+                          Learn More <ArrowRight size={16} />
+                        </Link>
+                        <Link
+                          href="/enroll"
+                          className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]"
+                        >
+                          Enrol
+                        </Link>
                       </div>
                     </div>
                   </motion.article>
@@ -183,24 +127,27 @@ export default function CoursesPage() {
               </AnimatePresence>
             </motion.div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="rounded-full bg-slate-100 p-6 mb-4">
-                <Search size={32} className="text-slate-400" />
-              </div>
-              <h3 className="text-xl font-black text-[#020d24] mb-2">No courses found</h3>
-              <p className="text-slate-500 font-semibold max-w-md">
-                We couldn&apos;t find any courses matching your search &quot;{searchQuery}&quot;. Try adjusting your filters.
+            <div className="rounded-[1.5rem] bg-white p-12 text-center shadow-sm">
+              <Search size={32} className="mx-auto text-slate-400" />
+              <h2 className="mt-4 text-xl font-black text-[#020d24]">No courses found</h2>
+              <p className="mt-2 text-sm font-bold text-slate-500">
+                We couldn&apos;t find any courses matching &quot;{searchQuery}&quot;.
               </p>
               <button
-                onClick={() => { setSearchQuery(""); setSelectedFilter("All"); }}
-                className="mt-6 text-[#0067b1] font-bold hover:underline"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedFilter("All");
+                }}
+                className="mt-6 text-[#0067b1] font-black hover:underline"
               >
-                Clear all filters
+                Clear filters
               </button>
             </div>
           )}
         </div>
       </section>
+
+      <SiteFooter />
     </main>
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { grantCourseAccess } from "@/lib/access";
-import { markEnrollmentPaid } from "@/lib/enrollment";
+import { updateEnrollmentPaymentStatus } from "@/lib/enrollment";
 import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
@@ -31,30 +31,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object;
-    const clerkUserId = session.metadata?.clerkUserId;
-    const courseSlug = session.metadata?.courseSlug;
-    const enrollmentId = session.metadata?.enrollmentId;
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object;
+      const clerkUserId = session.metadata?.clerkUserId;
+      const courseSlug = session.metadata?.courseSlug;
+      const enrollmentId = session.metadata?.enrollmentId;
 
-    if (enrollmentId && session.payment_status === "paid") {
-      await markEnrollmentPaid({
-        enrollmentId,
-        stripeSessionId: session.id,
-      });
+      if (enrollmentId && session.payment_status === "paid") {
+        await updateEnrollmentPaymentStatus({
+          enrollmentId,
+          paymentStatus: "paid",
+          stripeSessionId: session.id,
+        });
+      }
+
+      if (clerkUserId && courseSlug && session.payment_status === "paid") {
+        await grantCourseAccess({
+          clerkUserId,
+          courseSlug,
+          stripeCustomerId:
+            typeof session.customer === "string"
+              ? session.customer
+              : session.customer?.id,
+          stripeSessionId: session.id,
+          amountPaid: session.amount_total,
+          currency: session.currency,
+          email: session.customer_details?.email,
+        });
+      }
+      break;
     }
 
-    if (clerkUserId && courseSlug && session.payment_status === "paid") {
-      await grantCourseAccess({
-        clerkUserId,
-        courseSlug,
-        stripeCustomerId:
-          typeof session.customer === "string" ? session.customer : session.customer?.id,
-        stripeSessionId: session.id,
-        amountPaid: session.amount_total,
-        currency: session.currency,
-        email: session.customer_details?.email,
-      });
+    case "checkout.session.expired": {
+      const session = event.data.object;
+      const enrollmentId = session.metadata?.enrollmentId;
+
+      if (enrollmentId) {
+        await updateEnrollmentPaymentStatus({
+          enrollmentId,
+          paymentStatus: "cancelled",
+          stripeSessionId: session.id,
+          onlyIfCurrentSession: true,
+        });
+      }
+      break;
     }
   }
 

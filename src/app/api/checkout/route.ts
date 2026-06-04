@@ -3,7 +3,10 @@ import { z } from "zod";
 import { currentUser } from "@clerk/nextjs/server";
 import { getAppUrl } from "@/lib/app-url";
 import { getCourse } from "@/lib/courses";
-import { getEnrollmentLead } from "@/lib/enrollment";
+import {
+  getEnrollmentLead,
+  updateEnrollmentCheckoutSession,
+} from "@/lib/enrollment";
 import { isClerkConfigured } from "@/lib/clerk";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 
@@ -21,8 +24,15 @@ export async function POST(request: Request) {
   }
 
   const user = isClerkConfigured() ? await currentUser() : null;
+  let payload: unknown;
 
-  const body = checkoutSchema.safeParse(await request.json());
+  try {
+    payload = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+  }
+
+  const body = checkoutSchema.safeParse(payload);
 
   if (!body.success) {
     return NextResponse.json({ error: "Invalid checkout request." }, { status: 400 });
@@ -32,6 +42,18 @@ export async function POST(request: Request) {
 
   if (!course) {
     return NextResponse.json({ error: "Course not found." }, { status: 404 });
+  }
+
+  if (isClerkConfigured() && !user) {
+    return NextResponse.json(
+      {
+        error: "Please sign in before continuing to secure checkout.",
+        signInUrl: `/sign-in?redirect_url=${encodeURIComponent(
+          `/enroll?course=${course.slug}`,
+        )}`,
+      },
+      { status: 401 },
+    );
   }
 
   const enrollment = body.data.enrollmentId
@@ -49,6 +71,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (enrollment?.payment_status === "paid") {
+    return NextResponse.json(
+      { error: "This enrollment has already been paid." },
+      { status: 409 },
+    );
+  }
+
   const stripe = getStripe();
 
   if (!stripe) {
@@ -60,9 +89,13 @@ export async function POST(request: Request) {
 
   const appUrl = getAppUrl();
   const email = enrollment?.email ?? user?.primaryEmailAddress?.emailAddress;
+  const metadata = {
+    clerkUserId: user?.id ?? "",
+    courseSlug: course.slug,
+    enrollmentId: enrollment?.id ?? "",
+  };
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
     customer_email: email,
     line_items: [
       {
@@ -77,14 +110,20 @@ export async function POST(request: Request) {
         quantity: 1,
       },
     ],
-    metadata: {
-      clerkUserId: user?.id ?? "",
-      courseSlug: course.slug,
-      enrollmentId: enrollment?.id ?? "",
+    metadata,
+    payment_intent_data: {
+      metadata,
     },
     success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/cancel?course=${course.slug}`,
   });
+
+  if (enrollment?.id && session.id) {
+    await updateEnrollmentCheckoutSession({
+      enrollmentId: enrollment.id,
+      stripeSessionId: session.id,
+    });
+  }
 
   return NextResponse.json({ url: session.url });
 }

@@ -79,6 +79,61 @@ create table if not exists public.lesson_progress (
   unique (clerk_user_id, course_slug, lesson_id)
 );
 
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists set_student_profiles_updated_at on public.student_profiles;
+create trigger set_student_profiles_updated_at
+before update on public.student_profiles
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_courses_updated_at on public.courses;
+create trigger set_courses_updated_at
+before update on public.courses
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_course_lessons_updated_at on public.course_lessons;
+create trigger set_course_lessons_updated_at
+before update on public.course_lessons
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_enrollment_leads_updated_at on public.enrollment_leads;
+create trigger set_enrollment_leads_updated_at
+before update on public.enrollment_leads
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_course_enrollments_updated_at on public.course_enrollments;
+create trigger set_course_enrollments_updated_at
+before update on public.course_enrollments
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_lesson_progress_updated_at on public.lesson_progress;
+create trigger set_lesson_progress_updated_at
+before update on public.lesson_progress
+for each row execute function public.set_updated_at();
+
+create index if not exists idx_course_lessons_course_position
+on public.course_lessons (course_slug, position);
+
+create index if not exists idx_enrollment_leads_course_status
+on public.enrollment_leads (course_slug, payment_status);
+
+create index if not exists idx_enrollment_leads_email_created
+on public.enrollment_leads (email, created_at desc);
+
+create index if not exists idx_course_enrollments_clerk_status
+on public.course_enrollments (clerk_user_id, status);
+
+create index if not exists idx_lesson_progress_clerk_course
+on public.lesson_progress (clerk_user_id, course_slug);
+
 alter table public.student_profiles enable row level security;
 alter table public.courses enable row level security;
 alter table public.course_lessons enable row level security;
@@ -86,31 +141,37 @@ alter table public.enrollment_leads enable row level security;
 alter table public.course_enrollments enable row level security;
 alter table public.lesson_progress enable row level security;
 
+drop policy if exists "Public can read active courses" on public.courses;
 create policy "Public can read active courses"
 on public.courses
 for select
 using (is_active = true);
 
+drop policy if exists "Public can read preview lessons" on public.course_lessons;
 create policy "Public can read preview lessons"
 on public.course_lessons
 for select
 using (is_preview = true);
 
+drop policy if exists "Students can read their profile" on public.student_profiles;
 create policy "Students can read their profile"
 on public.student_profiles
 for select
 using ((auth.jwt() ->> 'sub') = clerk_user_id);
 
+drop policy if exists "Students can read their enrollments" on public.course_enrollments;
 create policy "Students can read their enrollments"
 on public.course_enrollments
 for select
 using ((auth.jwt() ->> 'sub') = clerk_user_id);
 
+drop policy if exists "Students can read their lesson progress" on public.lesson_progress;
 create policy "Students can read their lesson progress"
 on public.lesson_progress
 for select
 using ((auth.jwt() ->> 'sub') = clerk_user_id);
 
+drop policy if exists "Students can update their lesson progress" on public.lesson_progress;
 create policy "Students can update their lesson progress"
 on public.lesson_progress
 for all
@@ -122,26 +183,42 @@ values
   (
     'certificate-ii-security-operations',
     'Certificate II Security Operations',
-    'Foundational security training with practical procedures, responsibilities, and compliance-led video lessons.',
-    100,
-    '8 modules',
+    'The core SSTA pathway for unarmed guard and crowd controller licensing outcomes.',
+    1195,
+    '291 nominal hours',
     'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80'
   ),
   (
-    'crowd-control-essentials',
-    'Crowd Control Essentials',
-    'Entry screening, communication, conflict prevention, safe escalation, and clear incident reporting.',
-    100,
-    '6 modules',
-    'https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80'
+    'certificate-iii-security-operations-armed-cash-in-transit',
+    'Certificate III Security Operations',
+    'For licensed officers who want to deepen operational skills and lead teams in specialist security settings.',
+    2840,
+    '228 nominal hours',
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80'
   ),
   (
-    'patrol-risk-awareness',
-    'Patrol & Risk Awareness',
-    'Scenario-led patrol checks, hazard awareness, observation routines, and professional handovers.',
-    100,
-    '5 modules',
-    'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=900&q=80'
+    'batons-and-handcuffs-skill-set',
+    'Batons & Handcuffs Skill Set',
+    'A practical extension for licensed officers who need baton and handcuff capability for approved work roles.',
+    450,
+    '1 day',
+    'https://images.unsplash.com/photo-1589578527966-fdac0f44566c?auto=format&fit=crop&w=900&q=80'
+  ),
+  (
+    'certificate-iv-security-management',
+    'Certificate IV Security Management',
+    'For supervisors and security business managers coordinating operational teams and client services.',
+    2650,
+    '12 months full-time',
+    'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80'
+  ),
+  (
+    'provide-first-aid',
+    'Provide First Aid',
+    'First aid response, life support, casualty management and incident support until assistance arrives.',
+    165,
+    '1 day',
+    'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80'
   )
 on conflict (slug) do update set
   title = excluded.title,
@@ -162,10 +239,17 @@ insert into public.course_lessons (
   is_preview
 )
 values
-  ('certificate-ii-security-operations', 'welcome', 'Welcome to SSTA training', '04:28', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 1, true),
-  ('certificate-ii-security-operations', 'legal-responsibilities', 'Legal responsibilities and duty of care', '12:40', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 2, false),
-  ('certificate-ii-security-operations', 'incident-reports', 'Observation, notes, and incident reports', '16:05', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 3, false),
-  ('certificate-ii-security-operations', 'communication-pressure', 'Communication under pressure', '14:12', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 4, false)
+  ('certificate-ii-security-operations', 'security-preview', 'Security operations orientation', '04:28', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 1, true),
+  ('certificate-ii-security-operations', 'legal-procedures', 'Legal and procedural requirements', '12:40', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 2, false),
+  ('certificate-ii-security-operations', 'risk-response', 'Risk assessment and response', '16:05', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 3, false),
+  ('certificate-ii-security-operations', 'crowd-behaviour', 'Monitor crowd behaviour', '14:12', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 4, false),
+  ('certificate-iii-security-operations-armed-cash-in-transit', 'advanced-preview', 'Advanced security pathway overview', '05:10', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 1, true),
+  ('certificate-iii-security-operations-armed-cash-in-transit', 'operational-safety', 'Operational safety and risk control', '13:35', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 2, false),
+  ('batons-and-handcuffs-skill-set', 'baton-preview', 'Baton and handcuff safety overview', '03:45', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 1, true),
+  ('batons-and-handcuffs-skill-set', 'lawful-use', 'Lawful use and workplace authorisation', '11:20', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 2, false),
+  ('certificate-iv-security-management', 'management-preview', 'Security management overview', '04:55', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 1, true),
+  ('certificate-iv-security-management', 'client-needs', 'Assess client security needs', '12:10', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 2, false),
+  ('provide-first-aid', 'first-aid-preview', 'First aid course orientation', '03:20', 'youtube', 'https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0', 1, true)
 on conflict (course_slug, lesson_key) do update set
   title = excluded.title,
   duration = excluded.duration,

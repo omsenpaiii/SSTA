@@ -34,6 +34,15 @@ export type EnrollmentLead = {
   created_at: string;
 };
 
+export type EnrollmentPaymentStatus =
+  | "pending"
+  | "paid"
+  | "failed"
+  | "cancelled";
+
+const leadSelect =
+  "id,first_name,last_name,email,phone,date_of_birth,usi,address,course_slug,payment_status,stripe_session_id,created_at";
+
 export async function createEnrollmentLead(input: EnrollmentInput) {
   const course = getCourse(input.courseId);
 
@@ -60,9 +69,7 @@ export async function createEnrollmentLead(input: EnrollmentInput) {
       course_slug: course.slug,
       payment_status: "pending",
     })
-    .select(
-      "id,first_name,last_name,email,phone,date_of_birth,usi,address,course_slug,payment_status,stripe_session_id,created_at",
-    )
+    .select(leadSelect)
     .single();
 
   if (error) {
@@ -81,9 +88,7 @@ export async function getEnrollmentLead(id: string) {
 
   const { data, error } = await supabase
     .from("enrollment_leads")
-    .select(
-      "id,first_name,last_name,email,phone,date_of_birth,usi,address,course_slug,payment_status,stripe_session_id,created_at",
-    )
+    .select(leadSelect)
     .eq("id", id)
     .maybeSingle();
 
@@ -94,7 +99,7 @@ export async function getEnrollmentLead(id: string) {
   return data as EnrollmentLead | null;
 }
 
-export async function markEnrollmentPaid(input: {
+export async function updateEnrollmentCheckoutSession(input: {
   enrollmentId: string;
   stripeSessionId: string;
 }) {
@@ -107,11 +112,57 @@ export async function markEnrollmentPaid(input: {
   const { error } = await supabase
     .from("enrollment_leads")
     .update({
-      payment_status: "paid",
       stripe_session_id: input.stripeSessionId,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.enrollmentId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { skipped: false };
+}
+
+export async function updateEnrollmentPaymentStatus(input: {
+  enrollmentId: string;
+  paymentStatus: EnrollmentPaymentStatus;
+  stripeSessionId?: string | null;
+  onlyIfCurrentSession?: boolean;
+}) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    return { skipped: true };
+  }
+
+  const values: {
+    payment_status: EnrollmentPaymentStatus;
+    stripe_session_id?: string;
+    updated_at: string;
+  } = {
+    payment_status: input.paymentStatus,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.stripeSessionId) {
+    values.stripe_session_id = input.stripeSessionId;
+  }
+
+  let query = supabase
+    .from("enrollment_leads")
+    .update(values)
+    .eq("id", input.enrollmentId);
+
+  if (input.paymentStatus !== "paid") {
+    query = query.neq("payment_status", "paid");
+  }
+
+  if (input.onlyIfCurrentSession && input.stripeSessionId) {
+    query = query.eq("stripe_session_id", input.stripeSessionId);
+  }
+
+  const { error } = await query;
 
   if (error) {
     throw new Error(error.message);

@@ -173,11 +173,20 @@ export default function AdminPage() {
     const newCourse: Course = {
       slug: newCourseSlug,
       title: newCourseTitle,
+      code: "SSTA",
+      category: "Security",
       label: newCourseLabel,
       priceAud: price,
       duration: newCourseDuration,
       description: newCourseDesc,
+      overview: newCourseDesc,
       image: newCourseImage,
+      externalVideoUrl: "",
+      deliveryModes: ["Face to face", "Online", "Blended"],
+      entryRequirements: ["Contact SSTA for entry requirements."],
+      careerOutcomes: ["Security industry pathway"],
+      unitSummary: "Units to be confirmed by SSTA.",
+      units: [],
       lessons: []
     };
 

@@ -56,6 +56,10 @@ against the SSTA Supabase project. It creates:
 
 It also enables RLS and seeds the first set of courses and lessons.
 
+`enrollment_leads` intentionally has no public or authenticated RLS policy.
+Enrollment intake writes happen only through the Next.js server route with the
+Supabase service role key.
+
 ## Stripe
 
 Create a webhook endpoint pointing to:
@@ -68,11 +72,43 @@ Listen for:
 
 ```txt
 checkout.session.completed
+checkout.session.expired
 ```
 
 The enrollment form stores a lead in Supabase, emails the configured intake
 mailbox, then redirects to Stripe. The webhook marks the enrollment paid and
 grants course access in Supabase after a successful one-time payment.
+
+Payments are intentionally 503-safe until `STRIPE_SECRET_KEY` and
+`STRIPE_WEBHOOK_SECRET` are configured.
+
+## Vercel Domain Setup
+
+Use the existing Vercel project `ssta`
+(`prj_FCpx8ApyXLF0SlSfvoD7q26Mmzj2`) and add both production domains:
+
+```txt
+ssta.net.au
+www.ssta.net.au
+```
+
+Preserve cPanel email before changing website records:
+
+```txt
+A      mail   104.168.149.99
+MX     @      mail.ssta.net.au
+TXT    @      include or keep ip4:104.168.149.99 in SPF
+```
+
+Then point website traffic to Vercel:
+
+```txt
+A      @      76.76.21.21
+CNAME  www    cname.vercel-dns-0.com
+```
+
+Add the SMTP mailbox password only as an encrypted Vercel environment variable.
+Do not commit real passwords or API keys.
 
 ## Development
 

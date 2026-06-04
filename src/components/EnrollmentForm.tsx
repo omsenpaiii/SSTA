@@ -33,10 +33,27 @@ const steps = [
   { id: "review", title: "Review" },
 ];
 
-export function EnrollmentForm() {
+type EnrollmentFormProps = {
+  initialCourseSlug?: string;
+};
+
+async function readJson<T>(response: Response): Promise<T> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
+export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const validInitialCourse = courses.some(
+    (course) => course.slug === initialCourseSlug,
+  )
+    ? initialCourseSlug
+    : "";
 
   const {
     register,
@@ -54,7 +71,7 @@ export function EnrollmentForm() {
       dob: "",
       usi: "",
       address: "",
-      courseId: "",
+      courseId: validInitialCourse,
     },
     mode: "onTouched",
   });
@@ -86,11 +103,11 @@ export function EnrollmentForm() {
         body: JSON.stringify(data),
       });
 
-      const enrollmentResult = (await enrollmentResponse.json()) as {
+      const enrollmentResult = await readJson<{
         enrollmentId?: string;
         courseSlug?: string;
         error?: string;
-      };
+      }>(enrollmentResponse);
 
       if (!enrollmentResponse.ok || !enrollmentResult.enrollmentId) {
         throw new Error(
@@ -107,12 +124,18 @@ export function EnrollmentForm() {
         }),
       });
 
-      const checkoutResult = (await checkoutResponse.json()) as {
+      const checkoutResult = await readJson<{
         url?: string;
         error?: string;
-      };
+        signInUrl?: string;
+      }>(checkoutResponse);
 
       if (!checkoutResponse.ok || !checkoutResult.url) {
+        if (checkoutResponse.status === 401 && checkoutResult.signInUrl) {
+          window.location.assign(checkoutResult.signInUrl);
+          return;
+        }
+
         throw new Error(checkoutResult.error ?? "Unable to start checkout.");
       }
 
@@ -306,7 +329,7 @@ export function EnrollmentForm() {
                         control={control}
                         name="courseId"
                         render={({ field }) => (
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value}>
                             <SelectTrigger className={`h-14 bg-slate-50 focus:ring-[#18aee5] text-base font-semibold ${errors.courseId ? 'border-red-500' : 'border-slate-200'}`}>
                               <SelectValue placeholder="Select a course to enroll" />
                             </SelectTrigger>

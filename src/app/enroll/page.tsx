@@ -1,65 +1,43 @@
+import { ShieldCheck } from "lucide-react";
 import { EnrollmentForm } from "@/components/EnrollmentForm";
-import { ShieldCheck, ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 
-export default function EnrollPage() {
+type EnrollPageProps = {
+  searchParams: Promise<{
+    course?: string | string[];
+  }>;
+};
+
+export default async function EnrollPage({ searchParams }: EnrollPageProps) {
+  const params = await searchParams;
+  const courseParam = Array.isArray(params.course)
+    ? params.course[0]
+    : params.course;
+
   return (
     <main className="min-h-screen bg-slate-50 selection:bg-[#18aee5]/30">
-      {/* Premium Minimal Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Link
-            href="/"
-            className="group flex items-center justify-center gap-3 transition-opacity hover:opacity-80 min-h-12 min-w-12 p-2.5 -ml-2.5 rounded-full hover:bg-slate-100/50"
-            aria-label="Back to Home"
-          >
-            <ArrowLeft className="text-[#0067b1] shrink-0" size={20} />
-            <span className="font-black text-[#020d24] text-sm hidden sm:block">Back to Home</span>
-          </Link>
+      <SiteHeader />
 
-          <div className="flex items-center gap-3">
-            <span className="relative block size-10 shrink-0 overflow-hidden rounded-full bg-white shadow-sm border border-slate-100">
-              <Image
-                src="/ssta-logo.jpg"
-                alt="SSTA logo"
-                width={86}
-                height={69}
-                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
-              />
-            </span>
-            <div>
-              <p className="text-sm font-black tracking-widest text-[#0067b1] uppercase">SSTA</p>
-              <p className="text-[10px] font-bold text-slate-500 uppercase">RTO Code: 40873</p>
-            </div>
-          </div>
+      <section className="relative isolate overflow-hidden px-5 py-14 sm:px-8 sm:py-20 lg:py-24">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_85%_10%,rgba(24,174,229,0.14),transparent_28%),radial-gradient(circle_at_15%_85%,rgba(245,184,0,0.14),transparent_24%),linear-gradient(180deg,#ffffff_0%,#eef8ff_100%)]" />
 
-          <div className="w-[100px] flex justify-end">
-            <ShieldCheck className="text-[#f5b800]" size={24} />
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <section className="relative isolate px-5 py-12 sm:px-8 sm:py-20 lg:py-24 overflow-hidden">
-        {/* Decorative Background Elements */}
-        <div className="absolute top-[-10%] right-[-5%] h-[500px] w-[500px] rounded-full bg-[#18aee5]/10 blur-3xl -z-10" />
-        <div className="absolute bottom-[-10%] left-[-5%] h-[500px] w-[500px] rounded-full bg-[#f5b800]/10 blur-3xl -z-10" />
-
-        <div className="mx-auto max-w-3xl text-center mb-12">
-          <p className="inline-flex items-center gap-2 rounded-full border border-[#f5b800]/45 bg-white px-4 py-1.5 text-xs font-black text-[#d96f00] shadow-sm mb-6 uppercase tracking-wider">
-            <ShieldCheck size={14} /> Official RTO Enrollment
+        <div className="mx-auto mb-12 max-w-3xl text-center">
+          <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#f5b800]/45 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#d96f00] shadow-sm">
+            <ShieldCheck size={14} /> Official SSTA Enrollment
           </p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-[#020d24] tracking-tight leading-tight mb-4">
-            Begin your training journey.
+          <h1 className="text-4xl font-black leading-tight tracking-normal text-[#020d24] sm:text-5xl lg:text-6xl">
+            Enrol for your preferred course now.
           </h1>
-          <p className="text-lg font-bold text-[#53647c] max-w-2xl mx-auto">
-            Complete the form below to register your details and securely unlock access to our professional security training modules.
+          <p className="mx-auto mt-5 max-w-2xl text-lg font-bold leading-8 text-[#53647c]">
+            Submit your details, select your course and continue to secure checkout when payment keys are configured.
           </p>
         </div>
 
-        <EnrollmentForm />
+        <EnrollmentForm initialCourseSlug={courseParam} />
       </section>
+
+      <SiteFooter />
     </main>
   );
 }
