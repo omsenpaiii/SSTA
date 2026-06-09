@@ -81,7 +81,7 @@ export function SiteFooter() {
               Student Access
             </h2>
             <p className="mt-5 text-sm font-bold leading-7 text-sky-100/70">
-              Preview one lesson free, then unlock course modules after login and payment.
+              Explore accredited training, additional pathway courses, and contact-first options with guidance from the SSTA team.
             </p>
             <Link
               href="/courses"

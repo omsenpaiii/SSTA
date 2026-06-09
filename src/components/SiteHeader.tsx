@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Menu, X } from "lucide-react";
-import { courseMenu, primaryLinks, siteInfo } from "@/lib/site-content";
+import { announcementBarMessage, courseMenu, primaryLinks, siteInfo } from "@/lib/site-content";
 
 export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +14,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 bg-white shadow-[0_12px_40px_rgba(0,74,143,0.08)]">
       <div className="bg-[#0067b1] px-5 py-2 text-center text-xs font-black uppercase tracking-[0.2em] text-white">
-        Knowledge is power. Enrol now and start with a preview lesson.
+        {announcementBarMessage}
       </div>
       <nav
         aria-label="Main navigation"

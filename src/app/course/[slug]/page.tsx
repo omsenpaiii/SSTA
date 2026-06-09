@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, CheckCircle2, Clock, DollarSign, Lock, Play, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, DollarSign, Lock, Mail, Phone, Play, ShieldCheck } from "lucide-react";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -9,8 +9,10 @@ import {
   courses,
   getCourse,
   getCoursePriceDisplay,
+  isContactFirstCourse,
   isCourseAvailableForEnrollment,
 } from "@/lib/courses";
+import { siteInfo } from "@/lib/site-content";
 
 type CoursePageProps = {
   params: Promise<{
@@ -44,6 +46,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
 
   const previewLesson = course.lessons.find((lesson) => lesson.isPreview) ?? course.lessons[0];
   const isOpenForEnrollment = isCourseAvailableForEnrollment(course);
+  const isContactFirst = isContactFirstCourse(course);
 
   return (
     <main className="min-h-screen bg-white text-[#020d24]">
@@ -63,7 +66,16 @@ export default async function CoursePage({ params }: CoursePageProps) {
               {course.overview}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              {isOpenForEnrollment ? (
+              {isContactFirst ? (
+                <a
+                  href={course.externalAccessUrl ?? "https://ssta.mylearnt.io/login"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#020d24] px-5 text-sm font-black text-white"
+                >
+                  {course.externalAccessLabel ?? "Access Additional Courses"} <ArrowRight size={16} />
+                </a>
+              ) : isOpenForEnrollment ? (
                 <>
                   <CheckoutButton courseSlug={course.slug} />
                   <Link
@@ -88,20 +100,81 @@ export default async function CoursePage({ params }: CoursePageProps) {
             <div className="relative h-80">
               <Image src={course.image} alt={course.title} fill sizes="(min-width:1024px) 45vw, 100vw" className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#020d24]/80 via-transparent to-transparent" />
-              <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#0067b1]">
-                  <Clock size={16} /> {course.duration}
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#f5b800] px-4 py-2 text-sm font-black text-[#020d24]">
-                  <DollarSign size={16} /> {getCoursePriceDisplay(course)}
-                </span>
-              </div>
+              {isContactFirst ? (
+                <div className="absolute bottom-5 left-5 right-5">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#0067b1]">
+                    Additional course access via SSTA
+                  </span>
+                </div>
+              ) : (
+                <div className="absolute bottom-5 left-5 right-5 flex flex-wrap gap-3">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#0067b1]">
+                    <Clock size={16} /> {course.duration}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#f5b800] px-4 py-2 text-sm font-black text-[#020d24]">
+                    <DollarSign size={16} /> {getCoursePriceDisplay(course)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="px-5 py-20 sm:px-8">
+      {isContactFirst ? (
+        <section className="px-5 py-20 sm:px-8">
+          <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_0.9fr]">
+            <div className="rounded-[1.5rem] border border-[#18aee5]/14 bg-white p-8 shadow-[0_24px_70px_rgba(0,74,143,0.08)]">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-[#0067b1]">
+                Please contact us
+              </p>
+              <h2 className="mt-4 text-4xl font-black tracking-normal">
+                Contact SSTA for these additional courses and we will guide you.
+              </h2>
+              <p className="mt-5 text-base font-bold leading-7 text-[#53647c]">
+                These courses use an additional access pathway. Please contact us on the details below and the SSTA team will help you with the correct next step.
+              </p>
+              <div className="mt-8 grid gap-4">
+                <a
+                  href={`mailto:${siteInfo.email}`}
+                  className="flex items-center gap-3 rounded-2xl bg-[#eef8ff] p-4 text-base font-black text-[#020d24]"
+                >
+                  <Mail className="text-[#0067b1]" size={20} />
+                  {siteInfo.email}
+                </a>
+                <a
+                  href={siteInfo.phoneHref}
+                  className="flex items-center gap-3 rounded-2xl bg-[#fff6da] p-4 text-base font-black text-[#020d24]"
+                >
+                  <Phone className="text-[#d96f00]" size={20} />
+                  {siteInfo.phone}
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] bg-[#020d24] p-8 text-white shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-[#f5b800]">
+                Additional access
+              </p>
+              <h2 className="mt-4 text-3xl font-black tracking-normal">
+                Ready to continue into the external learning platform?
+              </h2>
+              <p className="mt-5 text-sm font-bold leading-7 text-sky-100/80">
+                Once you have the right guidance from SSTA, use the button below to access the additional course platform.
+              </p>
+              <a
+                href={course.externalAccessUrl ?? "https://ssta.mylearnt.io/login"}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#f5b800] px-5 text-sm font-black text-[#020d24] transition hover:bg-[#ffc824]"
+              >
+                {course.externalAccessLabel ?? "Access Additional Courses"} <ArrowRight size={16} />
+              </a>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="px-5 py-20 sm:px-8">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <aside className="rounded-[1.5rem] bg-[#eef8ff] p-6">
             <h2 className="text-2xl font-black">Course Snapshot</h2>
@@ -188,9 +261,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      )}
 
-      <section className="bg-[#eef8ff] px-5 py-20 sm:px-8">
+      {isContactFirst ? null : (
+        <section className="bg-[#eef8ff] px-5 py-20 sm:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 max-w-3xl">
             <p className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
@@ -213,7 +288,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
             ))}
           </div>
         </div>
-      </section>
+        </section>
+      )}
 
       <SiteFooter />
     </main>

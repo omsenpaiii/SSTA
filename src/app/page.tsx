@@ -17,7 +17,7 @@ import {
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CheckoutButton } from "@/components/CheckoutButton";
-import { benefits, faqs, testimonials } from "@/lib/site-content";
+import { benefits, faqs, josephProfile, testimonials } from "@/lib/site-content";
 import { courseCategories, courses, getFeaturedCourse, type CourseLesson } from "@/lib/courses";
 
 const mediaCards = [
@@ -26,15 +26,14 @@ const mediaCards = [
       "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80",
     alt: "Security students in a guided training session",
     className:
-      "left-[2%] top-[18%] z-20 w-[48%] rotate-[-9deg] md:left-[8%] md:w-[31%]",
+      "left-[2%] top-[20%] z-20 w-[43%] rotate-[-9deg] opacity-90 md:left-[8%] md:w-[28%]",
     delay: 0.15,
   },
   {
-    image:
-      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=900&q=80",
-    alt: "Instructor presenting a training lesson",
+    image: "/ssta-classroom-hero.jpeg",
+    alt: "Joseph presenting training to a classroom of SSTA students",
     className:
-      "left-1/2 top-[2%] z-10 hidden w-[37%] -translate-x-1/2 rotate-[1deg] md:block",
+      "left-1/2 top-[6%] z-30 w-[52%] -translate-x-1/2 rotate-[1deg] md:top-[2%] md:w-[40%]",
     delay: 0.32,
   },
   {
@@ -42,7 +41,7 @@ const mediaCards = [
       "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=900&q=80",
     alt: "Online course dashboard on a laptop",
     className:
-      "right-[2%] top-[22%] z-30 w-[48%] rotate-[10deg] md:right-[8%] md:w-[31%]",
+      "right-[2%] top-[22%] z-20 w-[43%] rotate-[10deg] opacity-90 md:right-[8%] md:w-[28%]",
     delay: 0.5,
   },
 ];
@@ -125,12 +124,10 @@ export default function Home() {
               Knowledge is power
             </div>
             <h1 className="mx-auto max-w-4xl text-5xl font-black leading-[0.96] tracking-normal text-[#020d24] sm:text-6xl lg:text-6xl">
-              Select Security Training & Professional Certification.
+              Select Security Training Academy.
             </h1>
             <p className="mx-auto mt-7 max-w-3xl text-lg font-bold leading-8 text-[#53647c] sm:text-xl">
-              Australia-ready security courses with in-site video lessons,
-              protected modules, one-time payment access, and a premium student
-              experience for SSTA learners.
+              Explore security, first aid, workplace safety, and career pathway courses with practical guidance from the SSTA team.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
@@ -195,8 +192,7 @@ export default function Home() {
               Industry-ready training with clear pathways.
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-base font-bold leading-7 text-[#53647c]">
-              Explore SSTA programs with clear categories, transparent fees, practical
-              requirements and a visible preview-before-payment model.
+              Explore SSTA programs with clear categories, transparent pathways, practical requirements, and additional learning options.
             </p>
           </motion.div>
 
@@ -228,6 +224,19 @@ export default function Home() {
               </motion.article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-5 pb-6 sm:px-8">
+        <div className="mx-auto flex max-w-7xl justify-center">
+          <a
+            href="https://learntbusiness.com.au"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-full border border-[#18aee5]/35 bg-[#eef8ff] px-8 text-base font-black text-[#0067b1] shadow-[0_16px_36px_rgba(0,103,177,0.08)] transition hover:-translate-y-0.5 hover:border-[#0067b1]"
+          >
+            Explore More Courses <ArrowRight size={20} />
+          </a>
         </div>
       </section>
 
@@ -319,6 +328,34 @@ export default function Home() {
 
       <section className="bg-white px-5 py-24 sm:px-8">
         <div className="mx-auto max-w-7xl">
+          <div className="mb-12 grid gap-8 rounded-[1.75rem] border border-[#18aee5]/14 bg-[#f8fcff] p-8 shadow-[0_24px_70px_rgba(0,74,143,0.08)] lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <p className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
+                About SSTA
+              </p>
+              <h2 className="text-4xl font-black tracking-normal sm:text-5xl">
+                Joseph brings three decades of security and risk leadership.
+              </h2>
+              <p className="mt-5 text-base font-bold leading-7 text-[#53647c]">
+                {josephProfile.summary}
+              </p>
+              <Link
+                href="/about-us"
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#0067b1] px-6 py-3 text-sm font-black text-white transition hover:bg-[#123e95]"
+              >
+                Learn More <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="relative h-[320px] overflow-hidden rounded-[1.5rem] border-[8px] border-white shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
+              <Image
+                src="/ssta-classroom-hero.jpeg"
+                alt="Joseph leading an SSTA classroom session"
+                fill
+                sizes="(min-width:1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+          </div>
           <div className="mb-12 text-center">
             <p className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
               Benefits

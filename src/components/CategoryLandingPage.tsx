@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { courseCategories, courses, getCoursePriceDisplay } from "@/lib/courses";
+import { courseCategories, courses, getCoursePriceDisplay, isContactFirstCourse } from "@/lib/courses";
 
 export function CategoryLandingPage({ slug }: { slug: string }) {
   const category = courseCategories.find((item) => item.slug === slug) ?? courseCategories[0];
@@ -48,10 +48,16 @@ export function CategoryLandingPage({ slug }: { slug: string }) {
                 <div className="p-6">
                   <h2 className="text-2xl font-black">{course.title}</h2>
                   <p className="mt-3 text-sm font-bold leading-6 text-[#53647c]">{course.description}</p>
-                  <div className="mt-5 flex flex-wrap gap-2 text-xs font-black">
-                    <span className="rounded-full bg-[#eef8ff] px-3 py-1 text-[#0067b1]">{course.duration}</span>
-                    <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
-                  </div>
+                  {isContactFirstCourse(course) ? (
+                    <div className="mt-5 flex flex-wrap gap-2 text-xs font-black">
+                      <span className="rounded-full bg-[#eef8ff] px-3 py-1 text-[#0067b1]">Contact-first access</span>
+                    </div>
+                  ) : (
+                    <div className="mt-5 flex flex-wrap gap-2 text-xs font-black">
+                      <span className="rounded-full bg-[#eef8ff] px-3 py-1 text-[#0067b1]">{course.duration}</span>
+                      <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
+                    </div>
+                  )}
                   <Link href={`/course/${course.slug}`} className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#0067b1] px-5 py-3 text-sm font-black text-white">
                     Learn More <ArrowRight size={16} />
                   </Link>

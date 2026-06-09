@@ -15,6 +15,7 @@ export type UnitItem = {
 };
 
 export type CourseAvailability = "open" | "coming-soon" | "details-to-follow";
+export type CourseDetailVariant = "standard" | "contact-first";
 
 export type Course = {
   slug: string;
@@ -38,6 +39,9 @@ export type Course = {
   availability?: CourseAvailability;
   priceLabel?: string;
   statusNote?: string;
+  detailVariant?: CourseDetailVariant;
+  externalAccessUrl?: string;
+  externalAccessLabel?: string;
 };
 
 export type CourseCategory = {
@@ -171,6 +175,14 @@ export const courseCategories: CourseCategory[] = [
       "Food hygiene, safe food handling, and supervisor training for hospitality and food-service workplaces.",
     image:
       "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    slug: "other-courses",
+    title: "Other",
+    description:
+      "Additional professional development and pathway courses accessed with SSTA guidance.",
+    image:
+      "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=900&q=80",
   },
 ];
 
@@ -1269,6 +1281,90 @@ export const courses: Course[] = [
     ],
     lessons: previewLessons("food-supervisor", "Food safety supervisor preview"),
   },
+  {
+    slug: "communication-skills",
+    code: "Additional Course",
+    title: "Communication Skills",
+    category: "Other",
+    label: "External access",
+    priceAud: 0,
+    duration: "Contact SSTA",
+    description:
+      "A communication skills pathway for learners building clearer workplace communication and interpersonal confidence.",
+    overview:
+      "This additional course is available through SSTA with a guided access process. Contact the team and SSTA will help you access the right learning platform and next steps.",
+    image:
+      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80",
+    externalVideoUrl: "",
+    deliveryModes: ["Contact SSTA for delivery details"],
+    entryRequirements: ["Please contact SSTA for course access and suitability guidance"],
+    careerOutcomes: ["Professional development", "Workplace communication confidence"],
+    unitSummary: "Contact SSTA for course details.",
+    units: [],
+    lessons: [],
+    availability: "details-to-follow",
+    priceLabel: "Contact us",
+    statusNote: "Please contact SSTA for access details.",
+    detailVariant: "contact-first",
+    externalAccessUrl: "https://ssta.mylearnt.io/login",
+    externalAccessLabel: "Access Additional Courses",
+  },
+  {
+    slug: "counselling-skills",
+    code: "Additional Course",
+    title: "Counselling Skills",
+    category: "Other",
+    label: "External access",
+    priceAud: 0,
+    duration: "Contact SSTA",
+    description:
+      "A counselling skills pathway for learners exploring supportive communication and person-centred engagement skills.",
+    overview:
+      "This additional course is available through SSTA with a guided access process. Contact the team and SSTA will help you access the right learning platform and next steps.",
+    image:
+      "https://images.unsplash.com/photo-1573496773905-f5b17e717f05?auto=format&fit=crop&w=900&q=80",
+    externalVideoUrl: "",
+    deliveryModes: ["Contact SSTA for delivery details"],
+    entryRequirements: ["Please contact SSTA for course access and suitability guidance"],
+    careerOutcomes: ["Professional development", "Supportive communication skills"],
+    unitSummary: "Contact SSTA for course details.",
+    units: [],
+    lessons: [],
+    availability: "details-to-follow",
+    priceLabel: "Contact us",
+    statusNote: "Please contact SSTA for access details.",
+    detailVariant: "contact-first",
+    externalAccessUrl: "https://ssta.mylearnt.io/login",
+    externalAccessLabel: "Access Additional Courses",
+  },
+  {
+    slug: "criminal-justice-and-criminology",
+    code: "Additional Course",
+    title: "Criminal Justice and Criminology",
+    category: "Other",
+    label: "External access",
+    priceAud: 0,
+    duration: "Contact SSTA",
+    description:
+      "An additional pathway for learners interested in criminal justice systems, criminology concepts, and related professional study.",
+    overview:
+      "This additional course is available through SSTA with a guided access process. Contact the team and SSTA will help you access the right learning platform and next steps.",
+    image:
+      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=900&q=80",
+    externalVideoUrl: "",
+    deliveryModes: ["Contact SSTA for delivery details"],
+    entryRequirements: ["Please contact SSTA for course access and suitability guidance"],
+    careerOutcomes: ["Professional development", "Justice and criminology pathway exploration"],
+    unitSummary: "Contact SSTA for course details.",
+    units: [],
+    lessons: [],
+    availability: "details-to-follow",
+    priceLabel: "Contact us",
+    statusNote: "Please contact SSTA for access details.",
+    detailVariant: "contact-first",
+    externalAccessUrl: "https://ssta.mylearnt.io/login",
+    externalAccessLabel: "Access Additional Courses",
+  },
 ];
 
 export function getCourse(slug: string) {
@@ -1289,4 +1385,8 @@ export function isCourseAvailableForEnrollment(course: Course) {
 
 export function getCoursePriceDisplay(course: Course) {
   return course.priceLabel ?? `$${course.priceAud}`;
+}
+
+export function isContactFirstCourse(course: Course) {
+  return (course.detailVariant ?? "standard") === "contact-first";
 }

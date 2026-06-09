@@ -10,6 +10,21 @@ export const siteInfo = {
   address: "Level 1, 1287 North Road, Huntingdale 3166",
 };
 
+export const announcementBarMessage =
+  "Knowledge is power. Explore security, first aid, safety and more with SSTA.";
+
+export const josephProfile = {
+  name: "Joseph",
+  title: "Training Manager",
+  summary:
+    "Joseph is the Training Manager of SSTA and a senior security and risk management professional with over 30 years of experience across major events, corporate security, executive protection, security training, risk assessment, and compliance.",
+  details: [
+    "Joseph has led and overseen large-scale, high-risk security operations for some of Australia's most complex and high-profile events, including the Formula 1 Grand Prix, Melbourne Cup Carnival, Australian Open, MotoGP, as well as major concerts and festivals.",
+    "His experience spans close collaboration with Victoria Police, emergency services, government agencies, corporate clients, and venue operators, delivering security outcomes that are safe, compliant, and operationally efficient.",
+    "Joseph is recognised for his practical leadership, deep regulatory knowledge, and ability to manage risk in fast-paced, high-pressure environments.",
+  ],
+};
+
 export const primaryLinks = [
   { label: "Home", href: "/" },
   { label: "About Us", href: "/about-us" },
@@ -56,9 +71,9 @@ export const faqs = [
       "Choose the course that matches your goal, complete the enrolment form, and SSTA will guide you through payment, access and any licensing-related requirements.",
   },
   {
-    question: "Can students preview training before payment?",
+    question: "How do students access additional external courses?",
     answer:
-      "Yes. Course pages include one unlocked preview lesson. Full lesson access is unlocked after login and successful payment.",
+      "Some additional courses use a contact-first pathway. Reach out to SSTA and the team will guide you to the correct access or external learning platform.",
   },
   {
     question: "What delivery modes are available?",
@@ -75,7 +90,7 @@ export const testimonials = [
   {
     name: "Future SSTA Student",
     quote:
-      "The course structure is clear: fees, entry requirements, preview lessons and the units are all easy to understand before enrolling.",
+      "The course structure is clear and the pathways are easy to understand before committing.",
   },
   {
     name: "Security Learner",

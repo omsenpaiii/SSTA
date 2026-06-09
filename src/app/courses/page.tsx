@@ -12,6 +12,7 @@ import {
   courseCategories,
   courses,
   getCoursePriceDisplay,
+  isContactFirstCourse,
   isCourseAvailableForEnrollment,
   type Course,
 } from "@/lib/courses";
@@ -48,8 +49,7 @@ export default function CoursesPage() {
               Find the right training pathway.
             </h1>
             <p className="mt-5 text-lg font-bold leading-8 text-[#53647c]">
-              Browse detailed course pages with overview, fees, entry requirements, unit tables,
-              delivery strategy and one unlocked preview lesson.
+              Browse SSTA pathways across accredited, short-course, and additional external-access programs.
             </p>
           </div>
 
@@ -108,10 +108,16 @@ export default function CoursesPage() {
                     </div>
 
                     <div className="flex flex-1 flex-col p-6">
-                      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm font-bold text-[#0067b1]">
-                        <span className="inline-flex items-center gap-2"><Clock size={16} /> {course.duration}</span>
-                        <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
-                      </div>
+                      {isContactFirstCourse(course) ? (
+                        <div className="mb-4 flex flex-wrap items-center gap-3 text-sm font-bold text-[#0067b1]">
+                          <span className="rounded-full bg-[#eef8ff] px-3 py-1">Contact-first access</span>
+                        </div>
+                      ) : (
+                        <div className="mb-4 flex flex-wrap items-center gap-3 text-sm font-bold text-[#0067b1]">
+                          <span className="inline-flex items-center gap-2"><Clock size={16} /> {course.duration}</span>
+                          <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
+                        </div>
+                      )}
                       <p className="flex-1 text-sm font-bold leading-7 text-[#53647c]">{course.description}</p>
                       <div className="mt-6 flex flex-wrap gap-3">
                         <Link
@@ -120,7 +126,7 @@ export default function CoursesPage() {
                         >
                           Learn More <ArrowRight size={16} />
                         </Link>
-                        {isCourseAvailableForEnrollment(course) ? (
+                        {isContactFirstCourse(course) ? null : isCourseAvailableForEnrollment(course) ? (
                           <Link
                             href={`/enroll?course=${course.slug}`}
                             className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]"
