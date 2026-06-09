@@ -48,9 +48,22 @@ create table if not exists public.enrollment_leads (
   course_slug text not null references public.courses(slug) on delete restrict,
   payment_status text not null default 'pending' check (payment_status in ('pending', 'paid', 'failed', 'cancelled')),
   stripe_session_id text unique,
+  email_status text not null default 'pending' check (email_status in ('pending', 'sent', 'failed')),
+  email_error text,
+  email_sent_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.enrollment_leads
+add column if not exists email_status text not null default 'pending'
+check (email_status in ('pending', 'sent', 'failed'));
+
+alter table public.enrollment_leads
+add column if not exists email_error text;
+
+alter table public.enrollment_leads
+add column if not exists email_sent_at timestamptz;
 
 create table if not exists public.course_enrollments (
   id uuid primary key default gen_random_uuid(),
@@ -219,7 +232,34 @@ values
     165,
     '1 day',
     'https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=900&q=80'
-  )
+  ),
+  ('certificate-iv-building-construction', 'Certificate IV in Building & Construction', 'A building and site management pathway for builders, supervisors and managers of small to medium-sized building businesses.', 7950, '55 weeks / self paced', 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80'),
+  ('diploma-building-construction', 'Diploma of Building & Construction', 'Advanced building study covering structural principles, risk, finance, estimating, contracts, contractors and project quality.', 8450, '18 months', 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&w=900&q=80'),
+  ('white-card-cpcwhs1001', 'Work Safely in the Construction Industry (White Card)', 'Construction induction training for people who need safe access to building and construction sites.', 165, '1 day', 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80'),
+  ('white-card-refresher-cpcwhs1001', 'White Card Refresher', 'A refresher version of the construction induction course for learners who need to renew core site safety knowledge.', 135, '1 day', 'https://images.unsplash.com/photo-1581783898377-1c85bf937427?auto=format&fit=crop&w=900&q=80'),
+  ('apply-whs-requirements-construction', 'Apply WHS Requirements in Construction', 'Carry out WHS requirements through safe work practices in on-site and off-site construction workplaces.', 225, '1 day', 'https://images.unsplash.com/photo-1517089596392-fb9a9033e05b?auto=format&fit=crop&w=900&q=80'),
+  ('certificate-iv-work-health-safety', 'Certificate IV in Work Health and Safety', 'A WHS qualification for supervisors, WHS personnel and workers who manage workplace risks effectively.', 4606, '6 to 12 months', 'https://images.unsplash.com/photo-1581783898377-1c85bf937427?auto=format&fit=crop&w=900&q=80'),
+  ('contribute-health-safety-self-others', 'Contribute to Health and Safety to Self and Others', 'Basic WHS knowledge for workers who need to follow procedures, respond to incidents and participate in consultation.', 195, '1 day', 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=900&q=80'),
+  ('certificate-iv-leadership-management', 'Certificate IV in Leadership & Management', 'A pathway for developing and emerging leaders who guide teams and organise workplace outputs.', 3950, '6 to 12 months', 'https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=900&q=80'),
+  ('diploma-leadership-management', 'Diploma of Leadership & Management', 'Leadership and management study for people applying practical skills, judgement and initiative across workplace teams.', 6390, '6 to 12 months', 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=900&q=80'),
+  ('certificate-iv-accounting-bookkeeping', 'Certificate IV in Accounting and Bookkeeping', 'Accounting and bookkeeping training for BAS agent, contract bookkeeper and finance administration pathways.', 4389, '12 to 24 months', 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80'),
+  ('tax-documentation-legal-entities', 'Prepare and Administer Tax Documentation for Legal Entities', 'Identify tax requirements, gather and process tax data, and prepare documentation for complex legal-entity lodgements.', 495, '12 weeks', 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=900&q=80'),
+  ('tax-documentation-individuals', 'Prepare and Administer Tax Documentation for Individuals', 'Prepare non-complex income tax returns for individuals in line with statutory requirements.', 495, '12 weeks', 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=900&q=80'),
+  ('certificate-iv-real-estate-practice', 'Certificate IV in Real Estate Practice', 'Real estate practice training for learners working toward agency, sales, property management and related property roles.', 4795, '12 to 24 months', 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=900&q=80'),
+  ('diploma-property-agency-management', 'Diploma of Property (Agency Management)', 'Agency management training for real estate principals, agency managers and directors.', 5950, '12 to 24 months', 'https://images.unsplash.com/photo-1560520031-3a4dc4e9de0c?auto=format&fit=crop&w=900&q=80'),
+  ('provide-cpr-hltaid009', 'Provide Cardiopulmonary Resuscitation CPR', 'Perform cardiopulmonary resuscitation in line with Australian Resuscitation Council guidelines.', 70, '1 day', 'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?auto=format&fit=crop&w=900&q=80'),
+  ('provide-cpr-refresher-hltaid009', 'Provide CPR Refresher', 'A CPR refresher for learners who hold a current statement of attainment and need renewal training.', 70, '1 day', 'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?auto=format&fit=crop&w=900&q=80'),
+  ('child-care-first-aid-hltaid012', 'Emergency First Aid Response in Education and Care', 'First aid response for infants and children, including asthma and anaphylaxis emergencies in education and care settings.', 250, '8 hours online study plus class', 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=900&q=80'),
+  ('advanced-first-aid-hltaid014', 'Provide Advanced First Aid', 'Advanced first aid response skills for casualties in community and workplace situations.', 295, '1 day', 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?auto=format&fit=crop&w=900&q=80'),
+  ('advanced-resuscitation-oxygen-therapy', 'Advanced Resuscitation and Oxygen Therapy', 'Use specialised equipment to provide resuscitation and oxygen therapy in complex situations.', 350, '1 day', 'https://images.unsplash.com/photo-1583241801142-1131d2fe1865?auto=format&fit=crop&w=900&q=80'),
+  ('operate-emergency-control-organization', 'Operate as Part of an Emergency Control Organization', 'Implement workplace emergency response procedures as part of an emergency control organisation.', 195, '1 day', 'https://images.unsplash.com/photo-1505489304219-85ce17010209?auto=format&fit=crop&w=900&q=80'),
+  ('lead-emergency-control-organization', 'Lead an Emergency Control Organization', 'Make safety decisions and give priority instructions during workplace emergency incidents.', 195, '1 day', 'https://images.unsplash.com/photo-1475776408506-9a5371e7a068?auto=format&fit=crop&w=900&q=80'),
+  ('control-traffic-stop-slow-bat', 'Control Traffic with Stop-Slow Bat', 'Develop the knowledge and skills required to apply traffic controlling procedures on a worksite.', 220, '1 day', 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80'),
+  ('implement-traffic-management-plan', 'Implement Traffic Management Plan', 'Set out, monitor and close down traffic management plans and guidance schemes in civil construction.', 220, '1 day', 'https://images.unsplash.com/photo-1524211616209-8a337dd6a38e?auto=format&fit=crop&w=900&q=80'),
+  ('responsible-service-alcohol-rsa', 'Provide Responsible Service of Alcohol RSA', 'Responsible service of alcohol training for staff who sell, serve, supply or monitor alcohol service.', 65, '1 day', 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=900&q=80'),
+  ('hygienic-practices-food-safety', 'Use Hygienic Practices for Food Safety', 'Use personal hygiene practices to prevent contamination of food and control food hazards.', 65, '1 day', 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=900&q=80'),
+  ('safe-food-handling-practices', 'Participate in Safe Food Handling Practices', 'Handle food safely during storage, preparation, display, service and disposal.', 140, '1 day', 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=900&q=80'),
+  ('food-safety-supervisor-skill-set', 'Food Safety Supervisor Course', 'A food safety supervisor skill set covering personal hygiene, safe food handling and food-safety hazard awareness.', 205, '2 days', 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=900&q=80')
 on conflict (slug) do update set
   title = excluded.title,
   description = excluded.description,

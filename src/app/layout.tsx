@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SSTA | Select Security Training Academy",
   description:
-    "Online security training courses from Select Security Training Academy.",
+    "Training courses from Select Security Training Academy across security, first aid, construction and more.",
   icons: {
     icon: "/favicon.ico",
   },

@@ -58,7 +58,9 @@ It also enables RLS and seeds the first set of courses and lessons.
 
 `enrollment_leads` intentionally has no public or authenticated RLS policy.
 Enrollment intake writes happen only through the Next.js server route with the
-Supabase service role key.
+Supabase service role key. The table also records `email_status`,
+`email_error`, and `email_sent_at` so SMTP notification delivery can be audited
+without exposing intake data publicly.
 
 ## Stripe
 
@@ -80,7 +82,9 @@ mailbox, then redirects to Stripe. The webhook marks the enrollment paid and
 grants course access in Supabase after a successful one-time payment.
 
 Payments are intentionally 503-safe until `STRIPE_SECRET_KEY` and
-`STRIPE_WEBHOOK_SECRET` are configured.
+`STRIPE_WEBHOOK_SECRET` are configured. Checkout also refuses payment until
+Clerk is configured, because course access is granted to the signed-in Clerk
+student after Stripe confirms payment.
 
 ## Vercel Domain Setup
 

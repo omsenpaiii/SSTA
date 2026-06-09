@@ -3,7 +3,7 @@ import { courseCategories, courses } from "@/lib/courses";
 export const siteInfo = {
   name: "Select Security Training Academy",
   shortName: "SSTA",
-  rto: "RTO Code: 40873",
+  rto: "",
   email: "admin@ssta.net.au",
   phone: "+61 0431 696 558",
   phoneHref: "tel:+610431696558",

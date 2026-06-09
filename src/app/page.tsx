@@ -195,8 +195,8 @@ export default function Home() {
               Industry-ready training with clear pathways.
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-base font-bold leading-7 text-[#53647c]">
-              Explore SSTA programs inspired by the Baker Ebert course structure: clear categories,
-              transparent fees, practical requirements and a visible preview-before-payment model.
+              Explore SSTA programs with clear categories, transparent fees, practical
+              requirements and a visible preview-before-payment model.
             </p>
           </motion.div>
 

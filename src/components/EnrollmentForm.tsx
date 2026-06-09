@@ -5,7 +5,11 @@ import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { courses } from "@/lib/courses";
+import {
+  courses,
+  getCoursePriceDisplay,
+  isCourseAvailableForEnrollment,
+} from "@/lib/courses";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +32,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const steps = [
   { id: "personal", title: "Personal Info" },
-  { id: "rto", title: "RTO Details" },
+  { id: "student", title: "Student Details" },
   { id: "course", title: "Course Select" },
   { id: "review", title: "Review" },
 ];
@@ -46,10 +50,11 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) {
+  const enrollableCourses = courses.filter((course) => isCourseAvailableForEnrollment(course));
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const validInitialCourse = courses.some(
+  const validInitialCourse = enrollableCourses.some(
     (course) => course.slug === initialCourseSlug,
   )
     ? initialCourseSlug
@@ -77,7 +82,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
   });
 
   const formValues = useWatch({ control });
-  const selectedCourse = courses.find((c) => c.slug === formValues.courseId);
+  const selectedCourse = enrollableCourses.find((c) => c.slug === formValues.courseId);
 
   const nextStep = async () => {
     const fieldsToValidate = getFieldsForStep(currentStep);
@@ -207,7 +212,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
             </CardTitle>
             <CardDescription className="text-base font-semibold text-[#53647c]">
               {currentStep === 0 && "Let's start with your basic contact information."}
-              {currentStep === 1 && "As a Registered Training Organisation, we require your USI."}
+              {currentStep === 1 && "We use these details to prepare your enrolment and student record."}
               {currentStep === 2 && "Select the program you wish to enroll in."}
               {currentStep === 3 && "Review your details before proceeding to payment."}
             </CardDescription>
@@ -290,7 +295,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
                   <div className="grid gap-5">
                     <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 flex gap-3 items-start text-sm font-semibold text-blue-900">
                       <ShieldCheck className="shrink-0 text-[#0067b1]" size={20} />
-                      <p>As a Registered Training Organisation (RTO 40873), we are required by the Australian Government to collect this information.</p>
+                      <p>We may require these details to support enrolment processing, identity checks and student record setup.</p>
                     </div>
 
                     <div className="space-y-2">
@@ -334,9 +339,9 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
                               <SelectValue placeholder="Select a course to enroll" />
                             </SelectTrigger>
                             <SelectContent>
-                              {courses.map((course) => (
+                              {enrollableCourses.map((course) => (
                                 <SelectItem key={course.slug} value={course.slug} className="font-semibold py-3 cursor-pointer">
-                                  {course.title} - ${course.priceAud}
+                                  {course.title} - {getCoursePriceDisplay(course)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -352,7 +357,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
                         <p className="text-sm font-semibold text-[#53647c] mt-2">{selectedCourse.description}</p>
                         <div className="flex gap-4 mt-4 text-sm font-bold text-[#020d24]">
                           <span className="bg-white px-3 py-1 rounded-full shadow-sm">{selectedCourse.duration}</span>
-                          <span className="bg-white px-3 py-1 rounded-full shadow-sm text-[#f5b800] border border-[#f5b800]/20">${selectedCourse.priceAud} AUD</span>
+                          <span className="bg-white px-3 py-1 rounded-full shadow-sm text-[#f5b800] border border-[#f5b800]/20">{getCoursePriceDisplay(selectedCourse)} AUD</span>
                         </div>
                       </motion.div>
                     )}
@@ -383,7 +388,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
                     <div className="bg-[#020d24] rounded-2xl p-5 text-white flex justify-between items-center">
                       <div>
                         <p className="text-sm font-bold text-sky-200/70 uppercase tracking-widest mb-1">Total Due</p>
-                        <p className="text-3xl font-black">${selectedCourse?.priceAud}</p>
+                        <p className="text-3xl font-black">{selectedCourse ? getCoursePriceDisplay(selectedCourse) : ""}</p>
                       </div>
                       <ShieldCheck size={40} className="text-[#f5b800]/30" />
                     </div>

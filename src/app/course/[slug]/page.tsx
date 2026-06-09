@@ -5,7 +5,12 @@ import { ArrowRight, CheckCircle2, Clock, DollarSign, Lock, Play, ShieldCheck } 
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { courses, getCourse } from "@/lib/courses";
+import {
+  courses,
+  getCourse,
+  getCoursePriceDisplay,
+  isCourseAvailableForEnrollment,
+} from "@/lib/courses";
 
 type CoursePageProps = {
   params: Promise<{
@@ -38,6 +43,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
   }
 
   const previewLesson = course.lessons.find((lesson) => lesson.isPreview) ?? course.lessons[0];
+  const isOpenForEnrollment = isCourseAvailableForEnrollment(course);
 
   return (
     <main className="min-h-screen bg-white text-[#020d24]">
@@ -57,13 +63,24 @@ export default async function CoursePage({ params }: CoursePageProps) {
               {course.overview}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <CheckoutButton courseSlug={course.slug} />
-              <Link
-                href="/enroll"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#18aee5]/35 bg-white px-5 text-sm font-black text-[#0067b1]"
-              >
-                Enrol Form <ArrowRight size={16} />
-              </Link>
+              {isOpenForEnrollment ? (
+                <>
+                  <CheckoutButton courseSlug={course.slug} />
+                  <Link
+                    href={`/enroll?course=${course.slug}`}
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#18aee5]/35 bg-white px-5 text-sm font-black text-[#0067b1]"
+                  >
+                    Enrol Form <ArrowRight size={16} />
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  href="/contact"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#020d24] px-5 text-sm font-black text-white"
+                >
+                  Contact Us <ArrowRight size={16} />
+                </Link>
+              )}
             </div>
           </div>
 
@@ -76,7 +93,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   <Clock size={16} /> {course.duration}
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full bg-[#f5b800] px-4 py-2 text-sm font-black text-[#020d24]">
-                  <DollarSign size={16} /> {course.priceAud}
+                  <DollarSign size={16} /> {getCoursePriceDisplay(course)}
                 </span>
               </div>
             </div>
@@ -91,9 +108,12 @@ export default async function CoursePage({ params }: CoursePageProps) {
             <div className="mt-6 grid gap-4">
               <div className="rounded-2xl bg-white p-5">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0067b1]">Fee</p>
-                <p className="mt-2 text-xl font-black">${course.priceAud} tuition</p>
-                {course.enrolmentFee ? (
+                <p className="mt-2 text-xl font-black">{getCoursePriceDisplay(course)}</p>
+                {course.enrolmentFee && isOpenForEnrollment ? (
                   <p className="text-sm font-bold text-[#53647c]">${course.enrolmentFee} enrolment fee</p>
+                ) : null}
+                {!isOpenForEnrollment && course.statusNote ? (
+                  <p className="text-sm font-bold text-[#53647c]">{course.statusNote}</p>
                 ) : null}
               </div>
               <div className="rounded-2xl bg-white p-5">

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getCourse } from "@/lib/courses";
+import { getCourse, isCourseAvailableForEnrollment } from "@/lib/courses";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const enrollmentSchema = z.object({
@@ -31,6 +31,9 @@ export type EnrollmentLead = {
   course_slug: string;
   payment_status: "pending" | "paid" | "failed" | "cancelled";
   stripe_session_id: string | null;
+  email_status: "pending" | "sent" | "failed";
+  email_error: string | null;
+  email_sent_at: string | null;
   created_at: string;
 };
 
@@ -41,13 +44,17 @@ export type EnrollmentPaymentStatus =
   | "cancelled";
 
 const leadSelect =
-  "id,first_name,last_name,email,phone,date_of_birth,usi,address,course_slug,payment_status,stripe_session_id,created_at";
+  "id,first_name,last_name,email,phone,date_of_birth,usi,address,course_slug,payment_status,stripe_session_id,email_status,email_error,email_sent_at,created_at";
 
 export async function createEnrollmentLead(input: EnrollmentInput) {
   const course = getCourse(input.courseId);
 
   if (!course) {
     throw new Error("Selected course was not found.");
+  }
+
+  if (!isCourseAvailableForEnrollment(course)) {
+    throw new Error("Selected course is not open for enrollment yet.");
   }
 
   const supabase = getSupabaseAdmin();
@@ -68,6 +75,7 @@ export async function createEnrollmentLead(input: EnrollmentInput) {
       address: input.address,
       course_slug: course.slug,
       payment_status: "pending",
+      email_status: "pending",
     })
     .select(leadSelect)
     .single();
@@ -77,6 +85,35 @@ export async function createEnrollmentLead(input: EnrollmentInput) {
   }
 
   return data as EnrollmentLead;
+}
+
+export async function updateEnrollmentEmailStatus(input: {
+  enrollmentId: string;
+  emailStatus: "sent" | "failed";
+  emailError?: string | null;
+}) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    return { skipped: true };
+  }
+
+  const { error } = await supabase
+    .from("enrollment_leads")
+    .update({
+      email_status: input.emailStatus,
+      email_error: input.emailError?.slice(0, 1000) ?? null,
+      email_sent_at:
+        input.emailStatus === "sent" ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.enrollmentId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { skipped: false };
 }
 
 export async function getEnrollmentLead(id: string) {

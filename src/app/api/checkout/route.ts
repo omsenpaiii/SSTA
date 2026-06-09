@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { currentUser } from "@clerk/nextjs/server";
 import { getAppUrl } from "@/lib/app-url";
-import { getCourse } from "@/lib/courses";
+import { getCourse, isCourseAvailableForEnrollment } from "@/lib/courses";
 import {
   getEnrollmentLead,
   updateEnrollmentCheckoutSession,
@@ -15,6 +15,8 @@ const checkoutSchema = z.object({
   enrollmentId: z.string().uuid().optional(),
 });
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   if (!isStripeConfigured()) {
     return NextResponse.json(
@@ -23,7 +25,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = isClerkConfigured() ? await currentUser() : null;
+  if (!isClerkConfigured()) {
+    return NextResponse.json(
+      { error: "Clerk is not configured yet." },
+      { status: 503 },
+    );
+  }
+
+  const user = await currentUser();
   let payload: unknown;
 
   try {
@@ -44,7 +53,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Course not found." }, { status: 404 });
   }
 
-  if (isClerkConfigured() && !user) {
+  if (!isCourseAvailableForEnrollment(course)) {
+    return NextResponse.json(
+      { error: "This course is not open for online enrollment yet." },
+      { status: 400 },
+    );
+  }
+
+  if (!user) {
     return NextResponse.json(
       {
         error: "Please sign in before continuing to secure checkout.",

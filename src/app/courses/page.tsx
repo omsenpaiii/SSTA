@@ -8,7 +8,13 @@ import { ArrowRight, Clock, Search, ShieldCheck } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Input } from "@/components/ui/input";
-import { courseCategories, courses, type Course } from "@/lib/courses";
+import {
+  courseCategories,
+  courses,
+  getCoursePriceDisplay,
+  isCourseAvailableForEnrollment,
+  type Course,
+} from "@/lib/courses";
 
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,7 +45,7 @@ export default function CoursesPage() {
               <ShieldCheck size={15} /> SSTA Course Catalogue
             </p>
             <h1 className="text-5xl font-black leading-tight tracking-normal text-[#020d24] sm:text-6xl">
-              Find the right security training pathway.
+              Find the right training pathway.
             </h1>
             <p className="mt-5 text-lg font-bold leading-8 text-[#53647c]">
               Browse detailed course pages with overview, fees, entry requirements, unit tables,
@@ -104,7 +110,7 @@ export default function CoursesPage() {
                     <div className="flex flex-1 flex-col p-6">
                       <div className="mb-4 flex flex-wrap items-center gap-3 text-sm font-bold text-[#0067b1]">
                         <span className="inline-flex items-center gap-2"><Clock size={16} /> {course.duration}</span>
-                        <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">${course.priceAud}</span>
+                        <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
                       </div>
                       <p className="flex-1 text-sm font-bold leading-7 text-[#53647c]">{course.description}</p>
                       <div className="mt-6 flex flex-wrap gap-3">
@@ -114,12 +120,21 @@ export default function CoursesPage() {
                         >
                           Learn More <ArrowRight size={16} />
                         </Link>
-                        <Link
-                          href="/enroll"
-                          className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]"
-                        >
-                          Enrol
-                        </Link>
+                        {isCourseAvailableForEnrollment(course) ? (
+                          <Link
+                            href={`/enroll?course=${course.slug}`}
+                            className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]"
+                          >
+                            Enrol
+                          </Link>
+                        ) : (
+                          <Link
+                            href="/contact"
+                            className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]"
+                          >
+                            Contact Us
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </motion.article>

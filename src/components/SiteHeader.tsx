@@ -34,9 +34,11 @@ export function SiteHeader() {
             <span className="block text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
               {siteInfo.shortName}
             </span>
-            <span className="block truncate text-xs font-bold text-[#53647c]">
-              {siteInfo.rto}
-            </span>
+            {siteInfo.rto ? (
+              <span className="block truncate text-xs font-bold text-[#53647c]">
+                {siteInfo.rto}
+              </span>
+            ) : null}
           </span>
         </Link>
 
@@ -50,8 +52,8 @@ export function SiteHeader() {
                 >
                   Courses <ChevronDown size={16} />
                 </Link>
-                <div className="pointer-events-none absolute left-1/2 top-full w-[760px] -translate-x-1/2 translate-y-4 rounded-2xl border border-[#18aee5]/14 bg-white p-4 opacity-0 shadow-[0_28px_80px_rgba(0,74,143,0.16)] transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="pointer-events-none absolute left-1/2 top-full max-h-[72vh] w-[min(1100px,calc(100vw-64px))] -translate-x-1/2 translate-y-4 overflow-y-auto rounded-2xl border border-[#18aee5]/14 bg-white p-4 opacity-0 shadow-[0_28px_80px_rgba(0,74,143,0.16)] transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                  <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-4">
                     {courseMenu.map((category) => (
                       <div key={category.slug} className="rounded-2xl bg-[#eef8ff] p-4">
                         <Link
@@ -61,7 +63,7 @@ export function SiteHeader() {
                           {category.title}
                         </Link>
                         <div className="mt-3 grid gap-2">
-                          {category.courses.slice(0, 4).map((course) => (
+                          {category.courses.slice(0, 3).map((course) => (
                             <Link
                               key={course.slug}
                               href={`/course/${course.slug}`}
@@ -70,6 +72,14 @@ export function SiteHeader() {
                               {course.title}
                             </Link>
                           ))}
+                          {category.courses.length > 3 ? (
+                            <Link
+                              href={`/${category.slug}`}
+                              className="px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#0067b1]"
+                            >
+                              View all {category.courses.length}
+                            </Link>
+                          ) : null}
                         </div>
                       </div>
                     ))}

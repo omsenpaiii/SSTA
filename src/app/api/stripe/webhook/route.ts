@@ -4,6 +4,8 @@ import { grantCourseAccess } from "@/lib/access";
 import { updateEnrollmentPaymentStatus } from "@/lib/enrollment";
 import { getStripe } from "@/lib/stripe";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const stripe = getStripe();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;

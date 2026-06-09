@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
-import { createEnrollmentLead, enrollmentSchema } from "@/lib/enrollment";
+import {
+  createEnrollmentLead,
+  enrollmentSchema,
+  updateEnrollmentEmailStatus,
+} from "@/lib/enrollment";
 import { sendEnrollmentEmail } from "@/lib/email";
+
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   let payload: unknown;
@@ -25,7 +31,24 @@ export async function POST(request: Request) {
 
   try {
     const lead = await createEnrollmentLead(parsed.data);
-    await sendEnrollmentEmail(lead);
+
+    try {
+      await sendEnrollmentEmail(lead);
+      await updateEnrollmentEmailStatus({
+        enrollmentId: lead.id,
+        emailStatus: "sent",
+      });
+    } catch (emailError) {
+      await updateEnrollmentEmailStatus({
+        enrollmentId: lead.id,
+        emailStatus: "failed",
+        emailError:
+          emailError instanceof Error
+            ? emailError.message
+            : "Unable to send enrollment notification.",
+      });
+      throw emailError;
+    }
 
     return NextResponse.json({
       enrollmentId: lead.id,

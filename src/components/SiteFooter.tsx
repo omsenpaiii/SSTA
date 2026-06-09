@@ -21,7 +21,9 @@ export function SiteFooter() {
               </span>
               <span>
                 <span className="block text-xl font-black">{siteInfo.name}</span>
-                <span className="text-sm font-bold text-[#18aee5]">{siteInfo.rto}</span>
+                {siteInfo.rto ? (
+                  <span className="text-sm font-bold text-[#18aee5]">{siteInfo.rto}</span>
+                ) : null}
               </span>
             </Link>
 

@@ -1,5 +1,5 @@
 import { CategoryLandingPage } from "@/components/CategoryLandingPage";
 
-export default function WorkHealthSafetyCoursesPage() {
+export default function WhsCoursesPage() {
   return <CategoryLandingPage slug="whs-courses" />;
 }
