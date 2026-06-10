@@ -112,6 +112,16 @@ export function InterestModal() {
     setIsOpen(false);
   };
 
+  // Group activeCourses by category for structured optgroup dropdown
+  const categoriesMap = activeCourses.reduce((acc, course) => {
+    const cat = course.category || "Other";
+    if (!acc[cat]) {
+      acc[cat] = [];
+    }
+    acc[cat].push(course);
+    return acc;
+  }, {} as { [key: string]: Course[] });
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -274,10 +284,14 @@ export function InterestModal() {
                           }`}
                         >
                           <option value="">Please Select</option>
-                          {activeCourses.map((c) => (
-                            <option key={c.slug} value={c.slug}>
-                              {c.title}
-                            </option>
+                          {Object.entries(categoriesMap).map(([category, list]) => (
+                            <optgroup key={category} label={category} className="font-black text-slate-500 bg-white">
+                              {list.map((c) => (
+                                <option key={c.slug} value={c.slug} className="font-semibold text-slate-900">
+                                  {c.title}
+                                </option>
+                              ))}
+                            </optgroup>
                           ))}
                         </select>
                         {errors.courseSlug && (
