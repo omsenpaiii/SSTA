@@ -16,7 +16,7 @@ export default function AboutUsPage() {
             <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-[#0067b1] shadow-sm">
               <ShieldCheck size={15} /> About SSTA
             </p>
-            <h1 className="text-5xl font-black leading-tight tracking-normal sm:text-6xl">
+            <h1 className="text-4xl font-black leading-tight tracking-normal sm:text-5xl">
               Joseph leads SSTA with practical security experience.
             </h1>
             <p className="mt-5 text-lg font-bold leading-8 text-[#53647c]">
