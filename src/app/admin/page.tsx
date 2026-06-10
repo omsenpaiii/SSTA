@@ -340,9 +340,9 @@ export default function AdminPage() {
                 <Image
                   src="/ssta-logo.jpg"
                   alt="SSTA logo"
-                  width={64}
-                  height={51}
-                  className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
+                  fill
+                  sizes="64px"
+                  className="object-contain"
                 />
               </span>
               <h1 className="text-2xl font-black text-white tracking-wide">SSTA ADMIN GATE</h1>
@@ -446,9 +446,9 @@ export default function AdminPage() {
               <Image
                 src="/ssta-logo.jpg"
                 alt="SSTA logo"
-                width={86}
-                height={69}
-                className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
+                fill
+                sizes="40px"
+                className="object-contain"
               />
             </Link>
             <div>

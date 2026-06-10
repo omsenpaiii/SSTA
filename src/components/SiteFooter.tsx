@@ -10,13 +10,13 @@ export function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-[1.25fr_0.8fr_1fr_0.8fr]">
           <div>
             <Link href="/" className="flex items-center gap-4">
-              <span className="relative block size-16 overflow-hidden rounded-full bg-white">
+              <span className="relative block size-20 overflow-hidden rounded-full bg-white p-1">
                 <Image
                   src="/ssta-logo.jpg"
                   alt="SSTA logo"
-                  width={86}
-                  height={69}
-                  className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
+                  fill
+                  sizes="80px"
+                  className="object-contain"
                 />
               </span>
               <span>

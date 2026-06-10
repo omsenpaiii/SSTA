@@ -3,56 +3,19 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpenCheck,
   Lock,
   Play,
-  ShieldCheck,
   Sparkles,
-  Star,
-  Video,
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { benefits, faqs, josephProfile, testimonials } from "@/lib/site-content";
 import { courseCategories, courses, getFeaturedCourse, type CourseLesson } from "@/lib/courses";
-
-const mediaCards = [
-  {
-    image:
-      "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80",
-    alt: "Security students in a guided training session",
-    className:
-      "left-[2%] top-[20%] z-20 w-[43%] rotate-[-9deg] opacity-90 md:left-[8%] md:w-[28%]",
-    delay: 0.15,
-  },
-  {
-    image: "/ssta-classroom-hero.jpeg",
-    alt: "Joseph presenting training to a classroom of SSTA students",
-    className:
-      "left-1/2 top-[6%] z-30 w-[52%] -translate-x-1/2 rotate-[1deg] md:top-[2%] md:w-[40%]",
-    delay: 0.32,
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=900&q=80",
-    alt: "Online course dashboard on a laptop",
-    className:
-      "right-[2%] top-[22%] z-20 w-[43%] rotate-[10deg] opacity-90 md:right-[8%] md:w-[28%]",
-    delay: 0.5,
-  },
-];
-
-const floaters = [
-  { Icon: ShieldCheck, className: "left-[10%] top-[24%]", delay: 0 },
-  { Icon: Sparkles, className: "left-[24%] top-[46%]", delay: 0.8 },
-  { Icon: Star, className: "right-[18%] top-[22%]", delay: 1.4 },
-  { Icon: Lock, className: "right-[10%] top-[48%]", delay: 0.5 },
-  { Icon: Video, className: "left-[16%] top-[66%]", delay: 1.1 },
-];
 
 const reveal = {
   hidden: { opacity: 0, y: 34 },
@@ -72,9 +35,6 @@ function getEmbedUrl(url: string, provider: "youtube" | "google-drive"): string 
 }
 
 export default function Home() {
-  const { scrollYProgress } = useScroll();
-  const heroWordY = useTransform(scrollYProgress, [0, 0.35], [0, 90]);
-  const collageY = useTransform(scrollYProgress, [0, 0.35], [0, -70]);
   const featuredCourse = getFeaturedCourse();
   const lessons: CourseLesson[] = featuredCourse.lessons;
   const firstPreview = lessons.find((lesson) => lesson.isPreview) ?? lessons[0];
@@ -87,30 +47,21 @@ export default function Home() {
     <main className="min-h-screen overflow-hidden bg-white text-[#020d24]">
       <SiteHeader />
 
-      <section className="relative isolate min-h-screen overflow-hidden bg-white px-5 pb-8 pt-16 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 -z-30 bg-[radial-gradient(circle_at_14%_14%,rgba(245,184,0,0.22),transparent_25%),radial-gradient(circle_at_86%_11%,rgba(0,169,232,0.19),transparent_29%),linear-gradient(180deg,#ffffff_0%,#f8fcff_64%,#edf8ff_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 -z-20 h-1/2 bg-gradient-to-t from-[#eef8ff] to-transparent" />
+      <section className="relative isolate min-h-screen overflow-hidden bg-[#020d24] px-5 pb-12 pt-16 sm:px-8 lg:px-12">
+        <div className="absolute inset-0 -z-30">
+          <Image
+            src="/ssta-classroom-hero.jpeg"
+            alt="SSTA classroom training session"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
+        <div className="absolute inset-0 -z-20 bg-[linear-gradient(115deg,rgba(2,13,36,0.9)_10%,rgba(2,13,36,0.76)_42%,rgba(2,13,36,0.42)_100%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_14%_18%,rgba(245,184,0,0.18),transparent_18%),radial-gradient(circle_at_82%_16%,rgba(24,174,229,0.16),transparent_22%)]" />
 
-        <div className="relative mx-auto flex max-w-7xl flex-col items-center pb-0 pt-16 text-center lg:pt-20">
-          <motion.div
-            style={{ y: heroWordY }}
-            className="pointer-events-none absolute left-1/2 top-[34%] -z-10 hidden -translate-x-1/2 select-none text-[19vw] font-black leading-none tracking-normal text-[#0067b1]/5 lg:block"
-          >
-            SSTA
-          </motion.div>
-
-          <div className="pointer-events-none absolute inset-0 z-0 hidden md:block">
-            {floaters.map(({ Icon, className, delay }) => (
-              <motion.div
-                key={className}
-                animate={{ y: [0, -18, 0], rotate: [0, 8, -6, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay }}
-                className={`absolute ${className} rounded-2xl border border-[#f5b800]/25 bg-white/62 p-3 text-[#0067b1] opacity-70 shadow-lg shadow-[#0067b1]/10 backdrop-blur-md`}
-              >
-                <Icon size={26} />
-              </motion.div>
-            ))}
-          </div>
+        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-center pb-12 pt-20 text-left lg:min-h-[calc(100vh-8rem)] lg:pt-16">
 
           <motion.div
             initial="hidden"
@@ -119,17 +70,17 @@ export default function Home() {
             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
             className="relative z-10 max-w-4xl"
           >
-            <div className="mx-auto mb-8 inline-flex items-center gap-2 rounded-full border border-[#f5b800]/45 bg-white/78 px-4 py-2 text-sm font-black text-[#d96f00] shadow-[0_10px_30px_rgba(245,184,0,0.18)] backdrop-blur">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#f5b800]/45 bg-white/12 px-4 py-2 text-sm font-black text-[#ffd56b] shadow-[0_10px_30px_rgba(245,184,0,0.18)] backdrop-blur">
               <Sparkles size={16} fill="currentColor" />
               Knowledge is power
             </div>
-            <h1 className="mx-auto max-w-4xl text-5xl font-black leading-[0.96] tracking-normal text-[#020d24] sm:text-6xl lg:text-6xl">
+            <h1 className="max-w-4xl text-5xl font-black leading-[0.96] tracking-normal text-white sm:text-6xl lg:text-7xl">
               Select Security Training Academy.
             </h1>
-            <p className="mx-auto mt-7 max-w-3xl text-lg font-bold leading-8 text-[#53647c] sm:text-xl">
+            <p className="mt-7 max-w-3xl text-lg font-bold leading-8 text-sky-50/88 sm:text-xl">
               Explore security, first aid, workplace safety, and career pathway courses with practical guidance from the SSTA team.
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row">
               <a
                 href="#courses"
                 className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[#020d24] px-8 text-base font-black text-white shadow-[0_22px_45px_rgba(2,13,36,0.16)] transition hover:-translate-y-0.5 hover:bg-[#0067b1]"
@@ -143,34 +94,14 @@ export default function Home() {
                 <Play size={18} fill="currentColor" /> Watch preview
               </a>
             </div>
-          </motion.div>
-
-          <motion.div
-            style={{ y: collageY }}
-            className="relative z-10 mt-10 h-[420px] w-full max-w-6xl md:h-[500px]"
-          >
-            {mediaCards.map((card, index) => (
-              <motion.div
-                key={card.alt}
-                initial={{ opacity: 0, y: 90, scale: 0.86 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                whileHover={{ scale: 1.045, rotate: 0, zIndex: 40 }}
-                transition={{ duration: 0.9, delay: card.delay, type: "spring", stiffness: 55 }}
-                className={`absolute aspect-[4/5] rounded-[1.25rem] bg-white p-3 shadow-[0_30px_80px_rgba(0,74,143,0.18)] will-change-transform ${card.className}`}
-              >
-                <div className="relative h-full overflow-hidden rounded-2xl bg-[#eef8ff]">
-                  <Image
-                    src={card.image}
-                    alt={card.alt}
-                    fill
-                    priority={index === 0}
-                    sizes="(min-width: 1024px) 31vw, 48vw"
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#123e95]/30 via-transparent to-white/5" />
-                </div>
-              </motion.div>
-            ))}
+            <div className="mt-10 max-w-2xl rounded-[1.5rem] border border-white/15 bg-white/10 p-5 backdrop-blur-md">
+              <p className="text-sm font-black uppercase tracking-[0.24em] text-[#ffd56b]">
+                Practical in-person learning
+              </p>
+              <p className="mt-3 text-base font-bold leading-7 text-white/88">
+                Train with SSTA in a classroom environment designed for real skills, direct guidance, and confident outcomes.
+              </p>
+            </div>
           </motion.div>
         </div>
       </section>

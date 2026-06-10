@@ -21,13 +21,13 @@ export function SiteHeader() {
         className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8"
       >
         <Link href="/" className="flex min-w-0 items-center gap-3" onClick={() => setIsOpen(false)}>
-          <span className="relative block size-12 shrink-0 overflow-hidden rounded-full border border-[#18aee5]/20 bg-white shadow-sm">
+          <span className="relative block size-14 shrink-0 overflow-hidden rounded-full border border-[#18aee5]/20 bg-white p-1 shadow-sm">
             <Image
               src="/ssta-logo.jpg"
               alt="SSTA logo"
-              width={86}
-              height={69}
-              className="absolute left-1/2 top-1/2 h-auto w-[170%] max-w-none -translate-x-[45%] -translate-y-[45%] object-contain"
+              fill
+              sizes="56px"
+              className="object-contain"
             />
           </span>
           <span className="min-w-0">
