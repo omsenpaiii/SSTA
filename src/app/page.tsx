@@ -55,22 +55,22 @@ export default function Home() {
             fill
             priority
             sizes="100vw"
-            className="object-cover"
+            className="object-cover object-center"
           />
         </div>
         <div className="absolute inset-0 -z-20 bg-[linear-gradient(115deg,rgba(2,13,36,0.9)_10%,rgba(2,13,36,0.76)_42%,rgba(2,13,36,0.42)_100%)]" />
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_14%_18%,rgba(245,184,0,0.18),transparent_18%),radial-gradient(circle_at_82%_16%,rgba(24,174,229,0.16),transparent_22%)]" />
 
-        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-center pb-12 pt-20 text-left lg:min-h-[calc(100vh-8rem)] lg:pt-16">
+        <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-center pb-12 pt-20 text-left lg:min-h-[calc(100vh-8rem)] lg:items-center lg:pt-16 lg:text-center">
 
           <motion.div
             initial="hidden"
             animate="visible"
             variants={reveal}
             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 max-w-4xl"
+            className="relative z-10 max-w-4xl lg:mx-auto"
           >
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#f5b800]/45 bg-white/12 px-4 py-2 text-sm font-black text-[#ffd56b] shadow-[0_10px_30px_rgba(245,184,0,0.18)] backdrop-blur">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#f5b800]/45 bg-white/12 px-4 py-2 text-sm font-black text-[#ffd56b] shadow-[0_10px_30px_rgba(245,184,0,0.18)] backdrop-blur lg:mx-auto">
               <Sparkles size={16} fill="currentColor" />
               Knowledge is power
             </div>
@@ -80,7 +80,7 @@ export default function Home() {
             <p className="mt-7 max-w-3xl text-lg font-bold leading-8 text-sky-50/88 sm:text-xl">
               Explore security, first aid, workplace safety, and career pathway courses with practical guidance from the SSTA team.
             </p>
-            <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row">
+            <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row lg:justify-center">
               <a
                 href="#courses"
                 className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[#020d24] px-8 text-base font-black text-white shadow-[0_22px_45px_rgba(2,13,36,0.16)] transition hover:-translate-y-0.5 hover:bg-[#0067b1]"
@@ -94,7 +94,7 @@ export default function Home() {
                 <Play size={18} fill="currentColor" /> Watch preview
               </a>
             </div>
-            <div className="mt-10 max-w-2xl rounded-[1.5rem] border border-white/15 bg-white/10 p-5 backdrop-blur-md">
+            <div className="mt-10 max-w-2xl rounded-[1.5rem] border border-white/15 bg-white/10 p-5 backdrop-blur-md lg:mx-auto">
               <p className="text-sm font-black uppercase tracking-[0.24em] text-[#ffd56b]">
                 Practical in-person learning
               </p>
