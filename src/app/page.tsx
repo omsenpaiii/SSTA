@@ -278,13 +278,12 @@ export default function Home() {
               </Link>
             </div>
             <div className="relative h-[320px] overflow-hidden rounded-[1.5rem] border-[8px] border-white shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
-              <Image
-                src="/hero.jpeg"
-                alt="Joseph leading an SSTA classroom session"
-                fill
-                sizes="(min-width:1024px) 50vw, 100vw"
-                className="object-cover"
+              <div
+                aria-label="Joseph leading an SSTA classroom session"
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: "url('/hero.jpeg')" }}
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#020d24]/12 via-transparent to-white/5" />
             </div>
           </div>
           <div className="mb-12 text-center">
