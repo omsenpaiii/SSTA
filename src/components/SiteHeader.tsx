@@ -27,7 +27,7 @@ export function SiteHeader() {
               alt="SSTA logo"
               fill
               sizes="56px"
-              className="object-contain"
+              className="scale-[1.15] object-contain object-[56%_50%]"
             />
           </span>
           <span className="min-w-0">
