@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { getCourse } from "@/lib/courses";
 import type { EnrollmentLead } from "@/lib/enrollment";
+import type { InterestLead } from "@/lib/interests";
 
 export function isSmtpConfigured() {
   return Boolean(
@@ -76,6 +77,50 @@ export async function sendEnrollmentEmail(lead: EnrollmentLead) {
     html: `
       <div style="font-family:Arial,sans-serif;color:#020d24;">
         <h1 style="margin:0 0 16px;">New SSTA enrollment</h1>
+        <table style="border-collapse:collapse;width:100%;max-width:680px;">${htmlRows}</table>
+      </div>
+    `,
+  });
+}
+
+export async function sendInterestEmail(lead: InterestLead) {
+  const transporter = getTransporter();
+
+  if (!transporter) {
+    // Graceful fallback for local testing if SMTP is not configured
+    console.log("SMTP not configured. Interest Lead email not sent:", lead);
+    return;
+  }
+
+  const course = getCourse(lead.course_slug);
+  const fullName = `${lead.first_name} ${lead.last_name}`;
+  const rows = [
+    ["Student", fullName],
+    ["Email", lead.email],
+    ["Phone", lead.phone],
+    ["Course of Interest", course?.title ?? lead.course_slug],
+    ["Lead ID", lead.id],
+    ["Type", lead.isMock ? "Mock Lead (Local Dev)" : "Official Lead"],
+  ];
+
+  const text = rows.map(([label, value]) => `${label}: ${value}`).join("\n");
+  const htmlRows = rows
+    .map(
+      ([label, value]) =>
+        `<tr><td style="padding:8px 12px;font-weight:700;border-bottom:1px solid #e5e7eb;">${escapeHtml(label)}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(value)}</td></tr>`,
+    )
+    .join("");
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: process.env.ENROLLMENT_TO_EMAIL,
+    replyTo: lead.email,
+    subject: `New SSTA Course Interest Inquiry: ${fullName}`,
+    text,
+    html: `
+      <div style="font-family:Arial,sans-serif;color:#020d24;">
+        <h1 style="margin:0 0 16px;">New Course Interest Inquiry</h1>
+        <p style="margin:0 0 16px;font-size:16px;">A user has submitted an interest enquiry from the homepage popup:</p>
         <table style="border-collapse:collapse;width:100%;max-width:680px;">${htmlRows}</table>
       </div>
     `,

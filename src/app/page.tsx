@@ -14,6 +14,7 @@ import {
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CheckoutButton } from "@/components/CheckoutButton";
+import { InterestModal } from "@/components/InterestModal";
 import { benefits, faqs, josephProfile, testimonials } from "@/lib/site-content";
 import { courseCategories, courses, getFeaturedCourse, type CourseLesson } from "@/lib/courses";
 
@@ -364,6 +365,7 @@ export default function Home() {
       </section>
 
       <SiteFooter />
+      <InterestModal />
     </main>
   );
 }
