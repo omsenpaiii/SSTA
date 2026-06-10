@@ -31,7 +31,7 @@ export default function AboutUsPage() {
           </div>
           <div className="relative h-[420px] overflow-hidden rounded-[1.5rem] border-[10px] border-white shadow-[0_30px_90px_rgba(0,74,143,0.14)]">
             <Image
-              src="/ssta-classroom-hero.jpeg"
+              src="/hero.jpeg"
               alt="Joseph delivering training to SSTA students"
               fill
               sizes="(min-width:1024px) 48vw, 100vw"

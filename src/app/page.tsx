@@ -50,7 +50,7 @@ export default function Home() {
       <section className="relative isolate min-h-screen overflow-hidden bg-[#020d24] px-5 pb-12 pt-16 sm:px-8 lg:px-12">
         <div className="absolute inset-0 -z-30">
           <Image
-            src="/ssta-classroom-hero.jpeg"
+            src="/hero.jpeg"
             alt="SSTA classroom training session"
             fill
             priority
@@ -279,7 +279,7 @@ export default function Home() {
             </div>
             <div className="relative h-[320px] overflow-hidden rounded-[1.5rem] border-[8px] border-white shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
               <Image
-                src="/ssta-classroom-hero.jpeg"
+                src="/hero.jpeg"
                 alt="Joseph leading an SSTA classroom session"
                 fill
                 sizes="(min-width:1024px) 50vw, 100vw"
