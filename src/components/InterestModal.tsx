@@ -4,10 +4,29 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, CheckCircle2, ShieldCheck } from "lucide-react";
 import { courses as defaultCourses, Course } from "@/lib/courses";
+import { ReCaptchaField } from "@/components/ReCaptchaField";
 
 export function InterestModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeCourses, setActiveCourses] = useState<Course[]>(defaultCourses);
+  const [activeCourses] = useState<Course[]>(() => {
+    if (typeof window === "undefined") {
+      return defaultCourses;
+    }
+
+    const stored = window.localStorage.getItem("ssta_courses");
+
+    if (!stored) {
+      return defaultCourses;
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultCourses;
+    } catch (error) {
+      console.error("Error parsing courses from localStorage:", error);
+      return defaultCourses;
+    }
+  });
   
   // Form state
   const [firstName, setFirstName] = useState("");
@@ -15,6 +34,8 @@ export function InterestModal() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [courseSlug, setCourseSlug] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   
   // Validation/submission states
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -25,20 +46,7 @@ export function InterestModal() {
   // Load courses & trigger popup once per session after 3-second delay
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // 1. Sync courses from localStorage
-      const stored = localStorage.getItem("ssta_courses");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setActiveCourses(parsed);
-          }
-        } catch (e) {
-          console.error("Error parsing courses from localStorage:", e);
-        }
-      }
-
-      // 2. Trigger modal on 3-second delay if not shown in current session
+      // Trigger modal on 3-second delay if not shown in current session
       const shown = sessionStorage.getItem("ssta_interest_popup_shown");
       if (!shown) {
         const timer = setTimeout(() => {
@@ -65,6 +73,9 @@ export function InterestModal() {
       tempErrors.phone = "Must be a valid phone number (min 10 digits)";
     }
     if (!courseSlug) tempErrors.courseSlug = "Please select a course";
+    if (!captchaToken.trim()) {
+      tempErrors.captchaToken = "Please confirm you are not a robot";
+    }
 
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -87,6 +98,7 @@ export function InterestModal() {
           email,
           phone,
           courseSlug,
+          captchaToken,
         }),
       });
 
@@ -102,6 +114,8 @@ export function InterestModal() {
       }, 3000);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Submission failed.");
+      setCaptchaToken("");
+      setCaptchaResetKey((current) => current + 1);
     } finally {
       setIsSubmitting(false);
     }
@@ -109,6 +123,8 @@ export function InterestModal() {
 
   // Close modal handler
   const handleClose = () => {
+    setCaptchaToken("");
+    setCaptchaResetKey((current) => current + 1);
     setIsOpen(false);
   };
 
@@ -299,10 +315,26 @@ export function InterestModal() {
                         )}
                       </div>
 
+                      <ReCaptchaField
+                        error={errors.captchaToken}
+                        onChange={(token) => {
+                          setCaptchaToken(token);
+
+                          if (token) {
+                            setErrors((current) => {
+                              const nextErrors = { ...current };
+                              delete nextErrors.captchaToken;
+                              return nextErrors;
+                            });
+                          }
+                        }}
+                        resetKey={captchaResetKey}
+                      />
+
                       {/* Submit Button */}
                       <button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !captchaToken}
                         className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#0067b1] text-base font-black text-white shadow-[0_12px_30px_rgba(0,103,177,0.25)] transition hover:bg-[#123e95] active:scale-[0.98] disabled:opacity-70 cursor-pointer"
                       >
                         {isSubmitting ? (

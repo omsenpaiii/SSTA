@@ -7,9 +7,11 @@ export const interestSchema = z.object({
   email: z.string().trim().email("Invalid email address"),
   phone: z.string().trim().min(10, "Phone number is required"),
   courseSlug: z.string().trim().min(1, "Please select a course"),
+  captchaToken: z.string().trim().min(1, "Please confirm you are not a robot"),
 });
 
 export type InterestInput = z.infer<typeof interestSchema>;
+export type InterestLeadInput = Omit<InterestInput, "captchaToken">;
 
 export type InterestLead = {
   id: string;
@@ -22,7 +24,7 @@ export type InterestLead = {
   isMock?: boolean;
 };
 
-export async function createInterestLead(input: InterestInput) {
+export async function createInterestLead(input: InterestLeadInput) {
   const supabase = getSupabaseAdmin();
 
   if (!supabase) {

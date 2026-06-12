@@ -5,6 +5,7 @@ import {
   updateEnrollmentEmailStatus,
 } from "@/lib/enrollment";
 import { sendEnrollmentEmail } from "@/lib/email";
+import { isRecaptchaConfigured, verifyRecaptchaToken } from "@/lib/recaptcha";
 
 export const runtime = "nodejs";
 
@@ -29,8 +30,40 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!isRecaptchaConfigured()) {
+    return NextResponse.json(
+      { error: "reCAPTCHA is not configured yet." },
+      { status: 503 },
+    );
+  }
+
+  const verification = await verifyRecaptchaToken(parsed.data.captchaToken).catch(
+    (error) => {
+      const message =
+        error instanceof Error ? error.message : "Unable to verify reCAPTCHA.";
+
+      return NextResponse.json(
+        { error: message },
+        { status: message.includes("configured") ? 503 : 502 },
+      );
+    },
+  );
+
+  if (verification instanceof NextResponse) {
+    return verification;
+  }
+
+  if (!verification.success) {
+    return NextResponse.json(
+      { error: "reCAPTCHA verification failed. Please try again." },
+      { status: 403 },
+    );
+  }
+
   try {
-    const lead = await createEnrollmentLead(parsed.data);
+    const { captchaToken, ...leadInput } = parsed.data;
+    void captchaToken;
+    const lead = await createEnrollmentLead(leadInput);
 
     try {
       await sendEnrollmentEmail(lead);

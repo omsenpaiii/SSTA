@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
+import { ReCaptchaField } from "@/components/ReCaptchaField";
 
 const formSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
@@ -26,6 +27,7 @@ const formSchema = z.object({
   usi: z.string().min(10, "USI must be exactly 10 characters").max(10, "USI must be exactly 10 characters"),
   address: z.string().min(10, "Please provide your full address"),
   courseId: z.string().min(1, "Please select a course"),
+  captchaToken: z.string().min(1, "Please confirm you are not a robot"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -54,6 +56,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const validInitialCourse = enrollableCourses.some(
     (course) => course.slug === initialCourseSlug,
   )
@@ -65,6 +68,8 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
     handleSubmit,
     control,
     trigger,
+    setValue,
+    clearErrors,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -77,6 +82,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
       usi: "",
       address: "",
       courseId: validInitialCourse,
+      captchaToken: "",
     },
     mode: "onTouched",
   });
@@ -96,6 +102,21 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
   const prevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
+
+  const handleCaptchaChange = useCallback(
+    (token: string) => {
+      setValue("captchaToken", token, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+
+      if (token) {
+        clearErrors("captchaToken");
+      }
+    },
+    [clearErrors, setValue],
+  );
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
@@ -151,6 +172,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
           ? error.message
           : "Unable to submit enrollment details.",
       );
+      setCaptchaResetKey((current) => current + 1);
       setIsSubmitting(false);
     }
   };
@@ -392,6 +414,17 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
                       </div>
                       <ShieldCheck size={40} className="text-[#f5b800]/30" />
                     </div>
+
+                    <div className="grid gap-2">
+                      <p className="text-sm font-bold text-[#020d24]">
+                        Security verification
+                      </p>
+                      <ReCaptchaField
+                        error={errors.captchaToken?.message}
+                        onChange={handleCaptchaChange}
+                        resetKey={captchaResetKey}
+                      />
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -420,7 +453,7 @@ export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) 
             ) : (
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !formValues.captchaToken}
                 className="font-black h-12 px-8 rounded-full bg-[#020d24] hover:bg-black shadow-lg hover:shadow-xl transition-all"
               >
                 {isSubmitting ? (

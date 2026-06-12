@@ -15,9 +15,11 @@ export const enrollmentSchema = z.object({
     .max(10, "USI must be exactly 10 characters"),
   address: z.string().trim().min(10, "Please provide your full address"),
   courseId: z.string().trim().min(1, "Please select a course"),
+  captchaToken: z.string().trim().min(1, "Please confirm you are not a robot"),
 });
 
 export type EnrollmentInput = z.infer<typeof enrollmentSchema>;
+export type EnrollmentLeadInput = Omit<EnrollmentInput, "captchaToken">;
 
 export type EnrollmentLead = {
   id: string;
@@ -46,7 +48,7 @@ export type EnrollmentPaymentStatus =
 const leadSelect =
   "id,first_name,last_name,email,phone,date_of_birth,usi,address,course_slug,payment_status,stripe_session_id,email_status,email_error,email_sent_at,created_at";
 
-export async function createEnrollmentLead(input: EnrollmentInput) {
+export async function createEnrollmentLead(input: EnrollmentLeadInput) {
   const course = getCourse(input.courseId);
 
   if (!course) {
