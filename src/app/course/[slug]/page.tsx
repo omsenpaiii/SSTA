@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, CheckCircle2, Clock, DollarSign, Lock, Mail, Phone, Play, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, DollarSign, FileText, Lock, Mail, Phone, Play, ShieldCheck } from "lucide-react";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -34,6 +34,10 @@ function getEmbedUrl(url: string, provider: "youtube" | "google-drive"): string 
   if (url.includes("/preview")) return url;
   const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
   return driveMatch && driveMatch[1] ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : url;
+}
+
+function isPlayableVideo(url: string): boolean {
+  return /\.(mp4|webm|ogg)(?:$|\?)/i.test(url);
 }
 
 export default async function CoursePage({ params }: CoursePageProps) {
@@ -217,9 +221,17 @@ export default async function CoursePage({ params }: CoursePageProps) {
             <div className="rounded-[1.5rem] border border-[#18aee5]/14 bg-white p-6 shadow-[0_24px_70px_rgba(0,74,143,0.08)]">
               <div className="mb-5 flex items-center gap-3">
                 <Play className="text-[#0067b1]" fill="currentColor" />
-                <h2 className="text-2xl font-black">Unlocked Preview Lesson</h2>
+                <h2 className="text-2xl font-black">Course Video</h2>
               </div>
-              {previewLesson ? (
+              {isPlayableVideo(course.externalVideoUrl) ? (
+                <video
+                  className="aspect-video w-full rounded-2xl bg-[#020d24] object-cover"
+                  src={course.externalVideoUrl}
+                  poster={course.image}
+                  controls
+                  playsInline
+                />
+              ) : previewLesson ? (
                 <iframe
                   className="aspect-video w-full rounded-2xl bg-[#020d24]"
                   src={getEmbedUrl(previewLesson.videoUrl, previewLesson.videoProvider)}
@@ -228,6 +240,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   allowFullScreen
                 />
               ) : null}
+              {course.lessons.length ? (
               <div className="mt-4 grid gap-3">
                 {course.lessons.map((lesson, index) => (
                   <div key={lesson.id} className="flex items-center justify-between gap-4 rounded-2xl border border-[#18aee5]/12 p-4">
@@ -246,6 +259,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                   </div>
                 ))}
               </div>
+              ) : null}
             </div>
 
             <div className="rounded-[1.5rem] bg-[#020d24] p-6 text-white">
@@ -259,6 +273,45 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 ))}
               </ul>
             </div>
+
+            {(course.durationDetails || course.feeDetails || course.deliveryStrategy || course.sourceArchiveUrl) ? (
+              <div className="rounded-[1.5rem] border border-[#18aee5]/14 bg-white p-6 shadow-[0_24px_70px_rgba(0,74,143,0.08)]">
+                <div className="mb-5 flex items-center gap-3">
+                  <FileText className="text-[#0067b1]" />
+                  <h2 className="text-2xl font-black">Course Details</h2>
+                </div>
+                <div className="grid gap-4">
+                  {course.durationDetails ? (
+                    <div className="rounded-2xl bg-[#eef8ff] p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0067b1]">Duration</p>
+                      <p className="mt-2 text-sm font-bold leading-6 text-[#53647c]">{course.durationDetails}</p>
+                    </div>
+                  ) : null}
+                  {course.feeDetails ? (
+                    <div className="rounded-2xl bg-[#fff6da] p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#d96f00]">Fees</p>
+                      <p className="mt-2 text-sm font-bold leading-6 text-[#53647c]">{course.feeDetails}</p>
+                    </div>
+                  ) : null}
+                  {course.deliveryStrategy ? (
+                    <div className="rounded-2xl bg-white p-4 ring-1 ring-[#18aee5]/14">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0067b1]">Delivery Strategy</p>
+                      <p className="mt-2 text-sm font-bold leading-6 text-[#53647c]">{course.deliveryStrategy}</p>
+                    </div>
+                  ) : null}
+                  {course.sourceArchiveUrl ? (
+                    <a
+                      href={course.sourceArchiveUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex w-fit items-center gap-2 rounded-full border border-[#18aee5]/35 px-4 py-2 text-xs font-black text-[#0067b1]"
+                    >
+                      Baker Ebert archived source <ArrowRight size={14} />
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
         </section>

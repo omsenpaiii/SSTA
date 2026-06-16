@@ -1,3 +1,5 @@
+import { bakerCourseOverrides } from "./baker-course-overrides";
+
 export type CourseLesson = {
   id: string;
   title: string;
@@ -42,6 +44,10 @@ export type Course = {
   detailVariant?: CourseDetailVariant;
   externalAccessUrl?: string;
   externalAccessLabel?: string;
+  durationDetails?: string;
+  feeDetails?: string;
+  deliveryStrategy?: string;
+  sourceArchiveUrl?: string;
 };
 
 export type CourseCategory = {
@@ -186,7 +192,7 @@ export const courseCategories: CourseCategory[] = [
   },
 ];
 
-export const courses: Course[] = [
+const baseCourses: Course[] = [
   {
     slug: "certificate-ii-security-operations",
     code: "CPP20218",
@@ -1366,6 +1372,21 @@ export const courses: Course[] = [
     externalAccessLabel: "Access Additional Courses",
   },
 ];
+
+function applyBakerCourseOverride(course: Course): Course {
+  const override = bakerCourseOverrides[course.slug];
+
+  if (!override) {
+    return course;
+  }
+
+  return {
+    ...course,
+    ...override,
+  };
+}
+
+export const courses: Course[] = baseCourses.map(applyBakerCourseOverride);
 
 export function getCourse(slug: string) {
   return courses.find((course) => course.slug === slug);
