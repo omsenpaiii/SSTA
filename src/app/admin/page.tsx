@@ -338,7 +338,7 @@ export default function AdminPage() {
             <div className="flex flex-col items-center text-center mb-8">
               <span className="relative block size-16 shrink-0 overflow-hidden rounded-full bg-white p-1 border-2 border-[#0067b1] shadow-md mb-4">
                 <Image
-                  src="/ssta-logo.jpg"
+                  src="/ssta.jpg"
                   alt="SSTA logo"
                   fill
                   sizes="64px"
@@ -444,7 +444,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <Link href="/" className="relative block size-10 shrink-0 overflow-hidden rounded-full bg-white shadow border border-slate-100">
               <Image
-                src="/ssta-logo.jpg"
+                src="/ssta.jpg"
                 alt="SSTA logo"
                 fill
                 sizes="40px"

@@ -12,7 +12,7 @@ export function SiteFooter() {
             <Link href="/" className="flex items-center gap-4">
               <span className="relative block size-20 overflow-hidden rounded-full bg-white p-1">
                 <Image
-                  src="/ssta-logo.jpg"
+                  src="/ssta.jpg"
                   alt="SSTA logo"
                   fill
                   sizes="80px"
