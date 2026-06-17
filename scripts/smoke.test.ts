@@ -12,8 +12,8 @@ async function isPortOpen(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = http
       .createServer()
-      .once("error", (err: any) => {
-        if (err.code === "EADDRINUSE") {
+      .once("error", (err: unknown) => {
+        if (err && typeof err === "object" && "code" in err && err.code === "EADDRINUSE") {
           resolve(true);
         } else {
           resolve(false);
@@ -37,8 +37,8 @@ async function main() {
   });
 
   // Log stdout/stderr for dev server to console (for tracing test execution)
-  devServer.stdout?.on("data", (data) => {
-    // console.log(`[DevServer]: ${data.trim()}`);
+  devServer.stdout?.on("data", () => {
+    // console.log(`[DevServer] data received`);
   });
   devServer.stderr?.on("data", (data) => {
     console.error(`[DevServer Error]: ${data.trim()}`);
@@ -77,8 +77,9 @@ async function main() {
         console.error(`🔴 GET ${path} -> Status ${res.status}`);
         failureCount++;
       }
-    } catch (err: any) {
-      console.error(`🔴 GET ${path} -> Failed: ${err.message}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`🔴 GET ${path} -> Failed: ${message}`);
       failureCount++;
     }
   }
@@ -116,8 +117,9 @@ async function main() {
       console.error(`🔴 POST /api/interests -> Failed with status ${res.status}:`, data);
       failureCount++;
     }
-  } catch (err: any) {
-    console.error(`🔴 POST /api/interests -> Fetch failed: ${err.message}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`🔴 POST /api/interests -> Fetch failed: ${message}`);
     failureCount++;
   }
 
