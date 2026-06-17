@@ -2339,5 +2339,17 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "sourceArchiveUrl": "https://web.archive.org/web/20240713073047/https://www.bakerebert.edu.au/course/work-safely-in-the-construction-industry-white-card-refresher-cpcwhs1001/",
     "priceAud": 135,
     "priceLabel": "$135"
+  },
+  "advanced-resuscitation-oxygen-therapy-refresher": {
+    "image": "/baker-course-assets/provide-advanced-resuscitation-and-oxygen-therapy-hltaid015.jpg"
+  },
+  "provide-first-aid-refresher-hltaid011": {
+    "image": "/baker-course-assets/provide-first-aid-hltaid011.jpg"
+  },
+  "child-care-first-aid-refresher-hltaid012": {
+    "image": "/baker-course-assets/provide-an-emergency-first-aid-response-in-an-education-and-care-setting-child-care-hltaid012.jpg"
+  },
+  "advanced-first-aid-refresher-hltaid014": {
+    "image": "/baker-course-assets/provide-advanced-first-aid-hltaid014.jpg"
   }
 };
