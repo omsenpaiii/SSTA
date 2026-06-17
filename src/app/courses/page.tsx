@@ -31,6 +31,9 @@ export default function CoursesPage() {
       course.code.toLowerCase().includes(query);
 
     if (selectedFilter === "All") return matchesSearch;
+    if (selectedFilter === "Coming Soon") {
+      return matchesSearch && course.availability === "coming-soon";
+    }
     return matchesSearch && course.category === selectedFilter;
   });
 
@@ -114,7 +117,10 @@ export default function CoursesPage() {
                         </div>
                       ) : (
                         <div className="mb-4 flex flex-wrap items-center gap-3 text-sm font-bold text-[#0067b1]">
-                          <span className="inline-flex items-center gap-2"><Clock size={16} /> {course.duration}</span>
+                          <span className="inline-flex items-center gap-2" title={course.duration}>
+                            <Clock size={16} />
+                            {course.duration.length > 30 ? `${course.duration.slice(0, 30)}...` : course.duration}
+                          </span>
                           <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
                         </div>
                       )}

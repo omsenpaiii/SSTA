@@ -7,7 +7,12 @@ import { courseCategories, courses, getCoursePriceDisplay, isContactFirstCourse 
 
 export function CategoryLandingPage({ slug }: { slug: string }) {
   const category = courseCategories.find((item) => item.slug === slug) ?? courseCategories[0];
-  const categoryCourses = courses.filter((course) => course.category === category.title);
+  const categoryCourses = courses.filter((course) => {
+    if (category.title === "Coming Soon") {
+      return course.availability === "coming-soon";
+    }
+    return course.category === category.title;
+  });
 
   return (
     <main className="min-h-screen bg-white text-[#020d24]">
@@ -54,7 +59,9 @@ export function CategoryLandingPage({ slug }: { slug: string }) {
                     </div>
                   ) : (
                     <div className="mt-5 flex flex-wrap gap-2 text-xs font-black">
-                      <span className="rounded-full bg-[#eef8ff] px-3 py-1 text-[#0067b1]">{course.duration}</span>
+                      <span className="rounded-full bg-[#eef8ff] px-3 py-1 text-[#0067b1]" title={course.duration}>
+                        {course.duration.length > 30 ? `${course.duration.slice(0, 30)}...` : course.duration}
+                      </span>
                       <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
                     </div>
                   )}

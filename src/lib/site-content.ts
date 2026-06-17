@@ -34,7 +34,12 @@ export const primaryLinks = [
 
 export const courseMenu = courseCategories.map((category) => ({
   ...category,
-  courses: courses.filter((course) => course.category === category.title),
+  courses: courses.filter((course) => {
+    if (category.title === "Coming Soon") {
+      return course.availability === "coming-soon";
+    }
+    return course.category === category.title;
+  }),
 }));
 
 export const benefits = [

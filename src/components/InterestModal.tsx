@@ -130,7 +130,7 @@ export function InterestModal() {
 
   // Group activeCourses by category for structured optgroup dropdown
   const categoriesMap = activeCourses.reduce((acc, course) => {
-    const cat = course.category || "Other";
+    const cat = course.availability === "coming-soon" ? "Coming Soon" : (course.category || "Other");
     if (!acc[cat]) {
       acc[cat] = [];
     }
