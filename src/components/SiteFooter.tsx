@@ -16,7 +16,7 @@ export function SiteFooter() {
                   alt="SSTA logo"
                   fill
                   sizes="80px"
-                  className="scale-[1.12] object-contain object-[56%_50%]"
+                  className="scale-[0.95] object-contain object-[56%_50%]"
                 />
               </span>
               <span>

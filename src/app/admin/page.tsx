@@ -342,7 +342,7 @@ export default function AdminPage() {
                   alt="SSTA logo"
                   fill
                   sizes="64px"
-                  className="scale-[1.12] object-contain object-[56%_50%]"
+                  className="scale-[0.95] object-contain object-[56%_50%]"
                 />
               </span>
               <h1 className="text-2xl font-black text-white tracking-wide">SSTA ADMIN GATE</h1>
@@ -448,7 +448,7 @@ export default function AdminPage() {
                 alt="SSTA logo"
                 fill
                 sizes="40px"
-                className="scale-[1.14] object-contain object-[56%_50%]"
+                className="scale-[0.95] object-contain object-[56%_50%]"
               />
             </Link>
             <div>

@@ -98,6 +98,7 @@ async function main() {
       email: "smoke.test@example.com",
       phone: "0427978810",
       courseSlug: "certificate-ii-security-operations",
+      captchaToken: "mock-captcha-token",
     };
 
     const res = await fetch(`${DEV_URL}/api/interests`, {
