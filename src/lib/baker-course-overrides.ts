@@ -1881,7 +1881,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "priceLabel": "$6,390"
   },
   "diploma-property-agency-management": {
-    "image": "/baker-course-assets/diploma-of-property-agency-management-cpp51119.jpg",
+    "image": "/baker-course-assets/diploma-of-property-agency-management-cpp51122.jpg",
     "externalVideoUrl": "https://web.archive.org/web/20250427095336im_/https://videos.pexels.com/video-files/8725959/8725959-uhd_2560_1440_25fps.mp4",
     "overview": "This qualification reflects the role of real estate principals who apply knowledge of property agency and compliance requirements, ethical standards and consumer preferences to establish and control real estate functions This qualification applies to residential or commercial practice in real estate sales, real estate property management, strata management, business broking, stock and station, or auctioneering. Occupational titles may include: ⦁ Real Estate Agency Principal ⦁ Strata Management Principal ⦁ Agency Manager ⦁ Agency Director.",
     "description": "This qualification reflects the role of real estate principals who apply knowledge of property agency and compliance requirements, ethical standards and consumer.",

@@ -100,7 +100,7 @@ export default function Home() {
                 Practical in-person learning
               </p>
               <p className="mt-3 text-base font-bold leading-7 text-white/88">
-                Train with SSTA in a classroom environment designed for real skills, direct guidance, and confident outcomes.
+                Train with SSTA in a classroom environment designed for real skills, direct guidance, and confident outcomes. We are aligned with The Imperial College of Australia.
               </p>
             </div>
           </motion.div>
@@ -361,6 +361,20 @@ export default function Home() {
               </article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-[#eef8ff] px-5 py-20 sm:px-8 border-t border-[#18aee5]/14">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
+            Strategic Partnership
+          </p>
+          <h2 className="mt-4 text-4xl font-black tracking-normal sm:text-5xl text-[#020d24]">
+            Aligned with The Imperial College of Australia
+          </h2>
+          <p className="mx-auto mt-6 max-w-3xl text-base font-bold leading-8 text-[#53647c]">
+            Select Security Training Academy is proud to be aligned with The Imperial College of Australia. Through this strategic relationship, we ensure our courses are delivered to the highest standards, combining practical skills, modern compliance frameworks, and confident career pathways.
+          </p>
         </div>
       </section>
 

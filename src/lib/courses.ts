@@ -790,7 +790,7 @@ const baseCourses: Course[] = [
   },
   {
     slug: "diploma-property-agency-management",
-    code: "CPP51119",
+    code: "CPP51122",
     title: "Diploma of Property (Agency Management)",
     category: "Real Estate",
     label: "Diploma",
@@ -812,7 +812,7 @@ const baseCourses: Course[] = [
     ],
     careerOutcomes: ["Agency principal", "Agency manager", "Agency director", "Strata management principal"],
     unitSummary: "12 units of competency: 7 core units and 5 elective units.",
-    units: [unit("CPP51119", "Diploma of Property Agency Management", "Core")],
+    units: [unit("CPP51122", "Diploma of Property Agency Management", "Core")],
     lessons: previewLessons("property-diploma", "Property agency management preview"),
   },
   {

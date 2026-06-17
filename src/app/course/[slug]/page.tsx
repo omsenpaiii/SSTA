@@ -317,7 +317,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
         </section>
       )}
 
-      {isContactFirst ? null : (
+      {isContactFirst || course.slug === "diploma-property-agency-management" ? null : (
         <section className="bg-[#eef8ff] px-5 py-20 sm:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 max-w-3xl">

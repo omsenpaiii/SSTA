@@ -23,7 +23,7 @@ export function SiteHeader() {
         <Link href="/" className="flex min-w-0 items-center gap-3" onClick={() => setIsOpen(false)}>
           <span className="relative block size-14 shrink-0 overflow-hidden rounded-full border border-[#18aee5]/20 bg-white p-1 shadow-sm">
             <Image
-              src="/ssta-logo.jpg"
+              src="/ssta.jpg"
               alt="SSTA logo"
               fill
               sizes="56px"
