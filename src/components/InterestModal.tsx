@@ -43,16 +43,16 @@ export function InterestModal() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Load courses & trigger popup once per session after 3-second delay
+  // Load courses & trigger popup once per session after 60-second delay
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Trigger modal on 3-second delay if not shown in current session
+      // Trigger modal on 60-second delay if not shown in current session
       const shown = sessionStorage.getItem("ssta_interest_popup_shown");
       if (!shown) {
         const timer = setTimeout(() => {
           setIsOpen(true);
           sessionStorage.setItem("ssta_interest_popup_shown", "true");
-        }, 3000);
+        }, 60000);
         return () => clearTimeout(timer);
       }
     }
@@ -142,39 +142,38 @@ export function InterestModal() {
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          {/* Backdrop Overlay */}
+          {/* Backdrop Overlay (Click outside disabled to prevent data loss) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={handleClose}
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
           />
 
-          {/* Modal Container */}
+          {/* Modal Container (Scrollable and height-protected for mobile viewports) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl md:max-w-xl"
+            className="relative w-full max-w-lg max-h-[calc(100vh-32px)] overflow-y-auto rounded-[2rem] border border-slate-100 bg-white shadow-2xl md:max-w-xl"
             role="dialog"
             aria-modal="true"
           >
             {/* Top Branding Accent Bar */}
             <div className="h-2 w-full bg-gradient-to-r from-[#0067b1] via-[#18aee5] to-[#f5b800]" />
 
-            {/* Close Button */}
+            {/* Close Button (Optimized target for phones with z-index safety) */}
             <button
               onClick={handleClose}
-              className="absolute right-5 top-6 flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800 active:scale-95 z-10"
+              className="absolute right-4 top-4 flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800 active:scale-95 z-50 cursor-pointer shadow-md"
               aria-label="Close modal"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
 
-            {/* Modal Body */}
-            <div className="p-8 sm:p-10">
+            {/* Modal Body (Optimized padding for mobile layouts) */}
+            <div className="p-6 sm:p-10">
               <AnimatePresence mode="wait">
                 {!isSuccess ? (
                   <motion.div
@@ -286,30 +285,50 @@ export function InterestModal() {
                         )}
                       </div>
 
-                      {/* Course Dropdown */}
+                      {/* Course Selection list (visible selectable chips) */}
                       <div className="space-y-1.5">
-                        <label htmlFor="course" className="text-xs font-black uppercase tracking-wider text-slate-700">
+                        <label className="text-xs font-black uppercase tracking-wider text-slate-700">
                           Course of Interest <span className="text-red-500">*</span>
                         </label>
-                        <select
-                          id="course"
-                          value={courseSlug}
-                          onChange={(e) => setCourseSlug(e.target.value)}
-                          className={`h-12 w-full rounded-xl border bg-slate-50 px-4 font-bold text-[#020d24] focus:outline-none focus:ring-2 focus:ring-[#18aee5]/40 text-base appearance-none ${
-                            errors.courseSlug ? "border-red-500 focus:border-red-500" : "border-slate-200 focus:border-[#18aee5]"
+                        <div 
+                          className={`max-h-48 overflow-y-auto rounded-xl border bg-slate-50 p-4 space-y-4 ${
+                            errors.courseSlug ? "border-red-500 focus-within:ring-2 focus-within:ring-red-500/20" : "border-slate-200 focus-within:ring-2 focus-within:ring-[#18aee5]/40"
                           }`}
                         >
-                          <option value="">Please Select</option>
                           {Object.entries(categoriesMap).map(([category, list]) => (
-                            <optgroup key={category} label={category} className="font-black text-slate-500 bg-white">
-                              {list.map((c) => (
-                                <option key={c.slug} value={c.slug} className="font-semibold text-slate-900">
-                                  {c.title}
-                                </option>
-                              ))}
-                            </optgroup>
+                            <div key={category} className="space-y-2">
+                              <h4 className="text-[10px] font-black uppercase tracking-widest text-[#0067b1]">
+                                {category}
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {list.map((c) => {
+                                  const isSelected = courseSlug === c.slug;
+                                  return (
+                                    <button
+                                      key={c.slug}
+                                      type="button"
+                                      onClick={() => {
+                                        setCourseSlug(c.slug);
+                                        setErrors((current) => {
+                                          const nextErrors = { ...current };
+                                          delete nextErrors.courseSlug;
+                                          return nextErrors;
+                                        });
+                                      }}
+                                      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition active:scale-95 cursor-pointer border ${
+                                        isSelected
+                                          ? "bg-[#0067b1] border-[#f5b800] text-white shadow-md"
+                                          : "bg-white border-slate-200 text-slate-600 hover:border-[#18aee5] hover:text-[#0067b1]"
+                                      }`}
+                                    >
+                                      {c.title}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           ))}
-                        </select>
+                        </div>
                         {errors.courseSlug && (
                           <p className="text-xs font-bold text-red-500">{errors.courseSlug}</p>
                         )}

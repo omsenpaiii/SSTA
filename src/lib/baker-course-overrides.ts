@@ -162,9 +162,9 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "feeDetails": "Tuition Fee: $4,389 Enrolment Fee: $500",
     "entryRequirements": [
       "This course does not have specific entry requirements.",
-      "However, the Baker Ebert, expects participants in this course to meet the following: Australian citizen, holder of permanent residence or be on a visa that allows study in Australia, but not an international student visa.",
+      "However, SSTA, expects participants in this course to meet the following: Australian citizen, holder of permanent residence or be on a visa that allows study in Australia, but not an international student visa.",
       "All interested students will undertake a pre-training review.",
-      "This process allows Baker Ebert to confirm that the course meets the student’s needs and aspirations as well as identifying any learning support requirements and a student’s digital literacy capabilities."
+      "This process allows SSTA to confirm that the course meets the student’s needs and aspirations as well as identifying any learning support requirements and a student’s digital literacy capabilities."
     ],
     "deliveryModes": [
       "⦁ Face to face ⦁ Online ⦁ Recognition of Prior Learning (for experienced leaders and managers who have evidence to support their current competence in the relevant units of competency which comprise the qualification). ⦁ Blended (using a combination of the modes described)."
@@ -591,7 +591,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "feeDetails": "Tuition Fee: $4,795 Enrolment Fee: $500",
     "entryRequirements": [
       "This course does not have specific entry requirements.",
-      "However, the Baker Ebert, expects participants in this course to meet the following: 1.",
+      "However, SSTA, expects participants in this course to meet the following: 1.",
       "Age requirement (over 18 years of age for class based or over 17 years of age for workplace based) 2.",
       "Must be prepared to undertake training in the state of Victoria 3.",
       "Australian citizen, holder of permanent residence or be on a visa that allows study in Australia, but not an international student visa 4.",
@@ -599,7 +599,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
       "Computer equipment 6.",
       "Reliable internet connectivity 7.",
       "Access to printer and scan facilities 8.",
-      "As part of the pre-training review applicants will need to undertake an online literacy, language and numeracy assessment, which also assists Baker Ebert in assessing a student’s suitability."
+      "As part of the pre-training review applicants will need to undertake an online literacy, language and numeracy assessment, which also assists SSTA in assessing a student’s suitability."
     ],
     "deliveryModes": [
       "Classroom • The training is delivered in a classroom using a combination of face-to-face group sessions with a trainer and practical simulated workplace activities. • A total of 18 units make up the Certificate IV in Real Estate qualification with delivery of clusters over 2 days of face-to-face training, with structured learning and self-directed learning done outside of the classroom via the training hub. eLearning • Learning done via eLearning is delivered through the learning portal, all resources available for classroom learning is available to learners with the addition of a Learner Guide that gives structure to the learning materials and practical simulated workplace activities. Blended • Blended learning is a combination of classroom and eLearning, a percentage of the qualification may be delivered through face-to-face learning and the remainder done by eLearning, the combination is structured to allow the learner flexibility to progress through the qualification at their own pace and ability. • Blended learning is suitable for learners who are currently working in real estate."
@@ -1890,7 +1890,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "feeDetails": "Tuition Fee: $5,950 Enrolment Fee: $500",
     "entryRequirements": [
       "This course does not have specific entry requirements.",
-      "However, the Baker Ebert, expects participants in this course to meet the following: 1.",
+      "However, SSTA, expects participants in this course to meet the following: 1.",
       "Must be prepared to undertake training in the state of Victoria 2.",
       "Age requirement (over 18 years of age for class based or over 17 years of age for workplace based) 3.",
       "Australian citizen, holder of permanent residence or be on a visa that allows study in Australia, but not an international student visa Computing requirements below: 1.",
@@ -1898,9 +1898,9 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
       "Reliable internet connectivity 3.",
       "Access to printer and scan facilities Suitability 1.",
       "All interested students will undertake a pre-training review.",
-      "This process allows the Baker Ebert to confirm that the course meets the student’s needs and aspirations as well as identifying any learning support requirements and a student’s digital literacy capabilities. 2.",
+      "This process allows SSTA to confirm that the course meets the student’s needs and aspirations as well as identifying any learning support requirements and a student’s digital literacy capabilities. 2.",
       "By undertaking this process also ensures the student fully understands the program.",
-      "As part of the pre-training review applicants will need to undertake an online literacy, language and numeracy assessment, which also assists Baker Ebert in assessing a student’s suitability. 3.",
+      "As part of the pre-training review applicants will need to undertake an online literacy, language and numeracy assessment, which also assists SSTA in assessing a student’s suitability. 3.",
       "Entry into this program is via interview with the teacher"
     ],
     "deliveryModes": [
@@ -2107,7 +2107,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "durationDetails": "1 day",
     "feeDetails": "Tuition Fee: $140",
     "entryRequirements": [
-      "There are no prerequisites for this course, however Baker Ebert requires the students to meet the following requirements ⦁ Students are required to be competent in written and spoken English to gain entry to the course. ⦁ 18 Years of age"
+      "There are no prerequisites for this course, however SSTA requires the students to meet the following requirements ⦁ Students are required to be competent in written and spoken English to gain entry to the course. ⦁ 18 Years of age"
     ],
     "deliveryModes": [
       "⦁ Face to face ⦁ Online ⦁ Recognition of Prior Learning (for experienced leaders and managers who have evidence to support their current competence in the relevant units of competency which comprise the qualification). ⦁ Blended (using a combination of the modes described)."
@@ -2229,7 +2229,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
   "provide-first-aid": {
     "image": "/baker-course-assets/provide-first-aid-hltaid011.jpg",
     "externalVideoUrl": "https://web.archive.org/web/20250214121051im_/https://videos.pexels.com/video-files/8944320/8944320-hd_1920_1080_25fps.mp4",
-    "overview": "The unit of competency HLTAID011 Provide First Aid describes the skills and knowledge required to provide first aid response, life support, management of casualty(s), the incident and other first aiders, until the arrival of medical or other assistance. Baker Ebert recommends, as per the First Aid in the Workplace Code of Practice for and the Australian Resuscitation Council guidelines, that first aid skills are renewed every 3 years and resuscitation skills (HLTAID009 – CPR) are renewed every 12 months",
+    "overview": "The unit of competency HLTAID011 Provide First Aid describes the skills and knowledge required to provide first aid response, life support, management of casualty(s), the incident and other first aiders, until the arrival of medical or other assistance. SSTA recommends, as per the First Aid in the Workplace Code of Practice for and the Australian Resuscitation Council guidelines, that first aid skills are renewed every 3 years and resuscitation skills (HLTAID009 – CPR) are renewed every 12 months",
     "description": "The unit of competency HLTAID011 Provide First Aid describes the skills and knowledge required to provide first aid response, life support, management of casualty(s),.",
     "duration": "1 day",
     "durationDetails": "1 day",
@@ -2248,7 +2248,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
   "provide-first-aid-hltaid011": {
     "image": "/baker-course-assets/provide-first-aid-hltaid011.jpg",
     "externalVideoUrl": "https://web.archive.org/web/20250214121051im_/https://videos.pexels.com/video-files/8944320/8944320-hd_1920_1080_25fps.mp4",
-    "overview": "The unit of competency HLTAID011 Provide First Aid describes the skills and knowledge required to provide first aid response, life support, management of casualty(s), the incident and other first aiders, until the arrival of medical or other assistance. Baker Ebert recommends, as per the First Aid in the Workplace Code of Practice for and the Australian Resuscitation Council guidelines, that first aid skills are renewed every 3 years and resuscitation skills (HLTAID009 – CPR) are renewed every 12 months",
+    "overview": "The unit of competency HLTAID011 Provide First Aid describes the skills and knowledge required to provide first aid response, life support, management of casualty(s), the incident and other first aiders, until the arrival of medical or other assistance. SSTA recommends, as per the First Aid in the Workplace Code of Practice for and the Australian Resuscitation Council guidelines, that first aid skills are renewed every 3 years and resuscitation skills (HLTAID009 – CPR) are renewed every 12 months",
     "description": "The unit of competency HLTAID011 Provide First Aid describes the skills and knowledge required to provide first aid response, life support, management of casualty(s),.",
     "duration": "1 day",
     "durationDetails": "1 day",
@@ -2292,7 +2292,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "durationDetails": "1 day",
     "feeDetails": "Tuition Fee: $65",
     "entryRequirements": [
-      "There are no prerequisites for this course, however Baker Ebert requires the students to meet the following requirements ⦁ Students are required to be competent in written and spoken English to gain entry to the course. ⦁ 18 Years of age"
+      "There are no prerequisites for this course, however SSTA requires the students to meet the following requirements ⦁ Students are required to be competent in written and spoken English to gain entry to the course. ⦁ 18 Years of age"
     ],
     "deliveryModes": [
       "⦁ Face to face ⦁ Online ⦁ Recognition of Prior Learning (for experienced leaders and managers who have evidence to support their current competence in the relevant units of competency which comprise the qualification). ⦁ Blended (using a combination of the modes described)."

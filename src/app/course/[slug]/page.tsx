@@ -299,16 +299,6 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       <p className="mt-2 text-sm font-bold leading-6 text-[#53647c]">{course.deliveryStrategy}</p>
                     </div>
                   ) : null}
-                  {course.sourceArchiveUrl ? (
-                    <a
-                      href={course.sourceArchiveUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex w-fit items-center gap-2 rounded-full border border-[#18aee5]/35 px-4 py-2 text-xs font-black text-[#0067b1]"
-                    >
-                      Baker Ebert archived source <ArrowRight size={14} />
-                    </a>
-                  ) : null}
                 </div>
               </div>
             ) : null}
