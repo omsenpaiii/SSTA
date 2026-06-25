@@ -7,6 +7,7 @@ Next.js course storefront and protected video training platform for SSTA.
 The code is wired for:
 
 - Clerk authentication
+- Clerk Google/email sign-in for student and admin access
 - Stripe one-time course checkout
 - Supabase student profiles, enrolments, and lesson progress
 - Supabase enrollment leads with SMTP intake notifications
@@ -56,6 +57,10 @@ against the SSTA Supabase project. It creates:
 
 It also enables RLS and seeds the first set of courses and lessons.
 
+Run `supabase/migrations/202606250001_ssta_admin_portal_excel.sql` after the
+base migration to enable the admin portal fields, course units, manual student
+profile fields, and Excel-backed import/export workflows.
+
 `enrollment_leads` intentionally has no public or authenticated RLS policy.
 Enrollment intake writes happen only through the Next.js server route with the
 Supabase service role key. The table also records `email_status`,
@@ -85,6 +90,12 @@ Payments are intentionally 503-safe until `STRIPE_SECRET_KEY` and
 `STRIPE_WEBHOOK_SECRET` are configured. Checkout also refuses payment until
 Clerk is configured, because course access is granted to the signed-in Clerk
 student after Stripe confirms payment.
+
+## Clerk Admin Access
+
+Enable Google OAuth in the Clerk dashboard for this app. Admin access is granted
+by signing in with a Clerk account whose primary email is listed in
+`SSTA_ADMIN_EMAILS` as a comma-separated allowlist.
 
 ## Vercel Domain Setup
 

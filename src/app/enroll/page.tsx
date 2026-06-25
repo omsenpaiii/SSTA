@@ -2,6 +2,7 @@ import { ShieldCheck } from "lucide-react";
 import { EnrollmentForm } from "@/components/EnrollmentForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { getCourses } from "@/lib/course-repository";
 
 type EnrollPageProps = {
   searchParams: Promise<{
@@ -14,6 +15,7 @@ export default async function EnrollPage({ searchParams }: EnrollPageProps) {
   const courseParam = Array.isArray(params.course)
     ? params.course[0]
     : params.course;
+  const courses = await getCourses();
 
   return (
     <main className="min-h-screen bg-slate-50 selection:bg-[#18aee5]/30">
@@ -34,7 +36,7 @@ export default async function EnrollPage({ searchParams }: EnrollPageProps) {
           </p>
         </div>
 
-        <EnrollmentForm initialCourseSlug={courseParam} />
+        <EnrollmentForm initialCourseSlug={courseParam} courses={courses} />
       </section>
 
       <SiteFooter />

@@ -3,9 +3,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { courseCategories, courses, getCoursePriceDisplay, isContactFirstCourse } from "@/lib/courses";
+import { courseCategories, getCoursePriceDisplay, isContactFirstCourse } from "@/lib/courses";
+import { getCourses } from "@/lib/course-repository";
 
-export function CategoryLandingPage({ slug }: { slug: string }) {
+export async function CategoryLandingPage({ slug }: { slug: string }) {
+  const courses = await getCourses();
   const category = courseCategories.find((item) => item.slug === slug) ?? courseCategories[0];
   const categoryCourses = courses.filter((course) => {
     if (category.title === "Coming Soon") {

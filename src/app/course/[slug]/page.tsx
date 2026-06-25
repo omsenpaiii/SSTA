@@ -7,11 +7,11 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import {
   courses,
-  getCourse,
   getCoursePriceDisplay,
   isContactFirstCourse,
   isCourseAvailableForEnrollment,
 } from "@/lib/courses";
+import { getCourse } from "@/lib/course-repository";
 import { siteInfo } from "@/lib/site-content";
 
 type CoursePageProps = {
@@ -42,7 +42,7 @@ function isPlayableVideo(url: string): boolean {
 
 export default async function CoursePage({ params }: CoursePageProps) {
   const { slug } = await params;
-  const course = getCourse(slug);
+  const course = await getCourse(slug);
 
   if (!course) {
     notFound();

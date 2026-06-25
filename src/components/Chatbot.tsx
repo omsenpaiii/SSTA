@@ -16,17 +16,7 @@ export function Chatbot() {
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorText, setErrorText] = useState("");
-  const [activeCourses] = useState<Course[]>(() => {
-    if (typeof window === "undefined") return defaultCourses;
-    const stored = window.localStorage.getItem("ssta_courses");
-    if (!stored) return defaultCourses;
-    try {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultCourses;
-    } catch {
-      return defaultCourses;
-    }
-  });
+  const [activeCourses, setActiveCourses] = useState<Course[]>(defaultCourses);
 
   const initializeWelcome = (): ChatMessage => {
     return {
@@ -78,6 +68,19 @@ export function Chatbot() {
       window.localStorage.setItem("ssta_chat_history", JSON.stringify(messages));
     }
   }, [messages]);
+
+  useEffect(() => {
+    fetch("/api/courses")
+      .then((response) => response.json())
+      .then((data: { courses?: Course[] }) => {
+        if (Array.isArray(data.courses) && data.courses.length > 0) {
+          setActiveCourses(data.courses);
+        }
+      })
+      .catch(() => {
+        setActiveCourses(defaultCourses);
+      });
+  }, []);
 
   // Scroll to bottom when messages update or open state changes
   useEffect(() => {

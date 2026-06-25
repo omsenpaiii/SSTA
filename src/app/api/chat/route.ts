@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { courseCategories, courses as defaultCourses, Course } from "@/lib/courses";
+import { courseCategories, Course } from "@/lib/courses";
+import { getCourses } from "@/lib/course-repository";
 import { siteInfo } from "@/lib/site-content";
 
 interface ChatMessage {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     const coursesToUse: Course[] = clientCourses && Array.isArray(clientCourses) && clientCourses.length > 0
       ? clientCourses
-      : defaultCourses;
+      : await getCourses();
 
     const apiKey = process.env.GEMINI_API_KEY;
 

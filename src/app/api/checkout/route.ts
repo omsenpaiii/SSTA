@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { currentUser } from "@clerk/nextjs/server";
 import { getAppUrl } from "@/lib/app-url";
-import { getCourse, isCourseAvailableForEnrollment } from "@/lib/courses";
+import { isCourseAvailableForEnrollment } from "@/lib/courses";
+import { getCourse } from "@/lib/course-repository";
 import {
   getEnrollmentLead,
   updateEnrollmentCheckoutSession,
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid checkout request." }, { status: 400 });
   }
 
-  const course = getCourse(body.data.courseSlug);
+  const course = await getCourse(body.data.courseSlug);
 
   if (!course) {
     return NextResponse.json({ error: "Course not found." }, { status: 404 });

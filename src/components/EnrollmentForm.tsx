@@ -6,9 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  courses,
   getCoursePriceDisplay,
   isCourseAvailableForEnrollment,
+  type Course,
 } from "@/lib/courses";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ const steps = [
 
 type EnrollmentFormProps = {
   initialCourseSlug?: string;
+  courses: Course[];
 };
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -51,7 +52,7 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 }
 
-export function EnrollmentForm({ initialCourseSlug = "" }: EnrollmentFormProps) {
+export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFormProps) {
   const enrollableCourses = courses.filter((course) => isCourseAvailableForEnrollment(course));
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);

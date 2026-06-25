@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -16,7 +16,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { InterestModal } from "@/components/InterestModal";
 import { benefits, faqs, josephProfile, testimonials } from "@/lib/site-content";
-import { courseCategories, courses, getFeaturedCourse, type CourseLesson } from "@/lib/courses";
+import { courseCategories, courses, isCourseAvailableForEnrollment, type Course, type CourseLesson } from "@/lib/courses";
 
 const reveal = {
   hidden: { opacity: 0, y: 34 },
@@ -36,13 +36,37 @@ function getEmbedUrl(url: string, provider: "youtube" | "google-drive"): string 
 }
 
 export default function Home() {
-  const featuredCourse = getFeaturedCourse();
+  const [activeCourses, setActiveCourses] = useState<Course[]>(courses);
+  const featuredCourse =
+    activeCourses.find((course) => isCourseAvailableForEnrollment(course)) ?? activeCourses[0];
   const lessons: CourseLesson[] = featuredCourse.lessons;
   const firstPreview = lessons.find((lesson) => lesson.isPreview) ?? lessons[0];
   const [activeVideoUrl, setActiveVideoUrl] = useState(() =>
     firstPreview ? getEmbedUrl(firstPreview.videoUrl, firstPreview.videoProvider) : "",
   );
   const [activeLessonId, setActiveLessonId] = useState(firstPreview?.id ?? "");
+
+  useEffect(() => {
+    fetch("/api/courses")
+      .then((response) => response.json())
+      .then((data: { courses?: Course[] }) => {
+        if (Array.isArray(data.courses) && data.courses.length > 0) {
+          setActiveCourses(data.courses);
+        }
+      })
+      .catch(() => {
+        setActiveCourses(courses);
+      });
+  }, []);
+
+  useEffect(() => {
+    const nextPreview = lessons.find((lesson) => lesson.isPreview) ?? lessons[0];
+
+    if (nextPreview) {
+      setActiveVideoUrl(getEmbedUrl(nextPreview.videoUrl, nextPreview.videoProvider));
+      setActiveLessonId(nextPreview.id);
+    }
+  }, [featuredCourse.slug, lessons]);
 
   return (
     <main className="min-h-screen overflow-hidden bg-white text-[#020d24]">
@@ -204,7 +228,7 @@ export default function Home() {
                 1000+ learner-ready course interactions
               </p>
               <p className="rounded-2xl bg-white p-5 text-sm font-black text-[#020d24] shadow-sm">
-                {courses.length}+ detailed SSTA courses loaded
+                {activeCourses.length}+ detailed SSTA courses loaded
               </p>
             </div>
           </motion.div>

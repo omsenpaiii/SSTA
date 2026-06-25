@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { getCourse, isCourseAvailableForEnrollment } from "@/lib/courses";
+import { isCourseAvailableForEnrollment } from "@/lib/courses";
+import { getCourse } from "@/lib/course-repository";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const enrollmentSchema = z.object({
@@ -49,7 +50,7 @@ const leadSelect =
   "id,first_name,last_name,email,phone,date_of_birth,usi,address,course_slug,payment_status,stripe_session_id,email_status,email_error,email_sent_at,created_at";
 
 export async function createEnrollmentLead(input: EnrollmentLeadInput) {
-  const course = getCourse(input.courseId);
+  const course = await getCourse(input.courseId);
 
   if (!course) {
     throw new Error("Selected course was not found.");

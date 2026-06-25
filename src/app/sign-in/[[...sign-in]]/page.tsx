@@ -1,4 +1,5 @@
 import { SignIn } from "@clerk/nextjs";
+import { AuthShell, clerkAppearance } from "@/components/AuthShell";
 import { SetupNotice } from "@/components/SetupNotice";
 
 export default function SignInPage() {
@@ -17,8 +18,12 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#eef8ff] px-5 py-16">
-      <SignIn routing="path" path="/sign-in" />
-    </main>
+    <AuthShell
+      mode="sign-in"
+      title="Welcome back"
+      subtitle="Sign in to access your SSTA dashboard."
+    >
+      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" appearance={clerkAppearance} />
+    </AuthShell>
   );
 }

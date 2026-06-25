@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
@@ -20,7 +20,20 @@ import {
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
-  const [activeCourses] = useState<Course[]>(courses);
+  const [activeCourses, setActiveCourses] = useState<Course[]>(courses);
+
+  useEffect(() => {
+    fetch("/api/courses")
+      .then((response) => response.json())
+      .then((data: { courses?: Course[] }) => {
+        if (Array.isArray(data.courses) && data.courses.length > 0) {
+          setActiveCourses(data.courses);
+        }
+      })
+      .catch(() => {
+        setActiveCourses(courses);
+      });
+  }, []);
 
   const categories = ["All", ...courseCategories.map((category) => category.title)];
   const filteredCourses = activeCourses.filter((course) => {

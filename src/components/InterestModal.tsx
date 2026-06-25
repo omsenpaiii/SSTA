@@ -8,25 +8,7 @@ import { ReCaptchaField } from "@/components/ReCaptchaField";
 
 export function InterestModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeCourses] = useState<Course[]>(() => {
-    if (typeof window === "undefined") {
-      return defaultCourses;
-    }
-
-    const stored = window.localStorage.getItem("ssta_courses");
-
-    if (!stored) {
-      return defaultCourses;
-    }
-
-    try {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultCourses;
-    } catch (error) {
-      console.error("Error parsing courses from localStorage:", error);
-      return defaultCourses;
-    }
-  });
+  const [activeCourses, setActiveCourses] = useState<Course[]>(defaultCourses);
   
   // Form state
   const [firstName, setFirstName] = useState("");
@@ -45,6 +27,17 @@ export function InterestModal() {
 
   // Load courses & trigger popup once per session after 60-second delay
   useEffect(() => {
+    fetch("/api/courses")
+      .then((response) => response.json())
+      .then((data: { courses?: Course[] }) => {
+        if (Array.isArray(data.courses) && data.courses.length > 0) {
+          setActiveCourses(data.courses);
+        }
+      })
+      .catch(() => {
+        setActiveCourses(defaultCourses);
+      });
+
     if (typeof window !== "undefined") {
       // Trigger modal on 60-second delay if not shown in current session
       const shown = sessionStorage.getItem("ssta_interest_popup_shown");

@@ -1,4 +1,5 @@
 import { SignUp } from "@clerk/nextjs";
+import { AuthShell, clerkAppearance } from "@/components/AuthShell";
 import { SetupNotice } from "@/components/SetupNotice";
 
 export default function SignUpPage() {
@@ -17,8 +18,12 @@ export default function SignUpPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#eef8ff] px-5 py-16">
-      <SignUp routing="path" path="/sign-up" />
-    </main>
+    <AuthShell
+      mode="sign-up"
+      title="Create your account"
+      subtitle="Use Google or email to start your SSTA portal access."
+    >
+      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" appearance={clerkAppearance} />
+    </AuthShell>
   );
 }

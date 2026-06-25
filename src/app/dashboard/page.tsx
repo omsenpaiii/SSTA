@@ -2,7 +2,7 @@ import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { Lock, Play, ShieldCheck } from "lucide-react";
 import { getUserAccess } from "@/lib/access";
-import { courses } from "@/lib/courses";
+import { getCourses } from "@/lib/course-repository";
 import { isClerkConfigured } from "@/lib/clerk";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { SetupNotice } from "@/components/SetupNotice";
@@ -38,6 +38,7 @@ export default async function DashboardPage() {
 
   const access = isSupabaseConfigured() ? await getUserAccess(user.id) : [];
   const activeSlugs = new Set(access.map((item) => item.course_slug));
+  const courses = await getCourses();
 
   return (
     <main className="min-h-screen bg-[#eef8ff] px-5 py-12 sm:px-8">
