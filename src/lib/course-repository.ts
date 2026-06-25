@@ -94,6 +94,20 @@ function asStringArray(value: unknown, fallback: string[] = []) {
   return Array.isArray(value) ? value.map(String).filter(Boolean) : fallback;
 }
 
+function preferCourseText<T extends string | undefined>(
+  value: string | null,
+  fallback: T,
+  genericValues: string[] = [],
+) {
+  const trimmed = value?.trim();
+
+  if (!trimmed || genericValues.includes(trimmed)) {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
 function mapRowsToCourses(rows: CourseRow[], lessons: LessonRow[], units: UnitRow[]): Course[] {
   const lessonsByCourse = new Map<string, CourseLesson[]>();
   const unitsByCourse = new Map<string, UnitItem[]>();
@@ -134,10 +148,10 @@ function mapRowsToCourses(rows: CourseRow[], lessons: LessonRow[], units: UnitRo
 
       return {
         slug: row.slug,
-        code: row.code ?? fallback?.code ?? "SSTA",
+        code: preferCourseText(row.code, fallback?.code ?? "SSTA", ["SSTA"]),
         title: row.title,
-        category: row.category ?? fallback?.category ?? "Other",
-        label: row.label ?? fallback?.label ?? "Course",
+        category: preferCourseText(row.category, fallback?.category ?? "Other", ["Other"]),
+        label: preferCourseText(row.label, fallback?.label ?? "Course", ["Course"]),
         priceAud,
         enrolmentFee: row.enrolment_fee ?? fallback?.enrolmentFee,
         duration: row.duration ?? fallback?.duration ?? "",
