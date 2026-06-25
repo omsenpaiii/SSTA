@@ -137,4 +137,5 @@ Checks:
 ```bash
 npm run lint
 npm run build
+npm run verify:supabase-admin
 ```
