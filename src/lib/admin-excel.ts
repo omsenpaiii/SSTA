@@ -126,12 +126,14 @@ export async function buildExportWorkbook(entity: ExcelEntity, snapshot: AdminSn
   }
 
   if (entity === "students") {
+    const studentsByKey = new Map(snapshot.students.map((student) => [student.user_key, student]));
     addSheet(workbook, "Students", snapshot.students);
     addSheet(
       workbook,
       "StudentCourseAccess",
       snapshot.enrollments.map((enrollment) => ({
-        clerkUserId: enrollment.clerk_user_id,
+        userKey: enrollment.user_key,
+        email: studentsByKey.get(enrollment.user_key)?.email ?? "",
         courseSlug: enrollment.course_slug,
         status: enrollment.status,
         amountPaid: enrollment.amount_paid ?? "",
@@ -277,6 +279,7 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
 
   if (entity === "students") {
     const studentRows = rowsFromSheet(workbook, "Students");
+    const accessRows = rowsFromSheet(workbook, "StudentCourseAccess");
     const prepared = studentRows.map((row, index) => {
       const email = String(row.email ?? "").trim();
 
@@ -289,7 +292,29 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
         lastName: String(row.last_name ?? row.lastName ?? ""),
         email,
         phone: String(row.phone ?? ""),
-        clerkUserId: String(row.clerk_user_id ?? row.clerkUserId ?? ""),
+        userKey: String(row.user_key ?? row.userKey ?? ""),
+      };
+    });
+    const preparedAccess = accessRows.map((row, index) => {
+      const courseSlug = String(row.courseSlug ?? row.course_slug ?? "").trim();
+      const email = String(row.email ?? "").trim();
+      const userKey = String(row.userKey ?? row.user_key ?? "").trim();
+
+      if (!courseSlug) {
+        result.errors.push(`StudentCourseAccess row ${index + 2}: course slug is required.`);
+      }
+
+      if (!userKey && !email) {
+        result.errors.push(`StudentCourseAccess row ${index + 2}: userKey or email is required.`);
+      }
+
+      return {
+        userKey,
+        email,
+        courseSlug,
+        status: String(row.status ?? "active"),
+        amountPaid: row.amountPaid ?? row.amount_paid ? Number(row.amountPaid ?? row.amount_paid) : null,
+        currency: String(row.currency ?? "aud"),
       };
     });
 
@@ -299,6 +324,11 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
 
     for (const student of prepared) {
       await upsertAdminStudent(student);
+      result.updated += 1;
+    }
+
+    for (const access of preparedAccess) {
+      await upsertAdminEnrollment(access);
       result.updated += 1;
     }
 
@@ -313,7 +343,7 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
       }
 
       return {
-        clerkUserId: String(row.clerk_user_id ?? row.clerkUserId ?? ""),
+        userKey: String(row.user_key ?? row.userKey ?? ""),
         email: String(row.email ?? ""),
         courseSlug: String(row.course_slug ?? row.courseSlug ?? ""),
         status: String(row.status ?? "active"),

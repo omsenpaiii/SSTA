@@ -1,39 +1,26 @@
 import Link from "next/link";
-import { currentUser } from "@clerk/nextjs/server";
-import { Lock, Play, ShieldCheck } from "lucide-react";
+import { redirect } from "next/navigation";
+import { Play, ShieldCheck } from "lucide-react";
 import { getUserAccess } from "@/lib/access";
 import { getCourses } from "@/lib/course-repository";
-import { isClerkConfigured } from "@/lib/clerk";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { getCurrentUser } from "@/lib/auth";
+import { isSupabaseAuthConfigured, isSupabaseConfigured } from "@/lib/supabase";
 import { SetupNotice } from "@/components/SetupNotice";
 
 export default async function DashboardPage() {
-  if (!isClerkConfigured()) {
+  if (!isSupabaseAuthConfigured()) {
     return (
       <SetupNotice
-        title="Add Clerk keys to enable the student dashboard"
-        items={["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"]}
+        title="Add Supabase auth keys to enable the student dashboard"
+        items={["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]}
       />
     );
   }
 
-  const user = await currentUser();
+  const user = await getCurrentUser();
 
   if (!user) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#eef8ff] px-5">
-        <div className="max-w-lg rounded-[1.5rem] bg-white p-8 text-center shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
-          <Lock className="mx-auto mb-4 text-[#0067b1]" />
-          <h1 className="text-3xl font-black">Sign in to view your courses</h1>
-          <Link
-            href="/sign-in"
-            className="mt-6 inline-flex rounded-full bg-[#0067b1] px-6 py-3 text-sm font-black text-white"
-          >
-            Sign in
-          </Link>
-        </div>
-      </main>
-    );
+    redirect("/sign-in?redirect_url=/dashboard");
   }
 
   const access = isSupabaseConfigured() ? await getUserAccess(user.id) : [];

@@ -1,11 +1,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  getSupabasePublishableKey,
+  getSupabaseUrl,
+  isSupabaseAuthConfigured,
+} from "@/lib/supabase-config";
 
 let adminClient: SupabaseClient | null = null;
 
 export function isSupabaseConfigured() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY,
-  );
+  return Boolean(isSupabaseAuthConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 export function getSupabaseAdmin() {
@@ -14,17 +17,15 @@ export function getSupabaseAdmin() {
   }
 
   if (!adminClient) {
-    adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
+    adminClient = createClient(getSupabaseUrl(), process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
       },
-    );
+    });
   }
 
   return adminClient;
 }
+
+export { getSupabasePublishableKey, getSupabaseUrl, isSupabaseAuthConfigured };

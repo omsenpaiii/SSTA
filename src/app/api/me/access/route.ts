@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { getUserAccess } from "@/lib/access";
-import { getAuthUserId, isClerkConfigured } from "@/lib/clerk";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { getCurrentUser } from "@/lib/auth";
+import { isSupabaseAuthConfigured, isSupabaseConfigured } from "@/lib/supabase";
 
 export async function GET() {
-  if (!isClerkConfigured()) {
-    return NextResponse.json({ error: "Clerk is not configured yet." }, { status: 503 });
+  if (!isSupabaseAuthConfigured()) {
+    return NextResponse.json({ error: "Supabase Auth is not configured yet." }, { status: 503 });
   }
 
-  const userId = await getAuthUserId();
+  const user = await getCurrentUser();
 
-  if (!userId) {
+  if (!user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,6 +18,6 @@ export async function GET() {
     return NextResponse.json({ access: [], configured: false });
   }
 
-  const access = await getUserAccess(userId);
+  const access = await getUserAccess(user.id);
   return NextResponse.json({ access, configured: true });
 }

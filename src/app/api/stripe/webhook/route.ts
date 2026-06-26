@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
-      const clerkUserId = session.metadata?.clerkUserId;
+      const userKey = session.metadata?.userKey;
       const courseSlug = session.metadata?.courseSlug;
       const enrollmentId = session.metadata?.enrollmentId;
 
@@ -48,9 +48,9 @@ export async function POST(request: Request) {
         });
       }
 
-      if (clerkUserId && courseSlug && session.payment_status === "paid") {
+      if (userKey && courseSlug && session.payment_status === "paid") {
         await grantCourseAccess({
-          clerkUserId,
+          userKey,
           courseSlug,
           stripeCustomerId:
             typeof session.customer === "string"

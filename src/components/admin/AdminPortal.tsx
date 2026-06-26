@@ -22,7 +22,6 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { SignOutButton } from "@clerk/nextjs";
 import type { AdminUser } from "@/lib/admin";
 import type { AdminSnapshot } from "@/lib/admin-data";
 
@@ -240,11 +239,11 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           <button className="mb-3 flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left font-bold text-white/52">
             <ChevronLeft size={20} /> Collapse
           </button>
-          <SignOutButton>
+          <form action="/auth/sign-out" method="post">
             <button className="flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left font-bold text-white/52 hover:bg-white/8 hover:text-white">
               <LogOut size={20} /> Sign Out
             </button>
-          </SignOutButton>
+          </form>
         </div>
       </aside>
 
@@ -366,7 +365,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || "Unnamed",
                 student.email ?? "",
                 student.phone ?? "",
-                student.clerk_user_id,
+                student.user_key,
                 new Date(student.created_at).toLocaleDateString("en-AU"),
               ])}
             />
@@ -547,7 +546,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 </Link>
               </div>
               <p className="mt-5 text-sm font-bold text-slate-500">
-                Google sign-in is controlled in Clerk. Enable Google OAuth in the Clerk dashboard for this app before launch.
+                Google sign-in is controlled in Supabase Auth. Enable Google OAuth in the Supabase Auth dashboard for this app before launch.
               </p>
             </FormSection>
           ) : null}

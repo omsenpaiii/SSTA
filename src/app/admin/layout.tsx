@@ -1,29 +1,24 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { isClerkConfigured } from "@/lib/clerk";
+import { getCurrentAdmin } from "@/lib/admin";
+import { getCurrentUser } from "@/lib/auth";
+import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  if (!isClerkConfigured()) {
+  if (!isSupabaseAuthConfigured()) {
     redirect("/");
   }
 
-  const user = await currentUser();
+  const [user, admin] = await Promise.all([getCurrentUser(), getCurrentAdmin()]);
 
   if (!user) {
     redirect("/sign-in?redirect_url=/admin");
   }
 
-  const allowedEmails = (process.env.SSTA_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  const userEmail = user.primaryEmailAddress?.emailAddress?.toLowerCase();
-
-  if (!userEmail || !allowedEmails.includes(userEmail)) {
+  if (!admin) {
     redirect("/");
   }
 

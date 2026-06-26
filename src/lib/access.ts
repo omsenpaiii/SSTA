@@ -20,7 +20,7 @@ export async function getUserAccess(userId: string) {
   const { data, error } = await supabase
     .from("course_enrollments")
     .select("course_slug,status,stripe_session_id,amount_paid,currency,created_at")
-    .eq("clerk_user_id", userId)
+    .eq("user_key", userId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -40,7 +40,7 @@ export async function userHasCourseAccess(userId: string, courseSlug: string) {
   const { data, error } = await supabase
     .from("course_enrollments")
     .select("id")
-    .eq("clerk_user_id", userId)
+    .eq("user_key", userId)
     .eq("course_slug", courseSlug)
     .eq("status", "active")
     .maybeSingle();
@@ -53,7 +53,7 @@ export async function userHasCourseAccess(userId: string, courseSlug: string) {
 }
 
 export async function grantCourseAccess(input: {
-  clerkUserId: string;
+  userKey: string;
   courseSlug: string;
   stripeCustomerId?: string | null;
   stripeSessionId?: string | null;
@@ -74,12 +74,12 @@ export async function grantCourseAccess(input: {
 
   const { error: profileError } = await supabase.from("student_profiles").upsert(
     {
-      clerk_user_id: input.clerkUserId,
+      user_key: input.userKey,
       email: input.email,
       stripe_customer_id: input.stripeCustomerId,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "clerk_user_id" },
+    { onConflict: "user_key" },
   );
 
   if (profileError) {
@@ -88,7 +88,7 @@ export async function grantCourseAccess(input: {
 
   const { error } = await supabase.from("course_enrollments").upsert(
     {
-      clerk_user_id: input.clerkUserId,
+      user_key: input.userKey,
       course_slug: input.courseSlug,
       status: "active",
       stripe_customer_id: input.stripeCustomerId,
@@ -97,7 +97,7 @@ export async function grantCourseAccess(input: {
       currency: input.currency,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "clerk_user_id,course_slug" },
+    { onConflict: "user_key,course_slug" },
   );
 
   if (error) {
@@ -108,7 +108,7 @@ export async function grantCourseAccess(input: {
 }
 
 export async function recordLessonProgress(input: {
-  clerkUserId: string;
+  userKey: string;
   courseSlug: string;
   lessonId: string;
   progressSeconds: number;
@@ -122,14 +122,14 @@ export async function recordLessonProgress(input: {
 
   const { error } = await supabase.from("lesson_progress").upsert(
     {
-      clerk_user_id: input.clerkUserId,
+      user_key: input.userKey,
       course_slug: input.courseSlug,
       lesson_id: input.lessonId,
       progress_seconds: input.progressSeconds,
       completed: input.completed ?? false,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "clerk_user_id,course_slug,lesson_id" },
+    { onConflict: "user_key,course_slug,lesson_id" },
   );
 
   if (error) {

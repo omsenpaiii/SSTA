@@ -90,7 +90,7 @@ await assertNoError(
   "student profile admin columns are queryable",
   supabase
     .from("student_profiles")
-    .select("id,clerk_user_id,first_name,last_name,email,phone,stripe_customer_id,created_at,updated_at")
+    .select("id,user_key,first_name,last_name,email,phone,stripe_customer_id,created_at,updated_at")
     .limit(1),
 );
 

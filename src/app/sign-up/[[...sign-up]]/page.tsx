@@ -1,17 +1,26 @@
-import { SignUp } from "@clerk/nextjs";
-import { AuthShell, clerkAppearance } from "@/components/AuthShell";
+import { AuthShell } from "@/components/AuthShell";
+import { SignUpForm } from "@/components/auth/AuthForms";
 import { SetupNotice } from "@/components/SetupNotice";
+import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
-export default function SignUpPage() {
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+type SignUpPageProps = {
+  searchParams: Promise<{
+    redirect_url?: string;
+    error?: string;
+  }>;
+};
+
+export default async function SignUpPage({ searchParams }: SignUpPageProps) {
+  const params = await searchParams;
+
+  if (!isSupabaseAuthConfigured()) {
     return (
       <SetupNotice
-        title="Add Clerk keys to enable student registration"
+        title="Add Supabase auth keys to enable student registration"
         items={[
-          "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-          "CLERK_SECRET_KEY",
-          "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in",
-          "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up",
+          "NEXT_PUBLIC_SUPABASE_URL",
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+          "SSTA_ADMIN_EMAILS",
         ]}
       />
     );
@@ -23,7 +32,10 @@ export default function SignUpPage() {
       title="Create your account"
       subtitle="Use Google or email to start your SSTA portal access."
     >
-      <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" appearance={clerkAppearance} />
+      <SignUpForm
+        redirectUrl={params.redirect_url}
+        errorMessage={params.error ? decodeURIComponent(params.error) : undefined}
+      />
     </AuthShell>
   );
 }

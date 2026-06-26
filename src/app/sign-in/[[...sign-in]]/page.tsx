@@ -1,17 +1,26 @@
-import { SignIn } from "@clerk/nextjs";
-import { AuthShell, clerkAppearance } from "@/components/AuthShell";
+import { AuthShell } from "@/components/AuthShell";
+import { SignInForm } from "@/components/auth/AuthForms";
 import { SetupNotice } from "@/components/SetupNotice";
+import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
-export default function SignInPage() {
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+type SignInPageProps = {
+  searchParams: Promise<{
+    redirect_url?: string;
+    error?: string;
+  }>;
+};
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const params = await searchParams;
+
+  if (!isSupabaseAuthConfigured()) {
     return (
       <SetupNotice
-        title="Add Clerk keys to enable sign in"
+        title="Add Supabase auth keys to enable sign in"
         items={[
-          "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-          "CLERK_SECRET_KEY",
-          "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in",
-          "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up",
+          "NEXT_PUBLIC_SUPABASE_URL",
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+          "SSTA_ADMIN_EMAILS",
         ]}
       />
     );
@@ -21,9 +30,12 @@ export default function SignInPage() {
     <AuthShell
       mode="sign-in"
       title="Welcome back"
-      subtitle="Sign in to access your SSTA dashboard."
+      subtitle="Sign in to access the SSTA admin dashboard."
     >
-      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" appearance={clerkAppearance} />
+      <SignInForm
+        redirectUrl={params.redirect_url}
+        errorMessage={params.error ? decodeURIComponent(params.error) : undefined}
+      />
     </AuthShell>
   );
 }

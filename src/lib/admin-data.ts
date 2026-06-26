@@ -6,7 +6,7 @@ import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 export type AdminStudent = {
   id: string;
-  clerk_user_id: string;
+  user_key: string;
   first_name: string | null;
   last_name: string | null;
   email: string | null;
@@ -18,7 +18,7 @@ export type AdminStudent = {
 
 export type AdminEnrollment = {
   id: string;
-  clerk_user_id: string;
+  user_key: string;
   course_slug: string;
   status: "active" | "refunded" | "revoked";
   stripe_customer_id: string | null;
@@ -96,13 +96,13 @@ const studentSchema = z.object({
   lastName: z.string().trim().optional().nullable(),
   email: z.string().trim().email(),
   phone: z.string().trim().optional().nullable(),
-  clerkUserId: z.string().trim().optional().nullable(),
+  userKey: z.string().trim().optional().nullable(),
   courseSlug: z.string().trim().optional().nullable(),
   status: z.enum(["active", "refunded", "revoked"]).default("active"),
 });
 
 const enrollmentSchema = z.object({
-  clerkUserId: z.string().trim().optional().nullable(),
+  userKey: z.string().trim().optional().nullable(),
   email: z.string().trim().email().optional().nullable(),
   courseSlug: z.string().trim().min(1),
   status: z.enum(["active", "refunded", "revoked"]).default("active"),
@@ -202,11 +202,11 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       await Promise.all([
         supabase
           .from("student_profiles")
-          .select("id,clerk_user_id,first_name,last_name,email,phone,stripe_customer_id,created_at,updated_at")
+          .select("id,user_key,first_name,last_name,email,phone,stripe_customer_id,created_at,updated_at")
           .order("created_at", { ascending: false }),
         supabase
           .from("course_enrollments")
-          .select("id,clerk_user_id,course_slug,status,stripe_customer_id,stripe_session_id,amount_paid,currency,created_at,updated_at")
+          .select("id,user_key,course_slug,status,stripe_customer_id,stripe_session_id,amount_paid,currency,created_at,updated_at")
           .order("created_at", { ascending: false }),
         supabase
           .from("enrollment_leads")
@@ -331,18 +331,18 @@ export async function replaceAdminCourseUnits(
 export async function upsertAdminStudent(input: unknown) {
   const student = studentSchema.parse(input);
   const supabase = requireSupabase();
-  const clerkUserId = student.clerkUserId || manualStudentKey(student.email);
+  const userKey = student.userKey || manualStudentKey(student.email);
 
   const { error: profileError } = await supabase.from("student_profiles").upsert(
     {
-      clerk_user_id: clerkUserId,
+      user_key: userKey,
       first_name: student.firstName ?? null,
       last_name: student.lastName ?? null,
       email: student.email,
       phone: student.phone ?? null,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "clerk_user_id" },
+    { onConflict: "user_key" },
   );
 
   if (profileError) {
@@ -352,12 +352,12 @@ export async function upsertAdminStudent(input: unknown) {
   if (student.courseSlug) {
     const { error: enrollmentError } = await supabase.from("course_enrollments").upsert(
       {
-        clerk_user_id: clerkUserId,
+        user_key: userKey,
         course_slug: student.courseSlug,
         status: student.status,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "clerk_user_id,course_slug" },
+      { onConflict: "user_key,course_slug" },
     );
 
     if (enrollmentError) {
@@ -365,28 +365,28 @@ export async function upsertAdminStudent(input: unknown) {
     }
   }
 
-  return { ...student, clerkUserId };
+  return { ...student, userKey };
 }
 
 export async function upsertAdminEnrollment(input: unknown) {
   const enrollment = enrollmentSchema.parse(input);
   const supabase = requireSupabase();
-  const clerkUserId =
-    enrollment.clerkUserId ||
+  const userKey =
+    enrollment.userKey ||
     (enrollment.email ? manualStudentKey(enrollment.email) : null);
 
-  if (!clerkUserId) {
-    throw new Error("Enrollment import needs clerkUserId or email.");
+  if (!userKey) {
+    throw new Error("Enrollment import needs userKey or email.");
   }
 
   if (enrollment.email) {
     const { error: profileError } = await supabase.from("student_profiles").upsert(
       {
-        clerk_user_id: clerkUserId,
+        user_key: userKey,
         email: enrollment.email,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "clerk_user_id" },
+      { onConflict: "user_key" },
     );
 
     if (profileError) {
@@ -396,21 +396,21 @@ export async function upsertAdminEnrollment(input: unknown) {
 
   const { error } = await supabase.from("course_enrollments").upsert(
     {
-      clerk_user_id: clerkUserId,
+      user_key: userKey,
       course_slug: enrollment.courseSlug,
       status: enrollment.status,
       amount_paid: enrollment.amountPaid ?? null,
       currency: enrollment.currency ?? null,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "clerk_user_id,course_slug" },
+    { onConflict: "user_key,course_slug" },
   );
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return { ...enrollment, clerkUserId };
+  return { ...enrollment, userKey };
 }
 
 export async function upsertAdminLead(input: unknown) {

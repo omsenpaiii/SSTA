@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { currentUser } from "@clerk/nextjs/server";
 import { getAppUrl } from "@/lib/app-url";
+import { getCurrentUser } from "@/lib/auth";
 import { isCourseAvailableForEnrollment } from "@/lib/courses";
 import { getCourse } from "@/lib/course-repository";
 import {
   getEnrollmentLead,
   updateEnrollmentCheckoutSession,
 } from "@/lib/enrollment";
-import { isClerkConfigured } from "@/lib/clerk";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
+import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const checkoutSchema = z.object({
   courseSlug: z.string().min(1),
@@ -26,14 +26,14 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isClerkConfigured()) {
+  if (!isSupabaseAuthConfigured()) {
     return NextResponse.json(
-      { error: "Clerk is not configured yet." },
+      { error: "Supabase Auth is not configured yet." },
       { status: 503 },
     );
   }
 
-  const user = await currentUser();
+  const user = await getCurrentUser();
   let payload: unknown;
 
   try {
@@ -105,9 +105,9 @@ export async function POST(request: Request) {
   }
 
   const appUrl = getAppUrl();
-  const email = enrollment?.email ?? user?.primaryEmailAddress?.emailAddress;
+  const email = enrollment?.email ?? user.email;
   const metadata = {
-    clerkUserId: user?.id ?? "",
+    userKey: user?.id ?? "",
     courseSlug: course.slug,
     enrollmentId: enrollment?.id ?? "",
   };

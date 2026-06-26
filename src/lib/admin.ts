@@ -1,4 +1,5 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
+import { getAdminEmails, isAdminEmail, manualStudentKey } from "@/lib/auth-shared";
 
 export type AdminUser = {
   id: string;
@@ -7,13 +8,6 @@ export type AdminUser = {
   initials: string;
 };
 
-export function getAdminEmails() {
-  return (process.env.SSTA_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 function getInitials(name: string, email: string) {
   const source = name.trim() || email.split("@")[0] || "Admin";
   const parts = source.split(/\s+/).filter(Boolean);
@@ -21,20 +15,20 @@ function getInitials(name: string, email: string) {
 }
 
 export async function getCurrentAdmin(): Promise<AdminUser | null> {
-  const user = await currentUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return null;
   }
 
-  const email = user.primaryEmailAddress?.emailAddress?.toLowerCase();
+  const email = user.email.toLowerCase();
   const allowedEmails = getAdminEmails();
 
-  if (!email || !allowedEmails.includes(email)) {
+  if (!isAdminEmail(email, allowedEmails)) {
     return null;
   }
 
-  const name = user.fullName ?? user.firstName ?? "SSTA Admin";
+  const name = user.name || "SSTA Admin";
 
   return {
     id: user.id,
@@ -54,6 +48,4 @@ export async function requireAdmin() {
   return admin;
 }
 
-export function manualStudentKey(email: string) {
-  return `manual:${email.trim().toLowerCase()}`;
-}
+export { manualStudentKey };

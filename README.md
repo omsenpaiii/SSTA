@@ -6,8 +6,9 @@ Next.js course storefront and protected video training platform for SSTA.
 
 The code is wired for:
 
-- Clerk authentication
-- Clerk Google/email sign-in for student and admin access
+- Supabase Auth with Google OAuth and email/password sign-in
+- Custom `/sign-in` and `/sign-up` pages styled for the SSTA admin portal
+- Admin access controlled by `SSTA_ADMIN_EMAILS`
 - Stripe one-time course checkout
 - Supabase student profiles, enrolments, and lesson progress
 - Supabase enrollment leads with SMTP intake notifications
@@ -24,10 +25,6 @@ in Vercel Project Settings.
 Required for full production behavior:
 
 - `NEXT_PUBLIC_APP_URL`
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
-- `NEXT_PUBLIC_CLERK_SIGN_IN_URL`
-- `NEXT_PUBLIC_CLERK_SIGN_UP_URL`
 - `SSTA_ADMIN_EMAILS`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -61,6 +58,11 @@ Run `supabase/migrations/202606250001_ssta_admin_portal_excel.sql` after the
 base migration to enable the admin portal fields, course units, manual student
 profile fields, and Excel-backed import/export workflows.
 
+Run `supabase/migrations/202606260001_ssta_supabase_auth_cutover.sql` after the
+admin portal migration to rename identity columns from `clerk_user_id` to
+`user_key`, align RLS with Supabase Auth sessions, and complete the auth
+cutover.
+
 `enrollment_leads` intentionally has no public or authenticated RLS policy.
 Enrollment intake writes happen only through the Next.js server route with the
 Supabase service role key. The table also records `email_status`,
@@ -88,14 +90,29 @@ grants course access in Supabase after a successful one-time payment.
 
 Payments are intentionally 503-safe until `STRIPE_SECRET_KEY` and
 `STRIPE_WEBHOOK_SECRET` are configured. Checkout also refuses payment until
-Clerk is configured, because course access is granted to the signed-in Clerk
+Supabase Auth is configured, because course access is granted to the signed-in
 student after Stripe confirms payment.
 
-## Clerk Admin Access
+## Supabase Auth Setup
 
-Enable Google OAuth in the Clerk dashboard for this app. Admin access is granted
-by signing in with a Clerk account whose primary email is listed in
-`SSTA_ADMIN_EMAILS` as a comma-separated allowlist.
+1. In Google Cloud Console, configure the OAuth consent screen for the chosen
+   project and create a Web OAuth client.
+2. Add JavaScript origins:
+   - `https://ssta.net.au`
+   - `https://www.ssta.net.au`
+   - `http://localhost:3000`
+3. Add the Google redirect URI shown in Supabase at
+   `Authentication > Providers > Google`.
+4. In Supabase Auth:
+   - enable Google
+   - enable email/password
+   - set Site URL to `https://ssta.net.au`
+   - add redirect URLs:
+     - `http://localhost:3000/auth/callback`
+     - `https://ssta.net.au/auth/callback`
+     - `https://www.ssta.net.au/auth/callback`
+5. Admin access is granted only when the signed-in user email is listed in
+   `SSTA_ADMIN_EMAILS`.
 
 ## Vercel Domain Setup
 
