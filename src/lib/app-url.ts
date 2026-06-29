@@ -5,6 +5,15 @@ export function getAppUrl() {
     return appUrl.replace(/\/$/, "");
   }
 
+  const productionUrl = process.env["VERCEL_PROJECT_PRODUCTION_URL"];
+  if (productionUrl) {
+    return `https://${productionUrl.replace(/\/$/, "")}`;
+  }
+
+  if (process.env["VERCEL_ENV"] === "production") {
+    return "https://ssta.net.au";
+  }
+
   if (process.env["VERCEL_URL"]) {
     return `https://${process.env["VERCEL_URL"]}`;
   }
