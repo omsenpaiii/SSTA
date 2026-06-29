@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+type WebpackPlugin = {
+  constructor: {
+    name?: string;
+  };
+};
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ["exceljs"],
   transpilePackages: ["@supabase/auth-js", "@supabase/ssr", "@supabase/supabase-js"],
@@ -11,7 +17,7 @@ const nextConfig: NextConfig = {
 
     if (!dev && config.optimization?.minimizer) {
       config.optimization.minimizer = config.optimization.minimizer.filter(
-        (plugin: any) => plugin.constructor.name !== "CssMinimizerPlugin"
+        (plugin: WebpackPlugin) => plugin.constructor.name !== "CssMinimizerPlugin"
       );
     }
 

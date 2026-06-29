@@ -8,7 +8,7 @@ import {
 let adminClient: SupabaseClient | null = null;
 
 export function isSupabaseConfigured() {
-  return Boolean(isSupabaseAuthConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(isSupabaseAuthConfigured() && process.env["SUPABASE_SERVICE_ROLE_KEY"]);
 }
 
 export function getSupabaseAdmin() {
@@ -17,7 +17,7 @@ export function getSupabaseAdmin() {
   }
 
   if (!adminClient) {
-    adminClient = createClient(getSupabaseUrl(), process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    adminClient = createClient(getSupabaseUrl(), process.env["SUPABASE_SERVICE_ROLE_KEY"]!, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,

@@ -13,7 +13,7 @@ export function manualStudentKey(email: string) {
 }
 
 export function getAdminEmails() {
-  return (process.env.SSTA_ADMIN_EMAILS ?? "")
+  return (process.env["SSTA_ADMIN_EMAILS"] ?? "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);

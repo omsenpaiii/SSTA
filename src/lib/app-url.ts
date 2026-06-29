@@ -1,10 +1,12 @@
 export function getAppUrl() {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const appUrl = process.env["NEXT_PUBLIC_APP_URL"] ?? process.env["APP_URL"];
+
+  if (appUrl) {
+    return appUrl.replace(/\/$/, "");
   }
 
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+  if (process.env["VERCEL_URL"]) {
+    return `https://${process.env["VERCEL_URL"]}`;
   }
 
   return "http://localhost:3000";

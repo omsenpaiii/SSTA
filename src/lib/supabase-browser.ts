@@ -7,7 +7,7 @@ import {
   isSupabaseAuthConfigured,
 } from "@/lib/supabase-config";
 
-export function createBrowserSupabaseClient(): any {
+export function createBrowserSupabaseClient() {
   if (!isSupabaseAuthConfigured()) {
     throw new Error("Supabase Auth is not configured.");
   }

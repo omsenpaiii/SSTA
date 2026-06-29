@@ -6,7 +6,7 @@ import {
   isSupabaseAuthConfigured,
 } from "@/lib/supabase-config";
 
-export async function createServerSupabaseClient(): Promise<any> {
+export async function createServerSupabaseClient() {
   if (!isSupabaseAuthConfigured()) {
     throw new Error("Supabase Auth is not configured.");
   }

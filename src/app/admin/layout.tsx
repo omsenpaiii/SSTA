@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getCurrentAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
@@ -8,6 +9,8 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await connection();
+
   if (!isSupabaseAuthConfigured()) {
     redirect("/");
   }

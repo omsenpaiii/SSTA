@@ -41,10 +41,11 @@ export default function Home() {
     activeCourses.find((course) => isCourseAvailableForEnrollment(course)) ?? activeCourses[0];
   const lessons: CourseLesson[] = featuredCourse.lessons;
   const firstPreview = lessons.find((lesson) => lesson.isPreview) ?? lessons[0];
-  const [activeVideoUrl, setActiveVideoUrl] = useState(() =>
-    firstPreview ? getEmbedUrl(firstPreview.videoUrl, firstPreview.videoProvider) : "",
-  );
   const [activeLessonId, setActiveLessonId] = useState(firstPreview?.id ?? "");
+  const activeLesson = lessons.find((lesson) => lesson.id === activeLessonId) ?? firstPreview;
+  const activeVideoUrl = activeLesson
+    ? getEmbedUrl(activeLesson.videoUrl, activeLesson.videoProvider)
+    : "";
 
   useEffect(() => {
     fetch("/api/courses")
@@ -58,15 +59,6 @@ export default function Home() {
         setActiveCourses(courses);
       });
   }, []);
-
-  useEffect(() => {
-    const nextPreview = lessons.find((lesson) => lesson.isPreview) ?? lessons[0];
-
-    if (nextPreview) {
-      setActiveVideoUrl(getEmbedUrl(nextPreview.videoUrl, nextPreview.videoProvider));
-      setActiveLessonId(nextPreview.id);
-    }
-  }, [featuredCourse.slug, lessons]);
 
   return (
     <main className="min-h-screen overflow-hidden bg-white text-[#020d24]">
@@ -256,11 +248,10 @@ export default function Home() {
                   type="button"
                   disabled={!lesson.isPreview}
                   onClick={() => {
-                    setActiveVideoUrl(getEmbedUrl(lesson.videoUrl, lesson.videoProvider));
                     setActiveLessonId(lesson.id);
                   }}
                   className={`flex items-center justify-between gap-4 rounded-2xl border p-4 text-left transition ${
-                    activeLessonId === lesson.id ? "border-[#0067b1] bg-[#eef8ff]" : "border-[#18aee5]/12 bg-white"
+                    activeLesson?.id === lesson.id ? "border-[#0067b1] bg-[#eef8ff]" : "border-[#18aee5]/12 bg-white"
                   } ${lesson.isPreview ? "cursor-pointer hover:border-[#0067b1]" : "cursor-not-allowed opacity-75"}`}
                 >
                   <span className="flex min-w-0 items-center gap-3">

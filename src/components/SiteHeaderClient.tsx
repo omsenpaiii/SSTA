@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, Menu, ShieldCheck, UserRound, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, UserRound, X } from "lucide-react";
 import { announcementBarMessage, courseMenu, primaryLinks, siteInfo } from "@/lib/site-content";
 
 type HeaderUser = {

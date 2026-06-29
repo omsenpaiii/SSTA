@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { AuthShell } from "@/components/AuthShell";
 import { SignInForm } from "@/components/auth/AuthForms";
 import { SetupNotice } from "@/components/SetupNotice";
@@ -11,6 +12,7 @@ type SignInPageProps = {
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
+  await connection();
   const params = await searchParams;
 
   if (!isSupabaseAuthConfigured()) {

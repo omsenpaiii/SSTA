@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Play, ShieldCheck } from "lucide-react";
@@ -8,6 +9,8 @@ import { isSupabaseAuthConfigured, isSupabaseConfigured } from "@/lib/supabase";
 import { SetupNotice } from "@/components/SetupNotice";
 
 export default async function DashboardPage() {
+  await connection();
+
   if (!isSupabaseAuthConfigured()) {
     return (
       <SetupNotice
