@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["exceljs"],
   transpilePackages: ["@supabase/auth-js", "@supabase/ssr", "@supabase/supabase-js"],
   webpack(config, { dev }) {
     config.resolve.alias = {
@@ -28,4 +29,3 @@ const nextConfig: NextConfig = {
 
 
 export default nextConfig;
-
