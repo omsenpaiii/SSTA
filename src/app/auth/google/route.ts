@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getAppUrl } from "@/lib/app-url";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 export async function GET(request: Request) {
@@ -12,7 +11,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        redirectTo: `${url.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
     });
 

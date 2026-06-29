@@ -1,7 +1,7 @@
 export function getAppUrl() {
   const appUrl = process.env["NEXT_PUBLIC_APP_URL"] ?? process.env["APP_URL"];
 
-  if (appUrl) {
+  if (appUrl && /^https?:\/\//i.test(appUrl)) {
     return appUrl.replace(/\/$/, "");
   }
 
