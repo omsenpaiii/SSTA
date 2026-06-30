@@ -1,109 +1,240 @@
-import { connection } from "next/server";
+import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Play, ShieldCheck } from "lucide-react";
-import { getUserAccess } from "@/lib/access";
-import { getCourses } from "@/lib/course-repository";
+import { ArrowRight, BookCheck, Clock3, GraduationCap, Layers3, TrendingUp } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { isSupabaseAuthConfigured, isSupabaseConfigured } from "@/lib/supabase";
-import { SetupNotice } from "@/components/SetupNotice";
+import { formatActivityStatus, formatRelativeUpdate, getStudentPortalData } from "@/lib/student-portal";
 
-export default async function DashboardPage() {
-  await connection();
-
-  if (!isSupabaseAuthConfigured()) {
-    return (
-      <SetupNotice
-        title="Add Supabase auth keys to enable the student dashboard"
-        items={["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]}
-      />
-    );
-  }
-
+export default async function DashboardHomePage() {
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/sign-in?redirect_url=/dashboard");
+    return null;
   }
 
-  const access = isSupabaseConfigured() ? await getUserAccess(user.id) : [];
-  const activeSlugs = new Set(access.map((item) => item.course_slug));
-  const courses = await getCourses();
+  const portalData = await getStudentPortalData(user);
+  const continueCourse = portalData.continueCourse;
 
   return (
-    <main className="min-h-screen bg-[#eef8ff] px-5 py-12 sm:px-8">
-      <div className="mx-auto max-w-6xl">
-        <Link href="/" className="text-sm font-black text-[#0067b1]">
-          Back to SSTA
-        </Link>
-        <div className="mt-8 rounded-[1.5rem] bg-white p-8 shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
-            Student dashboard
+    <div className="space-y-6">
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+          <p className="text-sm font-black uppercase tracking-[0.22em] text-[#0f6eb8]">
+            Welcome back
           </p>
-          <h1 className="mt-3 text-4xl font-black text-[#020d24]">
-            Welcome, {user.firstName ?? "student"}
-          </h1>
-          {!isSupabaseConfigured() ? (
-            <p className="mt-4 rounded-2xl bg-[#fff7dd] p-4 text-sm font-bold text-[#9b5b00]">
-              Supabase env vars are not configured yet, so live enrolments will
-              appear after the database is connected.
-            </p>
-          ) : null}
-        </div>
+          <h2 className="mt-3 max-w-[14ch] text-4xl font-black tracking-tight text-[#081221] sm:text-[3.3rem]">
+            {user.firstName ? `${user.firstName}, your progress is moving.` : "Your progress is moving."}
+          </h2>
+          <p className="mt-4 max-w-3xl text-base font-semibold leading-7 text-[#5d7389]">
+            Keep your SSTA learning in one place: course access, activity tracking, resources, and the next task that gets you closer to completion.
+          </p>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {courses.map((course) => {
-            const unlocked = activeSlugs.has(course.slug);
-            return (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                label: "Enrolled courses",
+                value: String(portalData.totalCourses),
+                icon: GraduationCap,
+              },
+              {
+                label: "Average progress",
+                value: `${portalData.averageProgress}%`,
+                icon: TrendingUp,
+              },
+              {
+                label: "Completed activities",
+                value: String(portalData.completedActivities),
+                icon: BookCheck,
+              },
+              {
+                label: "Remaining tasks",
+                value: String(portalData.remainingActivities),
+                icon: Layers3,
+              },
+            ].map((item) => (
               <article
-                key={course.slug}
-                className="rounded-[1.25rem] border border-[#18aee5]/14 bg-white p-6 shadow-[0_18px_45px_rgba(0,74,143,0.08)]"
+                key={item.label}
+                className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5"
               >
-                <div className="mb-5 flex size-12 items-center justify-center rounded-full bg-[#eef8ff] text-[#0067b1]">
-                  {unlocked ? <Play size={20} /> : <ShieldCheck size={20} />}
-                </div>
-                <h2 className="text-xl font-black">{course.title}</h2>
-                <p className="mt-3 text-sm font-bold leading-6 text-[#53647c]">
-                  {unlocked
-                    ? "Unlocked. Continue learning from your protected lesson library."
-                    : "Locked. Complete checkout to unlock all lessons."}
-                </p>
-                <Link
-                  href={unlocked ? "#lessons" : "/#courses"}
-                  className="mt-5 inline-flex rounded-full bg-[#0067b1] px-5 py-3 text-sm font-black text-white"
-                >
-                  {unlocked ? "Continue" : "View course"}
-                </Link>
-              </article>
-            );
-          })}
-        </div>
-
-        <section id="lessons" className="mt-8 rounded-[1.5rem] bg-white p-8">
-          <h2 className="text-2xl font-black">Available lessons</h2>
-          <div className="mt-5 space-y-3">
-            {courses[0].lessons.map((lesson) => {
-              const unlocked = lesson.isPreview || activeSlugs.has(courses[0].slug);
-              return (
-                <div
-                  key={lesson.id}
-                  className="flex items-center justify-between rounded-2xl border border-[#18aee5]/10 p-4"
-                >
-                  <div>
-                    <p className="font-black">{lesson.title}</p>
-                    <p className="text-sm font-bold text-[#53647c]">
-                      {lesson.duration}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-[#eef8ff] px-3 py-1 text-xs font-black text-[#0067b1]">
-                    {unlocked ? "Playable" : "Locked"}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-black text-[#5d7389]">{item.label}</span>
+                  <span className="flex size-11 items-center justify-center rounded-2xl bg-[#eef5fb] text-[#0f6eb8]">
+                    <item.icon size={20} />
                   </span>
                 </div>
-              );
-            })}
+                <p className="mt-4 text-4xl font-black tracking-tight text-[#081221]">{item.value}</p>
+              </article>
+            ))}
           </div>
-        </section>
-      </div>
-    </main>
+        </div>
+
+        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-[#0f6eb8]">
+                Continue learning
+              </p>
+              <h3 className="mt-2 text-2xl font-black tracking-tight text-[#081221]">
+                {continueCourse ? continueCourse.title : "Your next course will appear here"}
+              </h3>
+            </div>
+            <div className="rounded-full bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
+              {continueCourse ? `${continueCourse.progressPercent}% complete` : "Ready when you are"}
+            </div>
+          </div>
+
+          {continueCourse ? (
+            <>
+              <div className="mt-5 overflow-hidden rounded-[24px]">
+                <div className="relative h-52">
+                  <Image
+                    src={continueCourse.image}
+                    alt={continueCourse.title}
+                    fill
+                    sizes="(min-width:1280px) 30vw, 100vw"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,18,33,0.02)_0%,rgba(8,18,33,0.72)_100%)]" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-white/78">
+                      {continueCourse.code}
+                    </p>
+                    <p className="mt-2 text-xl font-black text-white">
+                      {continueCourse.completedActivities} completed · {continueCourse.remainingActivities} remaining
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-5 text-sm font-semibold leading-6 text-[#5d7389]">
+                {continueCourse.overview}
+              </p>
+              <div className="mt-5 h-3 rounded-full bg-[#edf3f8]">
+                <div
+                  className="h-3 rounded-full bg-[linear-gradient(90deg,#0f6eb8_0%,#1b97db_100%)]"
+                  style={{ width: `${continueCourse.progressPercent}%` }}
+                />
+              </div>
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm font-semibold text-[#5d7389]">
+                  Updated {formatRelativeUpdate(continueCourse.updatedAt)}
+                </span>
+                <Link
+                  href={`/dashboard/course/${continueCourse.slug}`}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_18px_36px_rgba(15,110,184,0.22)]"
+                >
+                  Open workspace
+                  <ArrowRight size={18} />
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="mt-8 rounded-[24px] border border-dashed border-[#c9d9e8] bg-[#fbfdff] p-8 text-center">
+              <p className="text-base font-semibold text-[#5d7389]">
+                Once you enrol in a course, this panel becomes your launch point for lessons, activity tracking, and resources.
+              </p>
+              <Link
+                href="/dashboard/browse-courses"
+                className="mt-5 inline-flex rounded-full bg-[#081221] px-5 py-3 text-sm font-black text-white"
+              >
+                Browse courses
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-2xl font-black tracking-tight text-[#081221]">Next up</h3>
+              <p className="mt-2 text-sm font-semibold text-[#5d7389]">
+                Keep momentum on the activities that still need attention.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/my-courses"
+              className="text-sm font-black text-[#0f6eb8]"
+            >
+              View all courses
+            </Link>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            {portalData.incompleteActivityFeed.length ? (
+              portalData.incompleteActivityFeed.map((activity) => (
+                <Link
+                  key={`${activity.courseSlug}-${activity.id}`}
+                  href={`/dashboard/course/${activity.courseSlug}/activities/${activity.id}`}
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5 transition hover:border-[#0f6eb8]/30"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f6eb8]">
+                      {activity.courseTitle}
+                    </p>
+                    <h4 className="mt-2 text-lg font-black text-[#081221]">{activity.title}</h4>
+                    <p className="mt-1 text-sm font-semibold text-[#5d7389]">{activity.summary}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="rounded-full bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
+                      {formatActivityStatus(activity.status)}
+                    </div>
+                    <p className="mt-2 text-xs font-semibold text-[#7f92a5]">{activity.group}</p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="rounded-[24px] border border-dashed border-[#c9d9e8] bg-[#fbfdff] p-8 text-center">
+                <h4 className="text-xl font-black text-[#081221]">Everything is up to date</h4>
+                <p className="mt-3 text-sm font-semibold text-[#5d7389]">
+                  Once you start working through activities, this feed will keep the next important task in front of you.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-2xl font-black tracking-tight text-[#081221]">Recent activity</h3>
+              <p className="mt-2 text-sm font-semibold text-[#5d7389]">
+                Quick recap of the lessons and unit work you touched most recently.
+              </p>
+            </div>
+            <Clock3 size={18} className="text-[#7f92a5]" />
+          </div>
+
+          <div className="mt-6 space-y-4">
+            {portalData.recentActivity.length ? (
+              portalData.recentActivity.map((activity) => (
+                <div
+                  key={`${activity.id}-${activity.updatedAt ?? "recent"}`}
+                  className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="text-lg font-black text-[#081221]">{activity.title}</h4>
+                    <span className="rounded-full bg-[#e7fff1] px-3 py-1 text-xs font-black text-[#198754]">
+                      {formatActivityStatus(activity.status)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm font-semibold text-[#5d7389]">{activity.subtitle}</p>
+                  <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-[0.14em] text-[#7f92a5]">
+                    <span>{activity.group}</span>
+                    <span>{formatRelativeUpdate(activity.updatedAt)}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[24px] border border-dashed border-[#c9d9e8] bg-[#fbfdff] p-8 text-center">
+                <h4 className="text-xl font-black text-[#081221]">No recent activity yet</h4>
+                <p className="mt-3 text-sm font-semibold text-[#5d7389]">
+                  Your latest lesson and activity updates will start appearing here as you use the portal.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
