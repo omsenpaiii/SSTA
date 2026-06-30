@@ -37,66 +37,66 @@ export function AuthShell({ title, subtitle, mode, children }: AuthShellProps) {
   ];
 
   return (
-    <main className="grid min-h-screen bg-white text-[#101827] lg:grid-cols-[1.08fr_0.92fr]">
+    <main className="grid min-h-screen bg-white text-[#101827] lg:grid-cols-[1.05fr_0.95fr]">
       <section className="relative hidden overflow-hidden bg-[#082647] px-10 py-14 text-white lg:block xl:px-16">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:68px_68px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(146,208,255,0.18),transparent_24%),linear-gradient(140deg,#0a2444_0%,#123f71_56%,#0a223e_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:68px_68px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(146,208,255,0.15),transparent_30%),linear-gradient(140deg,#0a2444_0%,#123f71_56%,#0a223e_100%)]" />
         <div className="relative z-10 flex h-full min-h-[760px] flex-col justify-between">
           <Link href="/" className="flex items-center gap-4">
-            <span className="flex size-16 items-center justify-center rounded-3xl border border-white/18 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <ShieldCheck size={28} />
+            <span className="flex size-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <ShieldCheck size={24} />
             </span>
             <span>
-              <span className="block text-[2.15rem] font-black leading-none">SSTA</span>
-              <span className="mt-1 block text-sm font-black uppercase tracking-[0.08em] text-white/58">
+              <span className="block text-[1.85rem] font-extrabold leading-none tracking-tight">SSTA</span>
+              <span className="mt-1 block text-xs font-bold uppercase tracking-[0.1em] text-white/50">
                 {mode === "sign-in" ? "Admin Portal" : "Student Access"}
               </span>
             </span>
           </Link>
 
-          <div className="max-w-2xl">
-            <div className="mb-10 inline-flex items-center gap-2 rounded-full border border-white/16 bg-white/12 px-5 py-2.5 text-sm font-black text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-              <span className="size-2 rounded-full bg-[#f5b800]" />
-              {mode === "sign-in" ? "SECURE ADMIN ACCESS" : "CREATE SSTA ACCOUNT"}
+          <div className="max-w-xl">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4.5 py-1.5 text-xs font-bold text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <span className="size-1.5 rounded-full bg-[#f5b800]" />
+              {mode === "sign-in" ? "SECURE ADMIN ACCESS" : "SECURE STUDENT ACCESS"}
             </div>
-            <h1 className="max-w-[12ch] text-5xl font-black leading-[0.98] tracking-normal xl:text-[4.4rem]">
+            <h1 className="max-w-[12ch] text-4xl font-extrabold leading-[1.1] tracking-tight xl:text-[3.6rem]">
               {mode === "sign-in"
                 ? "Manage your academy with confidence."
-                : "Start your SSTA access with confidence."}
+                : "Start your learning access with confidence."}
             </h1>
-            <p className="mt-8 max-w-[28rem] text-xl font-medium leading-11 text-white/62">
+            <p className="mt-5 max-w-[26rem] text-base font-medium leading-relaxed text-white/70">
               {mode === "sign-in"
                 ? "Complete control over student enrolments, course management, and training operations in one secure dashboard."
-                : "Use Google or email to access course enrolments, lessons, and your SSTA learning tools."}
+                : "Use Google or email to access enrolments, lessons, and your SSTA learning tools in one place."}
             </p>
           </div>
 
-          <div className="grid max-w-2xl gap-6">
+          <div className="grid max-w-xl gap-5">
             {featureRows.map(({ heading, copy, icon: Icon }) => (
-              <div key={heading} className="grid grid-cols-[48px_1fr_24px] items-center gap-5">
-                <span className="flex size-14 items-center justify-center rounded-2xl border border-white/12 bg-white/7 text-[#f5b800]">
-                  <Icon size={22} />
+              <div key={heading} className="grid grid-cols-[40px_1fr_20px] items-center gap-4">
+                <span className="flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#f5b800]">
+                  <Icon size={18} />
                 </span>
                 <span>
-                  <span className="block text-[1.05rem] font-black">{heading}</span>
-                  <span className="block text-sm font-bold text-white/46">{copy}</span>
+                  <span className="block text-sm font-bold text-white">{heading}</span>
+                  <span className="block text-xs font-medium text-white/50">{copy}</span>
                 </span>
-                <ShieldCheck size={18} className="text-emerald-300" />
+                <ShieldCheck size={16} className="text-emerald-400" />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-5 py-12 xl:px-10">
-        <div className="w-full max-w-[640px]">
-          <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-5xl font-black tracking-normal text-[#111827]">{title}</h2>
-            <p className="mt-4 text-[1.7rem] font-medium text-[#7d8999] lg:text-[1.9rem]">{subtitle}</p>
+      <section className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-6 py-12 lg:px-12">
+        <div className="w-full max-w-[440px]">
+          <div className="mb-8 text-center lg:text-left">
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">{title}</h2>
+            <p className="mt-2 text-base font-medium text-slate-500">{subtitle}</p>
           </div>
           <div className="auth-card">{children}</div>
-          <div className="mt-10 border-t border-slate-200 pt-8 text-center text-sm font-bold text-[#748091]">
-            <ShieldCheck className="mr-2 inline-block align-[-4px]" size={18} />
+          <div className="mt-8 flex items-center justify-center gap-1.5 border-t border-slate-100 pt-6 text-center text-xs font-semibold text-slate-400">
+            <ShieldCheck size={15} className="text-slate-400" />
             Protected by SSTA Security · v2.0
           </div>
         </div>

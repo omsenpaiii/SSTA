@@ -8,6 +8,7 @@ type SignInPageProps = {
   searchParams: Promise<{
     redirect_url?: string;
     error?: string;
+    success?: string;
   }>;
 };
 
@@ -32,11 +33,12 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     <AuthShell
       mode="sign-in"
       title="Welcome back"
-      subtitle="Sign in to access the SSTA admin dashboard."
+      subtitle="Sign in to access the SSTA admin portal."
     >
       <SignInForm
         redirectUrl={params.redirect_url}
         errorMessage={params.error ? decodeURIComponent(params.error) : undefined}
+        successMessage={params.success ? decodeURIComponent(params.success) : undefined}
       />
     </AuthShell>
   );

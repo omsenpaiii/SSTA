@@ -8,6 +8,7 @@ type SignUpPageProps = {
   searchParams: Promise<{
     redirect_url?: string;
     error?: string;
+    success?: string;
   }>;
 };
 
@@ -32,11 +33,12 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
     <AuthShell
       mode="sign-up"
       title="Create your account"
-      subtitle="Use Google or email to start your SSTA portal access."
+      subtitle="Use Google or email to access your courses, lessons, and student dashboard."
     >
       <SignUpForm
         redirectUrl={params.redirect_url}
         errorMessage={params.error ? decodeURIComponent(params.error) : undefined}
+        successMessage={params.success ? decodeURIComponent(params.success) : undefined}
       />
     </AuthShell>
   );

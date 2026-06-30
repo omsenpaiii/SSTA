@@ -11,6 +11,11 @@ export type AuthFormState = {
   success?: string;
 };
 
+const signupConfirmationMessage =
+  "Check your email to confirm your account. Once confirmed, come back here and sign in.";
+const signupCooldownMessage =
+  "Your account is already waiting for email confirmation. Check your inbox for the latest link or wait a minute before requesting another.";
+
 const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters.")
@@ -60,6 +65,17 @@ function getPostAuthDestination(email: string, redirectUrl?: string | null) {
   }
 
   return isAdminEmail(email) ? "/admin" : "/dashboard";
+}
+
+function isSignupCooldownError(message: string) {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("security purposes") ||
+    normalized.includes("after 60 seconds") ||
+    normalized.includes("after 60 second") ||
+    normalized.includes("rate limit")
+  );
 }
 
 export async function signInWithPassword(
@@ -119,11 +135,14 @@ export async function signUpWithPassword(
         full_name: `${parsed.data.firstName} ${parsed.data.lastName}`.trim(),
         phone: parsed.data.phone || undefined,
       },
-      emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+      emailRedirectTo: `${getAppUrl()}/auth/callback?flow=signup-confirmation&next=${encodeURIComponent(nextPath)}`,
     },
   });
 
   if (error) {
+    if (isSignupCooldownError(error.message)) {
+      return { success: signupCooldownMessage };
+    }
     return { error: error.message };
   }
 
@@ -136,7 +155,7 @@ export async function signUpWithPassword(
   }
 
   return {
-    success: "Check your email to confirm your account and finish signing in.",
+    success: signupConfirmationMessage,
   };
 }
 
@@ -152,7 +171,7 @@ export async function requestPasswordReset(
 
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
+    redirectTo: `${getAppUrl()}/auth/callback?flow=recovery&next=${encodeURIComponent("/reset-password")}`,
   });
 
   if (error) {

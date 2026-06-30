@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const next = url.searchParams.get("next");
+  const flow = url.searchParams.get("flow");
 
   if (!code) {
     return NextResponse.redirect(new URL("/sign-in?error=missing_code", url.origin));
@@ -22,6 +23,23 @@ export async function GET(request: Request) {
     }
 
     await syncStudentProfileFromUser(data.user);
+
+    if (flow === "signup-confirmation") {
+      await supabase.auth.signOut();
+
+      const signInUrl = new URL("/sign-in", url.origin);
+      signInUrl.searchParams.set(
+        "success",
+        "Email confirmed. Sign in with your new account to continue.",
+      );
+
+      if (next?.startsWith("/")) {
+        signInUrl.searchParams.set("redirect_url", next);
+      }
+
+      return NextResponse.redirect(signInUrl);
+    }
+
     return NextResponse.redirect(new URL(next?.startsWith("/") ? next : "/dashboard", url.origin));
   } catch (error) {
     const errorUrl = new URL("/sign-in", url.origin);
