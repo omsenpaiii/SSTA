@@ -35,7 +35,7 @@ export function BrowseCoursesView({ courses }: BrowseCoursesViewProps) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-[#dce8f3] bg-white p-6 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+      <section className="portal-card rounded-[30px] p-6">
         <h2 className="text-3xl font-black tracking-tight text-[#081221]">Browse Courses</h2>
         <p className="mt-2 max-w-3xl text-base font-semibold leading-7 text-[#5d7389]">
           Explore the wider SSTA catalogue, compare industries, and jump straight into your enrolled workspaces where access is already active.
@@ -58,10 +58,10 @@ export function BrowseCoursesView({ courses }: BrowseCoursesViewProps) {
                 key={option}
                 type="button"
                 onClick={() => setCategory(option)}
-                className={`rounded-full px-4 py-3 text-sm font-black transition ${
+                className={`rounded-2xl px-4 py-3 text-sm font-black transition ${
                   option === category
-                    ? "bg-[#0f6eb8] text-white shadow-[0_12px_24px_rgba(15,110,184,0.18)]"
-                    : "bg-[#eef5fb] text-[#5d7389]"
+                    ? "bg-[#0f6eb8] text-white shadow-[0_12px_24px_rgba(15,110,184,0.16)]"
+                    : "border border-[#d8e6f2] bg-[#f4f8fc] text-[#5d7389]"
                 }`}
               >
                 {option}
@@ -88,11 +88,11 @@ export function BrowseCoursesView({ courses }: BrowseCoursesViewProps) {
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,18,33,0.02)_0%,rgba(8,18,33,0.72)_100%)]" />
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
+                  <span className="rounded-2xl bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
                     {course.code}
                   </span>
                   {course.enrolled ? (
-                    <span className="rounded-full bg-[#19b468] px-3 py-1 text-xs font-black text-white">
+                    <span className="rounded-2xl bg-[#19b468] px-3 py-1 text-xs font-black text-white">
                       Enrolled
                     </span>
                   ) : null}
@@ -103,14 +103,14 @@ export function BrowseCoursesView({ courses }: BrowseCoursesViewProps) {
               </div>
               <div className="p-6">
                 <div className="mb-4 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
+                  <span className="rounded-2xl bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
                     {course.category}
                   </span>
-                  <span className="rounded-full bg-[#f4f8fc] px-3 py-1 text-xs font-black text-[#5d7389]">
+                  <span className="rounded-2xl bg-[#f4f8fc] px-3 py-1 text-xs font-black text-[#5d7389]">
                     {course.duration}
                   </span>
                   {course.progressPercent != null ? (
-                    <span className="rounded-full bg-[#e7fff1] px-3 py-1 text-xs font-black text-[#198754]">
+                    <span className="rounded-2xl bg-[#e7fff1] px-3 py-1 text-xs font-black text-[#198754]">
                       {course.progressPercent}% complete
                     </span>
                   ) : null}
@@ -120,7 +120,7 @@ export function BrowseCoursesView({ courses }: BrowseCoursesViewProps) {
                   {course.deliveryModes.slice(0, 3).map((mode) => (
                     <span
                       key={mode}
-                      className="rounded-full border border-[#d9e7f3] px-3 py-1 text-xs font-black text-[#5d7389]"
+                      className="rounded-2xl border border-[#d9e7f3] px-3 py-1 text-xs font-black text-[#5d7389]"
                     >
                       {mode}
                     </span>
@@ -132,9 +132,9 @@ export function BrowseCoursesView({ courses }: BrowseCoursesViewProps) {
                   </span>
                   <Link
                     href={course.actionHref}
-                    className={`rounded-full px-5 py-3 text-sm font-black ${
+                    className={`rounded-2xl px-5 py-3 text-sm font-black ${
                       course.enrolled
-                        ? "bg-[#0f6eb8] text-white shadow-[0_18px_36px_rgba(15,110,184,0.22)]"
+                        ? "bg-[#0f6eb8] text-white shadow-[0_18px_36px_rgba(15,110,184,0.18)]"
                         : "border border-[#d9e7f3] text-[#0f6eb8]"
                     }`}
                   >

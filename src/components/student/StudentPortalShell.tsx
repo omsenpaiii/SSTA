@@ -70,7 +70,7 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
     <div className="min-h-screen bg-[#f4f8fc] text-[#081221]">
       <header className="sticky top-0 z-40 border-b border-[#d9e7f3] bg-white/92 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-3">
               <span className="relative block size-12 overflow-hidden rounded-2xl border border-[#cfe0ee] bg-white p-1 shadow-sm">
                 <Image
@@ -90,8 +90,11 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
                 </span>
               </span>
             </Link>
-            <div className="hidden rounded-full bg-[#eef5fb] px-3 py-2 text-xs font-bold text-[#5d7389] xl:block">
-              {summary}
+            <div className="hidden items-center gap-2 rounded-2xl border border-[#d8e6f2] bg-[#f7fbfe] px-3 py-2 xl:flex">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-[#7b8ea2]">
+                Snapshot
+              </span>
+              <span className="text-sm font-bold text-[#5d7389]">{summary}</span>
             </div>
           </div>
 
@@ -102,10 +105,10 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
                 <Link
                   key={href}
                   href={href}
-                  className={`rounded-full px-4 py-2.5 text-sm font-black transition ${
+                  className={`rounded-2xl px-3.5 py-2.5 text-sm font-black transition ${
                     active
-                      ? "bg-[#0f6eb8] text-white shadow-[0_16px_30px_rgba(15,110,184,0.2)]"
-                      : "text-[#566a80] hover:bg-[#eef5fb] hover:text-[#0b2b4e]"
+                      ? "bg-[#0f6eb8] text-white shadow-[0_14px_28px_rgba(15,110,184,0.18)]"
+                      : "text-[#566a80] hover:bg-[#f2f7fb] hover:text-[#0b2b4e]"
                   }`}
                 >
                   {label}
@@ -115,7 +118,7 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
           </nav>
 
           <div className="hidden items-center gap-3 sm:flex">
-            <div className="flex items-center gap-3 rounded-full border border-[#d8e6f2] bg-white px-3 py-2 shadow-sm">
+            <div className="flex items-center gap-3 rounded-2xl border border-[#d8e6f2] bg-white px-3 py-2 shadow-sm">
               <span className="flex size-10 items-center justify-center rounded-full bg-[#0f6eb8] text-sm font-black text-white">
                 {user.initials}
               </span>
@@ -125,7 +128,7 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
               </span>
             </div>
             <form action="/auth/sign-out" method="post">
-              <button className="rounded-full border border-[#d8e6f2] px-4 py-2.5 text-sm font-black text-[#0f6eb8] transition hover:bg-[#eef5fb]">
+              <button className="rounded-2xl border border-[#d8e6f2] px-4 py-2.5 text-sm font-black text-[#0f6eb8] transition hover:bg-[#eef5fb]">
                 Sign out
               </button>
             </form>
@@ -144,7 +147,7 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
         {open ? (
           <div className="border-t border-[#d9e7f3] bg-white xl:hidden">
             <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6">
-              <div className="mb-4 rounded-3xl bg-[#eef5fb] p-4">
+          <div className="mb-4 rounded-3xl bg-[#eef5fb] p-4">
                 <div className="flex items-center gap-3">
                   <span className="flex size-11 items-center justify-center rounded-full bg-[#0f6eb8] text-sm font-black text-white">
                     {user.initials}
@@ -189,22 +192,36 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
       </header>
 
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-wrap items-center gap-3 rounded-[28px] border border-[#dce8f3] bg-[linear-gradient(135deg,#0b2b4e_0%,#0f5f9c_55%,#1883c8_100%)] px-6 py-5 text-white shadow-[0_30px_70px_rgba(12,50,88,0.2)]">
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-white/12">
+        <div className="mb-6 overflow-hidden rounded-[30px] border border-[#dce8f3] bg-[linear-gradient(135deg,#0b2b4e_0%,#0d4f83_48%,#1680c4_100%)] px-6 py-6 text-white shadow-[0_24px_60px_rgba(12,50,88,0.16)]">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-white/12">
             <BookOpen size={22} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-white/68">
+                Learning workspace
+              </p>
+              <h1 className="mt-2 max-w-[20ch] text-2xl font-black tracking-tight sm:text-[2.1rem]">
+                Learn, track progress, and move with confidence.
+              </h1>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-white/72">
-              Learning workspace
-            </p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-[2rem]">
-              Learn, track progress, and move with confidence.
-            </h1>
-          </div>
-          <div className="grid gap-2 rounded-[24px] border border-white/12 bg-white/10 px-5 py-4 text-sm font-bold text-white/88 backdrop-blur sm:grid-cols-3">
-            <span>{stats.totalCourses} enrolled courses</span>
-            <span>{stats.activeEnrollments} active enrolments</span>
-            <span>{stats.remainingActivities} tasks remaining</span>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {[
+              { label: "Enrolled courses", value: stats.totalCourses },
+              { label: "Active enrolments", value: stats.activeEnrollments },
+              { label: "Tasks remaining", value: stats.remainingActivities },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-[22px] border border-white/14 bg-white/10 px-4 py-4 backdrop-blur"
+              >
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-white/64">
+                  {item.label}
+                </p>
+                <p className="mt-2 text-2xl font-black text-white">{item.value}</p>
+              </div>
+            ))}
           </div>
         </div>
         {children}

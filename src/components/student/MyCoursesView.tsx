@@ -38,7 +38,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[28px] border border-[#dce8f3] bg-white p-6 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+      <section className="portal-card rounded-[30px] p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 className="text-3xl font-black tracking-tight text-[#081221]">My Courses</h2>
@@ -46,13 +46,13 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
               Continue your learning journey, revisit your enrolled programs, and jump back into the next activity without losing context.
             </p>
           </div>
-          <div className="flex items-center gap-3 rounded-full bg-[#eef5fb] px-4 py-2 text-sm font-black text-[#5d7389]">
+          <div className="flex items-center gap-3 rounded-2xl border border-[#d8e6f2] bg-[#f4f8fc] px-4 py-2.5 text-sm font-black text-[#5d7389]">
             <TimerReset size={16} />
             {filtered.length} enrolled course{filtered.length === 1 ? "" : "s"}
           </div>
         </div>
 
-        <div className="mt-6 rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-4">
+        <div className="portal-subtle-card mt-6 rounded-[24px] p-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <label className="flex h-14 flex-1 items-center gap-3 rounded-2xl border border-[#d9e7f3] bg-white px-4 text-sm font-semibold text-[#5d7389]">
               <Search size={18} className="text-[#86a0b7]" />
@@ -118,10 +118,10 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="rounded-full bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
+                    <span className="rounded-2xl bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
                       {course.code}
                     </span>
-                    <span className="rounded-full bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
+                    <span className="rounded-2xl bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
                       {course.progressPercent}%
                     </span>
                   </div>
@@ -130,10 +130,10 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
               </div>
               <div className="flex flex-col p-6">
                 <div className="mb-4 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
+                  <span className="rounded-2xl bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
                     {course.category}
                   </span>
-                  <span className="rounded-full bg-[#f4f8fc] px-3 py-1 text-xs font-black text-[#5d7389]">
+                  <span className="rounded-2xl bg-[#f4f8fc] px-3 py-1 text-xs font-black text-[#5d7389]">
                     {formatEnrollmentMeta(course)}
                   </span>
                 </div>
@@ -160,7 +160,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                   </div>
                   <Link
                     href={`/dashboard/course/${course.slug}`}
-                    className="rounded-full bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_18px_36px_rgba(15,110,184,0.22)]"
+                    className="rounded-2xl bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_18px_36px_rgba(15,110,184,0.18)]"
                   >
                     Open workspace
                   </Link>

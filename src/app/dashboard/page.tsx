@@ -17,18 +17,18 @@ export default async function DashboardHomePage() {
   return (
     <div className="space-y-6">
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
-          <p className="text-sm font-black uppercase tracking-[0.22em] text-[#0f6eb8]">
+        <div className="portal-card rounded-[30px] p-7">
+          <p className="portal-section-label">
             Welcome back
           </p>
-          <h2 className="mt-3 max-w-[14ch] text-4xl font-black tracking-tight text-[#081221] sm:text-[3.3rem]">
+          <h2 className="mt-3 max-w-[14ch] text-4xl font-black tracking-tight text-[#081221] sm:text-[3.05rem]">
             {user.firstName ? `${user.firstName}, your progress is moving.` : "Your progress is moving."}
           </h2>
           <p className="mt-4 max-w-3xl text-base font-semibold leading-7 text-[#5d7389]">
             Keep your SSTA learning in one place: course access, activity tracking, resources, and the next task that gets you closer to completion.
           </p>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
               {
                 label: "Enrolled courses",
@@ -53,7 +53,7 @@ export default async function DashboardHomePage() {
             ].map((item) => (
               <article
                 key={item.label}
-                className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5"
+                className="portal-subtle-card rounded-[24px] p-5"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-black text-[#5d7389]">{item.label}</span>
@@ -61,23 +61,25 @@ export default async function DashboardHomePage() {
                     <item.icon size={20} />
                   </span>
                 </div>
-                <p className="mt-4 text-4xl font-black tracking-tight text-[#081221]">{item.value}</p>
+                <p className="mt-5 text-[2.6rem] leading-none font-black tracking-tight text-[#081221]">
+                  {item.value}
+                </p>
               </article>
             ))}
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <div className="portal-card rounded-[30px] p-7">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.22em] text-[#0f6eb8]">
+              <p className="portal-section-label">
                 Continue learning
               </p>
               <h3 className="mt-2 text-2xl font-black tracking-tight text-[#081221]">
                 {continueCourse ? continueCourse.title : "Your next course will appear here"}
               </h3>
             </div>
-            <div className="rounded-full bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
+            <div className="rounded-2xl bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
               {continueCourse ? `${continueCourse.progressPercent}% complete` : "Ready when you are"}
             </div>
           </div>
@@ -119,7 +121,7 @@ export default async function DashboardHomePage() {
                 </span>
                 <Link
                   href={`/dashboard/course/${continueCourse.slug}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_18px_36px_rgba(15,110,184,0.22)]"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_18px_36px_rgba(15,110,184,0.18)]"
                 >
                   Open workspace
                   <ArrowRight size={18} />
@@ -133,7 +135,7 @@ export default async function DashboardHomePage() {
               </p>
               <Link
                 href="/dashboard/browse-courses"
-                className="mt-5 inline-flex rounded-full bg-[#081221] px-5 py-3 text-sm font-black text-white"
+                className="mt-5 inline-flex rounded-2xl bg-[#081221] px-5 py-3 text-sm font-black text-white"
               >
                 Browse courses
               </Link>
@@ -143,7 +145,7 @@ export default async function DashboardHomePage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <div className="portal-card rounded-[30px] p-7">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-2xl font-black tracking-tight text-[#081221]">Next up</h3>
@@ -165,7 +167,7 @@ export default async function DashboardHomePage() {
                 <Link
                   key={`${activity.courseSlug}-${activity.id}`}
                   href={`/dashboard/course/${activity.courseSlug}/activities/${activity.id}`}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5 transition hover:border-[#0f6eb8]/30"
+                  className="portal-subtle-card flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-5 transition hover:border-[#0f6eb8]/30 hover:bg-white"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f6eb8]">
@@ -175,7 +177,7 @@ export default async function DashboardHomePage() {
                     <p className="mt-1 text-sm font-semibold text-[#5d7389]">{activity.summary}</p>
                   </div>
                   <div className="text-right">
-                    <div className="rounded-full bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
+                    <div className="rounded-2xl bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
                       {formatActivityStatus(activity.status)}
                     </div>
                     <p className="mt-2 text-xs font-semibold text-[#7f92a5]">{activity.group}</p>
@@ -193,7 +195,7 @@ export default async function DashboardHomePage() {
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <div className="portal-card rounded-[30px] p-7">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-2xl font-black tracking-tight text-[#081221]">Recent activity</h3>
@@ -209,11 +211,11 @@ export default async function DashboardHomePage() {
               portalData.recentActivity.map((activity) => (
                 <div
                   key={`${activity.id}-${activity.updatedAt ?? "recent"}`}
-                  className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5"
+                  className="portal-subtle-card rounded-[24px] p-5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <h4 className="text-lg font-black text-[#081221]">{activity.title}</h4>
-                    <span className="rounded-full bg-[#e7fff1] px-3 py-1 text-xs font-black text-[#198754]">
+                    <span className="rounded-2xl bg-[#e7fff1] px-3 py-1 text-xs font-black text-[#198754]">
                       {formatActivityStatus(activity.status)}
                     </span>
                   </div>

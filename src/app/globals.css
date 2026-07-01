@@ -170,3 +170,28 @@ html {
     display: none; /* Chrome, Safari and Opera */
   }
 }
+
+@utility portal-card {
+  border: 1px solid #dbe7f2;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 44px rgba(9, 33, 61, 0.08);
+}
+
+@utility portal-subtle-card {
+  border: 1px solid #e2ecf5;
+  background: #fbfdff;
+}
+
+@utility portal-pill {
+  border: 1px solid #d8e6f2;
+  background: #f4f8fc;
+  color: #5d7389;
+}
+
+@utility portal-section-label {
+  color: #0f6eb8;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
