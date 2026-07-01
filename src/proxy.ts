@@ -47,9 +47,10 @@ export async function proxy(request: NextRequest) {
 
   if (!user) {
     const url = request.nextUrl.clone();
+    const redirectPath = `${pathname}${request.nextUrl.search}`;
     url.pathname = "/sign-in";
     url.search = "";
-    url.searchParams.set("redirect_url", pathname);
+    url.searchParams.set("redirect_url", redirectPath);
     return NextResponse.redirect(url);
   }
 
