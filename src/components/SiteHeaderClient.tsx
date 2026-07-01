@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, LogOut, Menu, UserRound, X } from "lucide-react";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import { announcementBarMessage, courseMenu, primaryLinks, siteInfo } from "@/lib/site-content";
 
 type HeaderUser = {
@@ -123,11 +124,9 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
                   <span className="block text-xs font-bold text-[#53647c]">{user.email}</span>
                 </span>
               </Link>
-              <form action="/auth/sign-out" method="post">
-                <button className="rounded-full px-4 py-3 text-sm font-black text-[#0067b1] transition hover:bg-[#eef8ff]">
-                  Sign out
-                </button>
-              </form>
+              <SignOutButton className="rounded-full px-4 py-3 text-sm font-black text-[#0067b1] transition hover:bg-[#eef8ff] disabled:cursor-wait disabled:opacity-70">
+                Sign out
+              </SignOutButton>
             </>
           ) : (
             <>
@@ -220,11 +219,9 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
                     >
                       <UserRound size={18} /> Open portal
                     </Link>
-                    <form action="/auth/sign-out" method="post">
-                      <button className="inline-flex w-full items-center gap-2 rounded-xl px-4 py-3 text-left text-sm font-black text-[#0067b1]">
-                        <LogOut size={18} /> Sign out
-                      </button>
-                    </form>
+                    <SignOutButton className="inline-flex w-full items-center gap-2 rounded-xl px-4 py-3 text-left text-sm font-black text-[#0067b1] disabled:cursor-wait disabled:opacity-70">
+                      <LogOut size={18} /> Sign out
+                    </SignOutButton>
                   </div>
                 </div>
               ) : (

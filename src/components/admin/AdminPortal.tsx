@@ -23,6 +23,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import type { AdminUser } from "@/lib/admin";
 import type { AdminSnapshot } from "@/lib/admin-data";
 import { formatAssignmentStatus } from "@/lib/cpp20218";
@@ -262,11 +263,9 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           <button className="mb-3 flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left font-bold text-white/52">
             <ChevronLeft size={20} /> Collapse
           </button>
-          <form action="/auth/sign-out" method="post">
-            <button className="flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left font-bold text-white/52 hover:bg-white/8 hover:text-white">
-              <LogOut size={20} /> Sign Out
-            </button>
-          </form>
+          <SignOutButton className="flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left font-bold text-white/52 hover:bg-white/8 hover:text-white disabled:cursor-wait disabled:opacity-70">
+            <LogOut size={20} /> Sign Out
+          </SignOutButton>
         </div>
       </aside>
 

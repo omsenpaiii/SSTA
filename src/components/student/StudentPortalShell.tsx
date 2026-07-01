@@ -21,6 +21,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import type { AppUser } from "@/lib/auth";
 
 type StudentPortalShellProps = {
@@ -149,12 +150,10 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
                 <span className="block truncate text-xs font-medium text-[#64748b]">{user.email}</span>
               </span>
             </div>
-            <form action="/auth/sign-out" method="post">
-              <button className="inline-flex h-14 items-center gap-2 rounded-[8px] border border-[#dbe3ec] bg-white px-4 text-sm font-semibold text-[#081221] transition hover:border-[#0f6eb8] hover:text-[#0f6eb8]">
-                <LogOut size={17} />
-                <span className="whitespace-nowrap">Sign out</span>
-              </button>
-            </form>
+            <SignOutButton className="inline-flex h-14 items-center gap-2 rounded-[8px] border border-[#dbe3ec] bg-white px-4 text-sm font-semibold text-[#081221] transition hover:border-[#0f6eb8] hover:text-[#0f6eb8] disabled:cursor-wait disabled:opacity-70">
+              <LogOut size={17} />
+              <span className="whitespace-nowrap">Sign out</span>
+            </SignOutButton>
           </div>
 
           <button
@@ -190,12 +189,10 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
                   );
                 })}
               </div>
-              <form action="/auth/sign-out" method="post" className="mt-3 sm:hidden">
-                <button className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-[#dbe3ec] bg-white px-4 py-3 text-sm font-semibold text-[#081221]">
-                  <LogOut size={17} />
-                  Sign out
-                </button>
-              </form>
+              <SignOutButton className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-[#dbe3ec] bg-white px-4 py-3 text-sm font-semibold text-[#081221] disabled:cursor-wait disabled:opacity-70 sm:hidden">
+                <LogOut size={17} />
+                Sign out
+              </SignOutButton>
             </div>
           </div>
         ) : null}
