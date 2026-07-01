@@ -57,22 +57,22 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const summary = useMemo(
+  const summaryCards = useMemo(
     () => [
-      `${stats.totalCourses} course${stats.totalCourses === 1 ? "" : "s"}`,
-      `${stats.activeEnrollments} active`,
-      `${stats.remainingActivities} remaining`,
-    ].join(" · "),
-    [stats],
+      { label: "Enrolled courses", value: stats.totalCourses },
+      { label: "Active enrolments", value: stats.activeEnrollments },
+      { label: "Tasks remaining", value: stats.remainingActivities },
+    ],
+    [stats.activeEnrollments, stats.remainingActivities, stats.totalCourses],
   );
 
   return (
     <div className="min-h-screen bg-[#f4f8fc] text-[#081221]">
       <header className="sticky top-0 z-40 border-b border-[#d9e7f3] bg-white/92 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-3">
-              <span className="relative block size-12 overflow-hidden rounded-2xl border border-[#cfe0ee] bg-white p-1 shadow-sm">
+        <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4">
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
+              <span className="relative block size-12 shrink-0 overflow-hidden rounded-2xl border border-[#cfe0ee] bg-white p-1 shadow-sm">
                 <Image
                   src="/ssta.jpg"
                   alt="SSTA logo"
@@ -90,64 +90,77 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
                 </span>
               </span>
             </Link>
-            <div className="hidden items-center gap-2 rounded-2xl border border-[#d8e6f2] bg-[#f7fbfe] px-3 py-2 xl:flex">
-              <span className="text-xs font-black uppercase tracking-[0.16em] text-[#7b8ea2]">
-                Snapshot
+
+            <div className="hidden items-center gap-3 sm:flex">
+              <div className="portal-shell-card flex items-center gap-3 rounded-[20px] px-3 py-2">
+                <span className="flex size-10 items-center justify-center rounded-full bg-[#0f6eb8] text-sm font-black text-white">
+                  {user.initials}
+                </span>
+                <span className="hidden text-left lg:block">
+                  <span className="block text-sm font-black text-[#081221]">{user.name}</span>
+                  <span className="block text-xs font-bold text-[#6b7f94]">{user.email}</span>
+                </span>
+              </div>
+              <form action="/auth/sign-out" method="post">
+                <button className="portal-button-secondary px-4 py-2.5 transition hover:bg-[#eef5fb]">
+                  Sign out
+                </button>
+              </form>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setOpen((value) => !value)}
+              className="inline-flex size-11 items-center justify-center rounded-full border border-[#d8e6f2] bg-white text-[#0f6eb8] xl:hidden"
+              aria-label={open ? "Close navigation" : "Open navigation"}
+            >
+              {open ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+
+          <div className="mt-4 hidden items-center justify-between gap-6 xl:flex">
+            <nav className="hide-scrollbar -mx-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1">
+              {navItems.map(({ href, label }) => {
+                const active = isActivePath(pathname, href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`shrink-0 rounded-[16px] px-4 py-2.5 text-sm font-black transition ${
+                      active
+                        ? "bg-[#0f6eb8] text-white shadow-[0_14px_28px_rgba(15,110,184,0.16)]"
+                        : "text-[#5c7187] hover:bg-[#f2f7fb] hover:text-[#0b2b4e]"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="portal-subtle-card flex shrink-0 items-center gap-2 rounded-[18px] px-3 py-2">
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-[#7b8ea2]">
+                Portal view
               </span>
-              <span className="text-sm font-bold text-[#5d7389]">{summary}</span>
+              <span className="text-sm font-bold text-[#5d7389]">Learning workspace</span>
             </div>
           </div>
 
-          <nav className="hidden items-center gap-1 xl:flex">
-            {navItems.map(({ href, label }) => {
-              const active = isActivePath(pathname, href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`rounded-2xl px-3.5 py-2.5 text-sm font-black transition ${
-                    active
-                      ? "bg-[#0f6eb8] text-white shadow-[0_14px_28px_rgba(15,110,184,0.18)]"
-                      : "text-[#566a80] hover:bg-[#f2f7fb] hover:text-[#0b2b4e]"
-                  }`}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="hidden items-center gap-3 sm:flex">
-            <div className="flex items-center gap-3 rounded-2xl border border-[#d8e6f2] bg-white px-3 py-2 shadow-sm">
-              <span className="flex size-10 items-center justify-center rounded-full bg-[#0f6eb8] text-sm font-black text-white">
-                {user.initials}
-              </span>
-              <span className="hidden text-left lg:block">
-                <span className="block text-sm font-black text-[#081221]">{user.name}</span>
-                <span className="block text-xs font-bold text-[#6b7f94]">{user.email}</span>
-              </span>
-            </div>
-            <form action="/auth/sign-out" method="post">
-              <button className="rounded-2xl border border-[#d8e6f2] px-4 py-2.5 text-sm font-black text-[#0f6eb8] transition hover:bg-[#eef5fb]">
-                Sign out
-              </button>
-            </form>
+          <div className="mt-4 hidden grid-cols-3 gap-3 md:grid xl:grid-cols-3">
+            {summaryCards.map((item) => (
+              <div key={item.label} className="portal-subtle-card rounded-[18px] px-4 py-3">
+                <p className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-[#7b8ea2]">
+                  {item.label}
+                </p>
+                <p className="mt-2 text-2xl font-black tracking-tight text-[#081221]">{item.value}</p>
+              </div>
+            ))}
           </div>
-
-          <button
-            type="button"
-            onClick={() => setOpen((value) => !value)}
-            className="inline-flex size-11 items-center justify-center rounded-full border border-[#d8e6f2] bg-white text-[#0f6eb8] xl:hidden"
-            aria-label={open ? "Close navigation" : "Open navigation"}
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
         </div>
 
         {open ? (
           <div className="border-t border-[#d9e7f3] bg-white xl:hidden">
             <div className="mx-auto max-w-[1400px] px-4 py-4 sm:px-6">
-          <div className="mb-4 rounded-3xl bg-[#eef5fb] p-4">
+              <div className="portal-subtle-card mb-4 rounded-[24px] p-4">
                 <div className="flex items-center gap-3">
                   <span className="flex size-11 items-center justify-center rounded-full bg-[#0f6eb8] text-sm font-black text-white">
                     {user.initials}
@@ -157,10 +170,19 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
                     <span className="block text-xs font-bold text-[#6b7f94]">{user.email}</span>
                   </span>
                 </div>
-                <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-[#6f849a]">
-                  {summary}
-                </p>
               </div>
+
+              <div className="mb-4 grid grid-cols-3 gap-2">
+                {summaryCards.map((item) => (
+                  <div key={item.label} className="portal-subtle-card rounded-[18px] px-3 py-3">
+                    <p className="text-[0.64rem] font-black uppercase tracking-[0.14em] text-[#7b8ea2]">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-lg font-black text-[#081221]">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
               <div className="grid gap-2">
                 {navItems.map(({ href, label, icon: Icon }) => {
                   const active = isActivePath(pathname, href);
@@ -181,8 +203,9 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
                   );
                 })}
               </div>
+
               <form action="/auth/sign-out" method="post" className="mt-4">
-                <button className="w-full rounded-2xl border border-[#d8e6f2] px-4 py-3 text-sm font-black text-[#0f6eb8]">
+                <button className="portal-button-secondary w-full px-4 py-3">
                   Sign out
                 </button>
               </form>
@@ -192,26 +215,26 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
       </header>
 
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 overflow-hidden rounded-[30px] border border-[#dce8f3] bg-[linear-gradient(135deg,#0b2b4e_0%,#0d4f83_48%,#1680c4_100%)] px-6 py-6 text-white shadow-[0_24px_60px_rgba(12,50,88,0.16)]">
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="mb-8 overflow-hidden rounded-[30px] border border-[#dce8f3] bg-[linear-gradient(135deg,#0b2b4e_0%,#0d4674_44%,#177fc2_100%)] px-6 py-7 text-white shadow-[0_22px_48px_rgba(12,50,88,0.14)] sm:px-8">
+          <div className="flex flex-wrap items-start gap-4">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-white/12">
-            <BookOpen size={22} />
+              <BookOpen size={22} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-black uppercase tracking-[0.24em] text-white/68">
                 Learning workspace
               </p>
-              <h1 className="mt-2 max-w-[20ch] text-2xl font-black tracking-tight sm:text-[2.1rem]">
+              <h1 className="mt-2 max-w-[16ch] text-3xl font-black tracking-tight sm:text-[3rem]">
                 Learn, track progress, and move with confidence.
               </h1>
+              <p className="mt-3 max-w-[56ch] text-sm font-semibold leading-7 text-white/76 sm:text-base">
+                Your enrolments, learning progress, resources, and next steps all stay in one cleaner workspace.
+              </p>
             </div>
           </div>
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {[
-              { label: "Enrolled courses", value: stats.totalCourses },
-              { label: "Active enrolments", value: stats.activeEnrollments },
-              { label: "Tasks remaining", value: stats.remainingActivities },
-            ].map((item) => (
+
+          <div className="mt-6 grid gap-3 md:grid-cols-3 xl:hidden">
+            {summaryCards.map((item) => (
               <div
                 key={item.label}
                 className="rounded-[22px] border border-white/14 bg-white/10 px-4 py-4 backdrop-blur"
@@ -224,16 +247,17 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
             ))}
           </div>
         </div>
+
         {children}
       </div>
 
       <div className="fixed bottom-5 right-5 z-30">
         <Link
           href="/dashboard/contact"
-          className="inline-flex items-center gap-2 rounded-full bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_20px_40px_rgba(15,110,184,0.24)]"
+          className="portal-button-primary inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm"
         >
           <ShieldCheck size={18} />
-          Help
+          Support
         </Link>
       </div>
     </div>

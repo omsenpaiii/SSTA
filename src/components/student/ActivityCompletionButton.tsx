@@ -36,7 +36,7 @@ export function ActivityCompletionButton({
             setIntent(null);
           })
         }
-        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-black transition ${
+        className={`inline-flex items-center gap-2 rounded-[14px] border px-4 py-2 text-sm font-black transition ${
           completed
             ? "border-[#d9e7f3] text-[#5d7389]"
             : "border-[#d9e7f3] text-[#0f6eb8]"
@@ -63,7 +63,7 @@ export function ActivityCompletionButton({
             setIntent(null);
           })
         }
-        className="inline-flex items-center gap-2 rounded-full bg-[#19b468] px-4 py-2 text-sm font-black text-white shadow-[0_16px_30px_rgba(25,180,104,0.2)] transition"
+        className="inline-flex items-center gap-2 rounded-[14px] bg-[#19b468] px-4 py-2 text-sm font-black text-white shadow-[0_16px_30px_rgba(25,180,104,0.14)] transition"
       >
         {isPending && intent === "complete" ? (
           <Loader2 size={16} className="animate-spin" />

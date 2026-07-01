@@ -40,7 +40,7 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-      <section className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+      <section className="portal-card rounded-[28px] p-7 sm:p-8">
         <Link
           href={`/dashboard/course/${course.slug}?tab=activities`}
           className="inline-flex items-center gap-2 text-sm font-black text-[#0f6eb8]"
@@ -49,12 +49,12 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
           Back to activities
         </Link>
 
-        <div className="mt-6 rounded-[28px] bg-[linear-gradient(135deg,#0b2b4e_0%,#0f5f9c_55%,#1883c8_100%)] p-6 text-white shadow-[0_24px_54px_rgba(12,50,88,0.18)]">
+        <div className="mt-6 rounded-[24px] bg-[linear-gradient(135deg,#0b2b4e_0%,#0f5f9c_55%,#1883c8_100%)] p-6 text-white shadow-[0_24px_54px_rgba(12,50,88,0.16)]">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-white/14 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/85">
+            <span className="rounded-[14px] bg-white/14 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/85">
               {course.code}
             </span>
-            <span className="rounded-full bg-white/14 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/85">
+            <span className="rounded-[14px] bg-white/14 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/85">
               {formatActivityStatus(activity.status)}
             </span>
           </div>
@@ -64,7 +64,7 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
           </p>
         </div>
 
-        <div className="mt-6 rounded-[28px] border border-[#e1edf6] bg-[#fbfdff] p-6">
+        <div className="portal-subtle-card mt-6 rounded-[22px] p-6">
           <h3 className="text-2xl font-black tracking-tight text-[#081221]">Scenario and focus</h3>
           <p className="mt-4 text-base font-semibold leading-7 text-[#5d7389]">
             {activity.summary}
@@ -73,7 +73,7 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
             {supportingDetails.map((item) => (
               <div
                 key={item.label}
-                className="grid gap-2 rounded-[20px] border border-[#e1edf6] bg-white px-4 py-4 sm:grid-cols-[160px_1fr] sm:items-start"
+                className="portal-card grid gap-2 rounded-[18px] px-4 py-4 shadow-none sm:grid-cols-[160px_1fr] sm:items-start"
               >
                 <span className="text-sm font-black uppercase tracking-[0.14em] text-[#7f92a5]">
                   {item.label}
@@ -85,12 +85,12 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <article className="rounded-[28px] border border-[#e1edf6] bg-white p-6">
+          <article className="portal-card rounded-[22px] p-6 shadow-none">
             <h3 className="text-2xl font-black tracking-tight text-[#081221]">What to work through</h3>
             <div className="mt-5 space-y-4">
               {checklist.map((item, index) => (
                 <div key={item} className="flex gap-4">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#eef5fb] text-sm font-black text-[#0f6eb8]">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-[14px] bg-[#eef5fb] text-sm font-black text-[#0f6eb8]">
                     {index + 1}
                   </div>
                   <p className="text-sm font-semibold leading-6 text-[#5d7389]">{item}</p>
@@ -98,10 +98,10 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
               ))}
             </div>
           </article>
-          <article className="rounded-[28px] border border-[#e1edf6] bg-white p-6">
+          <article className="portal-card rounded-[22px] p-6 shadow-none">
             <h3 className="text-2xl font-black tracking-tight text-[#081221]">Deliverables</h3>
             <p className="mt-4 text-sm font-semibold leading-6 text-[#5d7389]">{deliverables}</p>
-            <div className="mt-6 rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5">
+            <div className="portal-subtle-card mt-6 rounded-[18px] p-5">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-[#7f92a5]">Course note</p>
               <p className="mt-3 text-sm font-semibold leading-6 text-[#5d7389]">
                 Use the Resources tab inside the course workspace for overview, delivery guidance, entry requirements, and external reference material that supports this activity.
@@ -112,19 +112,19 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
       </section>
 
       <aside className="space-y-6">
-        <section className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <section className="portal-card rounded-[28px] p-7">
           <h3 className="text-2xl font-black tracking-tight text-[#081221]">Activity controls</h3>
           <div className="mt-5 space-y-4">
-            <div className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5">
+            <div className="portal-subtle-card rounded-[18px] p-5">
               <p className="text-sm font-black text-[#081221]">Status</p>
               <p className="mt-2 text-base font-semibold text-[#5d7389]">{formatActivityStatus(activity.status)}</p>
             </div>
-            <div className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5">
+            <div className="portal-subtle-card rounded-[18px] p-5">
               <p className="text-sm font-black text-[#081221]">Last update</p>
               <p className="mt-2 text-base font-semibold text-[#5d7389]">{formatRelativeUpdate(activity.updatedAt)}</p>
             </div>
             {paymentLabel ? (
-              <div className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-5">
+              <div className="portal-subtle-card rounded-[18px] p-5">
                 <p className="text-sm font-black text-[#081221]">Enrolment value</p>
                 <p className="mt-2 text-base font-semibold text-[#5d7389]">{paymentLabel}</p>
               </div>
@@ -140,9 +140,9 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
           </div>
         </section>
 
-        <section className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <section className="portal-card rounded-[28px] p-7">
           <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-[#eef5fb] text-[#0f6eb8]">
+            <span className="flex size-11 items-center justify-center rounded-[16px] bg-[#eef5fb] text-[#0f6eb8]">
               <BookMarked size={20} />
             </span>
             <h3 className="text-2xl font-black tracking-tight text-[#081221]">Stay oriented</h3>
@@ -156,7 +156,7 @@ export default async function ActivityDetailPage({ params }: ActivityPageProps) 
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex items-center justify-between gap-3 rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] px-4 py-4 text-sm font-black text-[#081221]"
+                className="portal-subtle-card flex items-center justify-between gap-3 rounded-[18px] px-4 py-4 text-sm font-black text-[#081221]"
               >
                 <span className="inline-flex items-center gap-3">
                   <item.icon size={18} className="text-[#0f6eb8]" />

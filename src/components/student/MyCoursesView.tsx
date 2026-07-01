@@ -38,23 +38,23 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
 
   return (
     <div className="space-y-6">
-      <section className="portal-card rounded-[30px] p-6">
+      <section className="portal-card rounded-[28px] p-6 sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 className="text-3xl font-black tracking-tight text-[#081221]">My Courses</h2>
-            <p className="mt-2 max-w-3xl text-base font-semibold leading-7 text-[#5d7389]">
+            <p className="portal-page-copy mt-2 max-w-3xl">
               Continue your learning journey, revisit your enrolled programs, and jump back into the next activity without losing context.
             </p>
           </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-[#d8e6f2] bg-[#f4f8fc] px-4 py-2.5 text-sm font-black text-[#5d7389]">
+          <div className="portal-pill flex items-center gap-3 rounded-[16px] px-4 py-2.5 text-sm font-black">
             <TimerReset size={16} />
             {filtered.length} enrolled course{filtered.length === 1 ? "" : "s"}
           </div>
         </div>
 
-        <div className="portal-subtle-card mt-6 rounded-[24px] p-4">
+        <div className="portal-subtle-card mt-6 rounded-[22px] p-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <label className="flex h-14 flex-1 items-center gap-3 rounded-2xl border border-[#d9e7f3] bg-white px-4 text-sm font-semibold text-[#5d7389]">
+            <label className="portal-input flex h-14 flex-1 items-center gap-3 px-4 text-sm font-semibold text-[#5d7389]">
               <Search size={18} className="text-[#86a0b7]" />
               <input
                 value={query}
@@ -63,11 +63,11 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                 className="h-full w-full bg-transparent outline-none placeholder:text-[#90a3b7]"
               />
             </label>
-            <div className="flex items-center rounded-2xl border border-[#d9e7f3] bg-white p-1">
+            <div className="flex items-center rounded-[16px] border border-[#d9e7f3] bg-white p-1">
               <button
                 type="button"
                 onClick={() => setView("grid")}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+                className={`inline-flex items-center gap-2 rounded-[12px] px-4 py-2.5 text-sm font-black transition ${
                   view === "grid" ? "bg-[#081221] text-white" : "text-[#5d7389]"
                 }`}
               >
@@ -77,7 +77,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
               <button
                 type="button"
                 onClick={() => setView("list")}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black transition ${
+                className={`inline-flex items-center gap-2 rounded-[12px] px-4 py-2.5 text-sm font-black transition ${
                   view === "list" ? "bg-[#081221] text-white" : "text-[#5d7389]"
                 }`}
               >
@@ -100,7 +100,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
           {filtered.map((course) => (
             <article
               key={course.slug}
-              className={`overflow-hidden rounded-[28px] border border-[#dce8f3] bg-white shadow-[0_18px_50px_rgba(12,50,88,0.08)] ${
+              className={`portal-card overflow-hidden rounded-[24px] ${
                 view === "list" ? "grid gap-0 lg:grid-cols-[320px_1fr]" : ""
               }`}
             >
@@ -113,15 +113,15 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,18,33,0.02)_0%,rgba(8,18,33,0.72)_100%)]" />
-                <div className="absolute left-4 top-4 inline-flex rounded-full bg-[#19b468] px-3 py-1 text-xs font-black text-white">
+                <div className="absolute left-4 top-4 inline-flex rounded-[14px] bg-[#19b468] px-3 py-1 text-xs font-black text-white">
                   {course.statusLabel}
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <span className="rounded-2xl bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
+                    <span className="rounded-[14px] bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
                       {course.code}
                     </span>
-                    <span className="rounded-2xl bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
+                    <span className="rounded-[14px] bg-white/16 px-3 py-1 text-xs font-black text-white backdrop-blur">
                       {course.progressPercent}%
                     </span>
                   </div>
@@ -130,10 +130,10 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
               </div>
               <div className="flex flex-col p-6">
                 <div className="mb-4 flex flex-wrap gap-2">
-                  <span className="rounded-2xl bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
+                  <span className="rounded-[14px] bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
                     {course.category}
                   </span>
-                  <span className="rounded-2xl bg-[#f4f8fc] px-3 py-1 text-xs font-black text-[#5d7389]">
+                  <span className="rounded-[14px] bg-[#f4f8fc] px-3 py-1 text-xs font-black text-[#5d7389]">
                     {formatEnrollmentMeta(course)}
                   </span>
                 </div>
@@ -160,7 +160,7 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                   </div>
                   <Link
                     href={`/dashboard/course/${course.slug}`}
-                    className="rounded-2xl bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_18px_36px_rgba(15,110,184,0.18)]"
+                    className="portal-button-primary px-5 py-3 text-sm"
                   >
                     Open workspace
                   </Link>
@@ -170,14 +170,14 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
           ))}
         </div>
       ) : (
-        <section className="rounded-[28px] border border-dashed border-[#c9d9e8] bg-white p-12 text-center shadow-[0_18px_50px_rgba(12,50,88,0.06)]">
+        <section className="portal-card rounded-[24px] border-dashed p-12 text-center">
           <h3 className="text-2xl font-black text-[#081221]">No matching courses yet</h3>
           <p className="mt-3 text-base font-semibold text-[#5d7389]">
             Try another search term or head to Browse Courses to review the wider SSTA catalogue.
           </p>
           <Link
             href="/dashboard/browse-courses"
-            className="mt-6 inline-flex rounded-full bg-[#081221] px-5 py-3 text-sm font-black text-white"
+            className="mt-6 inline-flex rounded-[16px] bg-[#081221] px-5 py-3 text-sm font-black text-white"
           >
             Browse courses
           </Link>

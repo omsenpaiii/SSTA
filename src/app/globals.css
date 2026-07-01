@@ -174,7 +174,7 @@ html {
 @utility portal-card {
   border: 1px solid #dbe7f2;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18px 44px rgba(9, 33, 61, 0.08);
+  box-shadow: 0 18px 44px rgba(9, 33, 61, 0.07);
 }
 
 @utility portal-subtle-card {
@@ -194,4 +194,52 @@ html {
   font-weight: 900;
   letter-spacing: 0.24em;
   text-transform: uppercase;
+}
+
+@utility portal-shell-card {
+  border: 1px solid #d7e3ee;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 28px rgba(11, 43, 78, 0.06);
+}
+
+@utility portal-button-primary {
+  border-radius: 0.95rem;
+  background: #0f6eb8;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: 0 16px 32px rgba(15, 110, 184, 0.16);
+}
+
+@utility portal-button-secondary {
+  border: 1px solid #d8e6f2;
+  border-radius: 0.95rem;
+  background: white;
+  color: #0f6eb8;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+@utility portal-input {
+  border: 1px solid #d9e7f3;
+  border-radius: 1rem;
+  background: #fbfdff;
+  color: #081221;
+  font-weight: 600;
+  outline: none;
+}
+
+@utility portal-page-heading {
+  color: #081221;
+  font-size: clamp(2rem, 3.4vw, 3.2rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+@utility portal-page-copy {
+  color: #5d7389;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.8;
 }

@@ -17,7 +17,7 @@ export function FeedbackForm() {
           <input
             name="subject"
             placeholder="Example: Need help with course access"
-            className="h-14 rounded-2xl border border-[#d9e7f3] bg-[#fbfdff] px-4 font-semibold text-[#081221] outline-none"
+            className="portal-input h-14 px-4"
           />
         </label>
         <label className="grid gap-2 text-sm font-black text-[#081221]">
@@ -25,7 +25,7 @@ export function FeedbackForm() {
           <select
             name="category"
             defaultValue="portal"
-            className="h-14 rounded-2xl border border-[#d9e7f3] bg-[#fbfdff] px-4 font-semibold text-[#081221] outline-none"
+            className="portal-input h-14 px-4"
           >
             <option value="portal">Portal experience</option>
             <option value="course">Course support</option>
@@ -42,7 +42,7 @@ export function FeedbackForm() {
           name="message"
           rows={7}
           placeholder="Tell us what is working well, what feels confusing, or what support you need next."
-          className="rounded-[24px] border border-[#d9e7f3] bg-[#fbfdff] px-4 py-4 font-semibold text-[#081221] outline-none"
+          className="portal-input rounded-[18px] px-4 py-4"
         />
       </label>
 
@@ -60,7 +60,7 @@ export function FeedbackForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex items-center gap-2 rounded-full bg-[#0f6eb8] px-5 py-3 text-sm font-black text-white shadow-[0_18px_36px_rgba(15,110,184,0.22)]"
+        className="portal-button-primary inline-flex items-center gap-2 px-5 py-3 text-sm"
       >
         {isPending ? <Loader2 size={18} className="animate-spin" /> : <MessageSquareQuote size={18} />}
         Send feedback

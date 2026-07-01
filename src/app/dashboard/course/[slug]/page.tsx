@@ -20,7 +20,7 @@ function TabLink({ href, label, active }: { href: string; label: string; active:
   return (
     <Link
       href={href}
-      className={`rounded-2xl px-5 py-3 text-base font-black transition ${
+      className={`rounded-[14px] px-4 py-2.5 text-sm font-black transition ${
         active ? "bg-white text-[#081221] shadow-sm" : "text-[#5d7389]"
       }`}
     >
@@ -54,7 +54,7 @@ export default async function CourseWorkspacePage({
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <section className="space-y-6">
-        <div className="overflow-hidden rounded-[32px] border border-[#dce8f3] bg-white shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <div className="portal-card overflow-hidden rounded-[28px]">
           <div className="relative h-72">
             <Image
               src={course.image}
@@ -64,7 +64,7 @@ export default async function CourseWorkspacePage({
               className="object-cover"
             />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,18,33,0.08)_0%,rgba(8,18,33,0.86)_100%)]" />
-            <div className="absolute left-6 top-6 rounded-full bg-white/12 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white backdrop-blur">
+            <div className="absolute left-6 top-6 rounded-[14px] bg-white/12 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white backdrop-blur">
               Currently enrolled
             </div>
             <div className="absolute bottom-6 left-6 right-6">
@@ -92,7 +92,7 @@ export default async function CourseWorkspacePage({
           </div>
 
           <div className="p-6">
-            <div className="inline-flex rounded-[22px] bg-[#eef5fb] p-1.5">
+            <div className="inline-flex rounded-[18px] bg-[#eef5fb] p-1.5">
               <TabLink href={`/dashboard/course/${course.slug}`} label="Course Information" active={tab === "info"} />
               <TabLink href={`/dashboard/course/${course.slug}?tab=activities`} label="Activities" active={tab === "activities"} />
               <TabLink href={`/dashboard/course/${course.slug}?tab=resources`} label="Resources" active={tab === "resources"} />
@@ -100,31 +100,31 @@ export default async function CourseWorkspacePage({
 
             {tab === "info" ? (
               <div className="mt-6 space-y-6">
-                <article className="rounded-[28px] border border-[#e1edf6] bg-[#fbfdff] p-6">
+                <article className="portal-subtle-card rounded-[22px] p-6">
                   <h3 className="text-2xl font-black tracking-tight text-[#081221]">Course Overview</h3>
                   <p className="mt-4 text-base font-semibold leading-7 text-[#5d7389]">{course.description}</p>
                 </article>
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <article className="rounded-[28px] border border-[#e1edf6] bg-white p-6">
+                  <article className="portal-card rounded-[22px] p-6 shadow-none">
                     <h3 className="text-xl font-black text-[#081221]">Entry requirements</h3>
                     <div className="mt-4 space-y-3">
                       {course.entryRequirements.map((item) => (
                         <div
                           key={item}
-                          className="rounded-2xl border border-[#eef3f8] bg-[#fbfdff] px-4 py-3 text-sm font-semibold text-[#5d7389]"
+                          className="portal-subtle-card rounded-[16px] px-4 py-3 text-sm font-semibold text-[#5d7389]"
                         >
                           {item}
                         </div>
                       ))}
                     </div>
                   </article>
-                  <article className="rounded-[28px] border border-[#e1edf6] bg-white p-6">
+                  <article className="portal-card rounded-[22px] p-6 shadow-none">
                     <h3 className="text-xl font-black text-[#081221]">Career outcomes</h3>
                     <div className="mt-4 space-y-3">
                       {course.careerOutcomes.map((item) => (
                         <div
                           key={item}
-                          className="rounded-2xl border border-[#eef3f8] bg-[#fbfdff] px-4 py-3 text-sm font-semibold text-[#5d7389]"
+                          className="portal-subtle-card rounded-[16px] px-4 py-3 text-sm font-semibold text-[#5d7389]"
                         >
                           {item}
                         </div>
@@ -146,7 +146,7 @@ export default async function CourseWorkspacePage({
                   ].map((item) => (
                     <article
                       key={item.label}
-                      className="rounded-[24px] border border-[#e1edf6] bg-white p-5"
+                      className="portal-card rounded-[20px] p-5 shadow-none"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-sm font-black text-[#5d7389]">{item.label}</span>
@@ -162,7 +162,7 @@ export default async function CourseWorkspacePage({
                   {course.activityGroups.map((group) => (
                     <article
                       key={group.id}
-                      className="overflow-hidden rounded-[28px] border border-[#e1edf6] bg-white"
+                      className="portal-card overflow-hidden rounded-[22px] shadow-none"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#eef3f8] px-6 py-5">
                         <div>
@@ -190,7 +190,7 @@ export default async function CourseWorkspacePage({
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-3">
                                 <h4 className="text-lg font-black text-[#081221]">{activity.title}</h4>
-                                <span className="rounded-full bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
+                                <span className="rounded-[14px] bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
                                   {formatActivityStatus(activity.status)}
                                 </span>
                               </div>
@@ -203,7 +203,7 @@ export default async function CourseWorkspacePage({
                             <div className="flex flex-wrap items-center gap-3">
                               <Link
                                 href={`/dashboard/course/${course.slug}/activities/${activity.id}`}
-                                className="rounded-full border border-[#d9e7f3] px-4 py-2 text-sm font-black text-[#0f6eb8]"
+                                className="portal-button-secondary px-4 py-2 text-sm"
                               >
                                 Open
                               </Link>
@@ -228,7 +228,7 @@ export default async function CourseWorkspacePage({
                 {course.resources.map((resource) => (
                   <article
                     key={resource.id}
-                    className="rounded-[24px] border border-[#e1edf6] bg-white p-6"
+                    className="portal-card rounded-[20px] p-6 shadow-none"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -240,12 +240,12 @@ export default async function CourseWorkspacePage({
                       {resource.href ? (
                         <Link
                           href={resource.href}
-                          className="rounded-full bg-[#0f6eb8] px-4 py-2 text-sm font-black text-white"
+                          className="portal-button-primary px-4 py-2 text-sm"
                         >
                           {resource.actionLabel ?? "Open"}
                         </Link>
                       ) : (
-                        <span className="rounded-full bg-[#eef5fb] px-4 py-2 text-sm font-black text-[#0f6eb8]">
+                        <span className="rounded-[14px] bg-[#eef5fb] px-4 py-2 text-sm font-black text-[#0f6eb8]">
                           Resource note
                         </span>
                       )}
@@ -259,7 +259,7 @@ export default async function CourseWorkspacePage({
       </section>
 
       <aside className="space-y-6">
-        <section className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <section className="portal-card rounded-[28px] p-7">
           <h3 className="text-3xl font-black tracking-tight text-[#081221]">Your Progress</h3>
           <div className="mt-6 flex items-center justify-between gap-4">
             <span className="text-xl font-black text-[#081221]">Course Completion</span>
@@ -290,14 +290,14 @@ export default async function CourseWorkspacePage({
                 <Link
                   key={activity.id}
                   href={`/dashboard/course/${course.slug}/activities/${activity.id}`}
-                  className="flex items-center justify-between gap-4 rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-4 transition hover:border-[#0f6eb8]/30"
+                  className="portal-subtle-card flex items-center justify-between gap-4 rounded-[18px] p-4 transition hover:border-[#0f6eb8]/30 hover:bg-white"
                 >
                   <div className="min-w-0 flex-1">
                     <h5 className="truncate text-base font-black text-[#081221]">{activity.title}</h5>
                     <p className="mt-1 text-sm font-semibold text-[#5d7389]">{activity.subtitle}</p>
                   </div>
                   <div className="text-right">
-                    <span className="rounded-full bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
+                    <span className="rounded-[14px] bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
                       {formatActivityStatus(activity.status)}
                     </span>
                   </div>
@@ -309,7 +309,7 @@ export default async function CourseWorkspacePage({
           <div className="mt-8 border-t border-[#eef3f8] pt-6">
             <Link
               href="/dashboard/contact"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d9e7f3] px-5 py-3 text-sm font-black text-[#0f6eb8]"
+              className="portal-button-secondary inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm"
             >
               <Mail size={16} />
               Email Instructor
@@ -317,14 +317,14 @@ export default async function CourseWorkspacePage({
           </div>
         </section>
 
-        <section className="rounded-[32px] border border-[#dce8f3] bg-white p-7 shadow-[0_18px_50px_rgba(12,50,88,0.08)]">
+        <section className="portal-card rounded-[28px] p-7">
           <h3 className="text-2xl font-black tracking-tight text-[#081221]">Recent updates</h3>
           <div className="mt-5 space-y-3">
             {course.recentActivities.length ? (
               course.recentActivities.map((activity) => (
                 <div
                   key={`${activity.id}-${activity.updatedAt ?? "update"}`}
-                  className="rounded-[24px] border border-[#e1edf6] bg-[#fbfdff] p-4"
+                  className="portal-subtle-card rounded-[18px] p-4"
                 >
                   <div className="flex items-center gap-3">
                     <CheckCircle2 size={18} className="text-[#19b468]" />
