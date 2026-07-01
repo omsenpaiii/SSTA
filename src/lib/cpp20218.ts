@@ -46,6 +46,8 @@ export type CppAssignmentSubmission = {
   mime_type: string | null;
   file_size: number | null;
   status: "submitted" | "satisfactory" | "not_satisfactory";
+  student_comment: string | null;
+  resubmission_count: number | null;
   admin_comment: string | null;
   reviewed_by: string | null;
   submitted_at: string;
@@ -258,6 +260,7 @@ export async function getAssignmentResourceForStudent(input: {
   userKey: string;
   resourceId: string;
   mode: "preview" | "download";
+  format?: "pdf" | "docx";
 }) {
   const supabase = getSupabaseAdmin();
 
@@ -289,13 +292,20 @@ export async function getAssignmentResourceForStudent(input: {
 
   if (!access) return null;
 
-  const bucket = input.mode === "preview" ? row.preview_bucket : row.original_bucket;
-  const path = input.mode === "preview" ? row.preview_path : row.original_path;
-  const mimeType = input.mode === "preview" ? row.preview_mime_type : row.original_mime_type;
+  const wantsPdfDownload = input.mode === "download" && input.format === "pdf";
+  const bucket = input.mode === "preview" || wantsPdfDownload ? row.preview_bucket : row.original_bucket;
+  const path = input.mode === "preview" || wantsPdfDownload ? row.preview_path : row.original_path;
+  const mimeType =
+    input.mode === "preview" || wantsPdfDownload ? row.preview_mime_type : row.original_mime_type;
 
   if (!path) return null;
 
-  return { bucket, path, mimeType, title: row.title };
+  const extension = path.split(".").pop();
+  const title = extension && !row.title.toLowerCase().endsWith(`.${extension.toLowerCase()}`)
+    ? `${row.title}.${extension}`
+    : row.title;
+
+  return { bucket, path, mimeType, title };
 }
 
 export async function getAssignmentResourceForAdmin(resourceId: string) {

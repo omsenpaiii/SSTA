@@ -13,6 +13,7 @@ export function AssignmentUploadForm({
   hasSubmission,
 }: AssignmentUploadFormProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [studentComment, setStudentComment] = useState("");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export function AssignmentUploadForm({
 
     const formData = new FormData();
     formData.set("file", file);
+    formData.set("studentComment", studentComment);
 
     const response = await fetch(`/api/student/assignments/${assignmentKey}/submit`, {
       method: "POST",
@@ -50,18 +52,28 @@ export function AssignmentUploadForm({
     if (inputRef.current) {
       inputRef.current.value = "";
     }
+    setStudentComment("");
     setPending(false);
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-[8px] border border-[#dbe3ec] bg-[#fbfdff] p-4">
+    <form onSubmit={onSubmit} className="rounded-xl border border-[#dbe3ec] bg-[#fbfdff] p-4">
       <label className="grid gap-2 text-sm font-black text-[#081221]">
-        Upload completed assessment
+        {hasSubmission ? "Upload a revised assessment" : "Upload completed assessment"}
         <input
           ref={inputRef}
           name="file"
           type="file"
           className="block w-full rounded-[8px] border border-[#dbe3ec] bg-white px-3 py-2 text-sm font-semibold text-[#475569] file:mr-4 file:rounded-[7px] file:border-0 file:bg-[#eef5ff] file:px-3 file:py-2 file:text-sm file:font-black file:text-[#0f6eb8]"
+        />
+      </label>
+      <label className="mt-4 grid gap-2 text-sm font-black text-[#081221]">
+        Comment for assessor <span className="font-semibold text-[#6b7f95]">(optional)</span>
+        <textarea
+          value={studentComment}
+          onChange={(event) => setStudentComment(event.target.value)}
+          placeholder="Add a short note about your submission or what changed in this resubmission."
+          className="min-h-24 rounded-[8px] border border-[#dbe3ec] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#475569] outline-none focus:border-[#0f6eb8]"
         />
       </label>
       <button

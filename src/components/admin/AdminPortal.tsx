@@ -529,9 +529,9 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           {active === "assessments" ? (
             <div className="space-y-8">
               <div>
-                <h1 className="text-4xl font-black tracking-normal">CPP20218 Assessments</h1>
+                <h1 className="text-4xl font-black tracking-normal">CPP20218 Cluster Reviews</h1>
                 <p className="mt-2 text-lg font-bold text-slate-500">
-                  Review learner submissions, manage assignment access, and open assessor answer keys.
+                  Review learner submissions, manage cluster access, and open assessor answer keys.
                 </p>
               </div>
 
@@ -546,7 +546,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                       className="rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-[#1f7ac1]"
                     >
                       <p className="text-xs font-black uppercase tracking-[0.1em] text-[#1f7ac1]">
-                        {resource.assignment_key.replace("-", " ")}
+                        Cluster {resource.assignment_key.replace("assignment-", "")}
                       </p>
                       <h3 className="mt-2 text-base font-black text-slate-900">{resource.title}</h3>
                       <p className="mt-2 text-sm font-bold text-slate-500">Admin-only assessor resource</p>
@@ -577,7 +577,9 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                         {student.assignments.map((assignment) => (
                           <div key={assignment.assignmentKey} className="grid gap-4 p-6 xl:grid-cols-[1fr_220px_1.1fr]">
                             <div>
-                              <p className="text-xs font-black uppercase tracking-[0.1em] text-[#1f7ac1]">{assignment.title}</p>
+                              <p className="text-xs font-black uppercase tracking-[0.1em] text-[#1f7ac1]">
+                                Cluster {assignment.position}
+                              </p>
                               <h3 className="mt-1 text-lg font-black text-slate-900">{assignment.subtitle}</h3>
                               <p className="mt-2 text-sm font-bold text-slate-500">{assignment.lockReason ?? "Access rule applied."}</p>
                             </div>
@@ -599,7 +601,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                                 onClick={() => toggleAssignmentAccess(student.userKey, assignment.assignmentKey, !assignment.unlocked)}
                                 className="block h-10 rounded-xl border border-slate-200 px-4 text-sm font-black text-[#1f7ac1]"
                               >
-                                {assignment.unlocked ? "Lock assignment" : "Unlock assignment"}
+                                {assignment.unlocked ? "Lock cluster" : "Unlock cluster"}
                               </button>
                             </div>
 
@@ -618,6 +620,28 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                                     <span className="text-xs font-bold text-slate-500">
                                       {new Date(assignment.submission.submitted_at).toLocaleString("en-AU")}
                                     </span>
+                                  </div>
+                                  <div className="mt-3 grid gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm font-bold text-slate-600">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <span>Student file</span>
+                                      <span className="text-slate-900">{assignment.submission.file_name}</span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <span>Submission cycle</span>
+                                      <span className="text-slate-900">
+                                        {assignment.submission.resubmission_count
+                                          ? `Resubmission ${assignment.submission.resubmission_count}`
+                                          : "First submission"}
+                                      </span>
+                                    </div>
+                                    {assignment.submission.student_comment ? (
+                                      <div>
+                                        <span className="block text-slate-500">Student comment</span>
+                                        <p className="mt-1 leading-6 text-slate-900">
+                                          {assignment.submission.student_comment}
+                                        </p>
+                                      </div>
+                                    ) : null}
                                   </div>
                                   <textarea
                                     name="adminComment"

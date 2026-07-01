@@ -37,6 +37,7 @@ export async function POST(request: Request, { params }: SubmitRouteProps) {
 
   const formData = await request.formData();
   const file = formData.get("file");
+  const studentComment = String(formData.get("studentComment") || "").trim().slice(0, 4000);
 
   if (!(file instanceof File) || file.size <= 0) {
     return NextResponse.json({ error: "Choose an assessment file to upload." }, { status: 400 });
@@ -48,7 +49,7 @@ export async function POST(request: Request, { params }: SubmitRouteProps) {
 
   const previous = await supabase
     .from("assignment_submissions")
-    .select("file_path")
+    .select("file_path,resubmission_count")
     .eq("user_key", user.id)
     .eq("course_slug", CPP20218_COURSE_SLUG)
     .eq("assignment_key", assignmentKey)
@@ -78,6 +79,8 @@ export async function POST(request: Request, { params }: SubmitRouteProps) {
       mime_type: file.type || null,
       file_size: file.size,
       status: "submitted",
+      student_comment: studentComment || null,
+      resubmission_count: previous.data ? Number(previous.data.resubmission_count ?? 0) + 1 : 0,
       admin_comment: null,
       reviewed_by: null,
       reviewed_at: null,

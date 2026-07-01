@@ -24,10 +24,12 @@ export async function GET(request: Request, { params }: ResourceRouteProps) {
   const { resourceId } = await params;
   const url = new URL(request.url);
   const mode = url.searchParams.get("mode") === "download" ? "download" : "preview";
+  const format = url.searchParams.get("format") === "docx" ? "docx" : "pdf";
   const file = await getAssignmentResourceForStudent({
     userKey: user.id,
     resourceId,
     mode,
+    format,
   });
 
   if (!file) {

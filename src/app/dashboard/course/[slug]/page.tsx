@@ -318,7 +318,9 @@ export default async function CourseWorkspacePage({
                     className="portal-subtle-card flex items-center justify-between gap-4 rounded-[18px] p-4 transition hover:border-[#0f6eb8]/30 hover:bg-white"
                   >
                     <div className="min-w-0 flex-1">
-                      <h5 className="truncate text-base font-black text-[#081221]">{assignment.title}</h5>
+                      <h5 className="truncate text-base font-black text-[#081221]">
+                        Cluster {assignment.position}
+                      </h5>
                       <p className="mt-1 text-sm font-semibold text-[#5d7389]">{assignment.subtitle}</p>
                     </div>
                     <div className="text-right">

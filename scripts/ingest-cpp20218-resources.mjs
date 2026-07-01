@@ -121,7 +121,7 @@ function sourcePath(assignment, relativePath) {
 }
 
 function storagePath(assignmentKey, role, filePath) {
-  const clean = basename(filePath).replace(/[^\w.\-()[\]\s]/g, "_").replace(/\s+/g, "_");
+  const clean = basename(filePath).replace(/[^\w.\-()\s]/g, "_").replace(/\s+/g, "_");
   return `cpp20218/${assignmentKey}/${role}/${clean}`;
 }
 
@@ -182,6 +182,7 @@ async function addResource({
   relativePath,
   downloadable,
   position,
+  uploadOriginal = true,
 }) {
   const original = sourcePath(assignment, relativePath);
   if (!existsSync(original)) {
@@ -189,9 +190,11 @@ async function addResource({
     return;
   }
   const preview = convertToPdf(original, assignment.key);
-  const originalPath = storagePath(assignment.key, audience, original);
+  const originalPath = uploadOriginal ? storagePath(assignment.key, audience, original) : null;
   const previewPath = storagePath(assignment.key, `${audience}-preview`, preview);
-  await upload(original, originalPath);
+  if (originalPath) {
+    await upload(original, originalPath);
+  }
   await upload(preview, previewPath);
   await upsertResource({
     course_slug: courseSlug,
@@ -203,7 +206,7 @@ async function addResource({
     description,
     original_bucket: bucket,
     original_path: originalPath,
-    original_mime_type: mimeType(original),
+    original_mime_type: originalPath ? mimeType(original) : null,
     preview_bucket: bucket,
     preview_path: previewPath,
     preview_mime_type: "application/pdf",
@@ -226,6 +229,7 @@ for (const assignment of assignments) {
       relativePath: assignment.slides,
       downloadable: false,
       position: 1,
+      uploadOriginal: false,
     });
   }
   if (assignment.learning) {
