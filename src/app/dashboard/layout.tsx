@@ -36,6 +36,7 @@ export default async function DashboardLayout({
       stats={{
         totalCourses: portalData.totalCourses,
         activeEnrollments: portalData.activeEnrollments,
+        completedActivities: portalData.completedActivities,
         remainingActivities: portalData.remainingActivities,
       }}
     >

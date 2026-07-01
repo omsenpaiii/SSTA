@@ -1,6 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BookCheck, Clock3, GraduationCap, Layers3, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarCheck,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  GraduationCap,
+  Layers3,
+  ShieldCheck,
+  TrendingUp,
+} from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { formatActivityStatus, formatRelativeUpdate, getStudentPortalData } from "@/lib/student-portal";
 
@@ -14,223 +25,261 @@ export default async function DashboardHomePage() {
   const portalData = await getStudentPortalData(user);
   const continueCourse = portalData.continueCourse;
 
+  const overviewStats = [
+    {
+      label: "Enrolled Courses",
+      value: String(portalData.totalCourses),
+      note: portalData.totalCourses === 1 ? "Active" : "Active courses",
+      icon: GraduationCap,
+      tone: "bg-[#eef5ff] text-[#0f6eb8]",
+    },
+    {
+      label: "Average Progress",
+      value: `${portalData.averageProgress}%`,
+      note: "Across courses",
+      icon: TrendingUp,
+      tone: "bg-[#e8f8ef] text-[#19a463]",
+    },
+    {
+      label: "Completed Activities",
+      value: String(portalData.completedActivities),
+      note: "Total completed",
+      icon: CalendarCheck,
+      tone: "bg-[#eef5ff] text-[#0f6eb8]",
+    },
+    {
+      label: "Tasks Remaining",
+      value: String(portalData.remainingActivities),
+      note: "Pending tasks",
+      icon: Layers3,
+      tone: "bg-[#fff2e8] text-[#f97316]",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="portal-card rounded-[28px] p-7 sm:p-8">
-          <p className="portal-section-label">
-            Welcome back
+    <div className="space-y-5">
+      <section className="relative overflow-hidden rounded-[8px] bg-[linear-gradient(135deg,#06264b_0%,#004c92_52%,#0067b1_100%)] px-8 py-8 text-white shadow-[0_18px_48px_rgba(0,76,146,0.24)]">
+        <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(255,255,255,.22)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.22)_1px,transparent_1px)] [background-size:56px_56px]" />
+        <ShieldCheck
+          size={210}
+          strokeWidth={1.15}
+          className="absolute right-20 top-10 hidden text-white/25 xl:block"
+        />
+        <div className="relative max-w-4xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.02em] text-[#5eb5ff]">
+            Learning workspace
           </p>
-          <h2 className="portal-page-heading mt-3 max-w-[12ch]">
-            {user.firstName ? `${user.firstName}, your progress is moving.` : "Your progress is moving."}
-          </h2>
-          <p className="portal-page-copy mt-4 max-w-3xl">
-            Keep your SSTA learning in one place: course access, activity tracking, resources, and the next task that gets you closer to completion.
+          <h1 className="mt-4 max-w-3xl text-[2rem] font-black leading-tight tracking-tight sm:text-[2.55rem]">
+            Learn, track progress, and move with confidence.
+          </h1>
+          <p className="mt-4 max-w-xl text-base font-medium leading-7 text-white/82">
+            Access your courses, track activities, and complete tasks all in one place.
           </p>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-8 grid max-w-4xl gap-5 md:grid-cols-3">
             {[
-              {
-                label: "Enrolled courses",
-                value: String(portalData.totalCourses),
-                icon: GraduationCap,
-              },
-              {
-                label: "Average progress",
-                value: `${portalData.averageProgress}%`,
-                icon: TrendingUp,
-              },
-              {
-                label: "Completed activities",
-                value: String(portalData.completedActivities),
-                icon: BookCheck,
-              },
-              {
-                label: "Remaining tasks",
-                value: String(portalData.remainingActivities),
-                icon: Layers3,
-              },
-            ].map((item) => (
+              { label: "Enrolled Courses", value: portalData.totalCourses, icon: BookOpen },
+              { label: "Average Progress", value: `${portalData.averageProgress}%`, icon: TrendingUp },
+              { label: "Tasks Remaining", value: portalData.remainingActivities, icon: Layers3 },
+            ].map((item, index) => (
+              <div
+                key={item.label}
+                className={`flex items-center gap-4 ${index ? "md:border-l md:border-white/20 md:pl-7" : ""}`}
+              >
+                <span className="flex size-12 items-center justify-center rounded-[8px] bg-white/10 text-[#3ea0ff]">
+                  <item.icon size={24} />
+                </span>
+                <span>
+                  <span className="block text-sm font-medium text-white/86">{item.label}</span>
+                  <span className="mt-1 block text-2xl font-black text-white">{item.value}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-[8px] border border-[#dbe3ec] bg-white p-7 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+          <h2 className="text-2xl font-black tracking-tight text-[#081221]">
+            Welcome back, {user.firstName || user.name}
+          </h2>
+          <p className="mt-2 text-sm font-medium text-[#475569]">Here&apos;s your learning overview</p>
+
+          <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {overviewStats.map((item) => (
               <article
                 key={item.label}
-                className="portal-subtle-card rounded-[22px] p-5"
+                className="rounded-[8px] border border-[#dbe3ec] bg-white p-4 shadow-[0_6px_18px_rgba(15,23,42,0.03)]"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-black leading-5 text-[#5d7389]">{item.label}</span>
-                  <span className="flex size-11 items-center justify-center rounded-[16px] bg-[#eef5fb] text-[#0f6eb8]">
-                    <item.icon size={20} />
-                  </span>
+                <div className={`flex size-10 items-center justify-center rounded-[8px] ${item.tone}`}>
+                  <item.icon size={20} />
                 </div>
-                <p className="mt-5 text-[2.6rem] leading-none font-black tracking-tight text-[#081221]">
-                  {item.value}
-                </p>
+                <p className="mt-4 text-sm font-medium text-[#475569]">{item.label}</p>
+                <p className="mt-2 text-3xl font-black leading-none text-[#081221]">{item.value}</p>
+                <p className="mt-2 text-xs font-semibold text-[#0f6eb8]">{item.note}</p>
               </article>
             ))}
           </div>
         </div>
 
-        <div className="portal-card rounded-[28px] p-7 sm:p-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="portal-section-label">
-                Continue learning
-              </p>
-              <h3 className="mt-2 max-w-[12ch] text-[2rem] font-black tracking-tight text-[#081221]">
-                {continueCourse ? continueCourse.title : "Your next course will appear here"}
-              </h3>
-            </div>
-            <div className="rounded-[16px] bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
-              {continueCourse ? `${continueCourse.progressPercent}% complete` : "Ready when you are"}
-            </div>
-          </div>
+        <div className="rounded-[8px] border border-[#dbe3ec] bg-white p-7 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+          <h2 className="text-2xl font-black tracking-tight text-[#081221]">Continue Learning</h2>
+          <p className="mt-2 text-sm font-medium text-[#475569]">Pick up where you left off</p>
 
           {continueCourse ? (
-            <>
-              <div className="mt-5 overflow-hidden rounded-[24px]">
-                <div className="relative h-52">
-                  <Image
-                    src={continueCourse.image}
-                    alt={continueCourse.title}
-                    fill
-                    sizes="(min-width:1280px) 30vw, 100vw"
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,18,33,0.02)_0%,rgba(8,18,33,0.72)_100%)]" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-white/78">
-                      {continueCourse.code}
-                    </p>
-                    <p className="mt-2 text-xl font-black text-white">
-                      {continueCourse.completedActivities} completed · {continueCourse.remainingActivities} remaining
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <p className="mt-5 text-sm font-semibold leading-6 text-[#5d7389]">
-                {continueCourse.overview}
-              </p>
-              <div className="mt-5 h-3 rounded-full bg-[#edf3f8]">
-                <div
-                  className="h-3 rounded-full bg-[linear-gradient(90deg,#0f6eb8_0%,#1b97db_100%)]"
-                  style={{ width: `${continueCourse.progressPercent}%` }}
+            <div className="mt-6 grid gap-5 lg:grid-cols-[190px_1fr]">
+              <div className="relative h-32 overflow-hidden rounded-[8px] bg-[#0b2b4e]">
+                <Image
+                  src={continueCourse.image}
+                  alt={continueCourse.title}
+                  fill
+                  sizes="190px"
+                  className="object-cover"
                 />
-              </div>
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-[#5d7389]">
-                  Updated {formatRelativeUpdate(continueCourse.updatedAt)}
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(5,22,42,.62)_100%)]" />
+                <span className="absolute bottom-3 right-3 rounded-[6px] bg-[#0f6eb8] px-2.5 py-1 text-sm font-black text-white">
+                  {continueCourse.progressPercent}%
                 </span>
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-black text-[#081221]">{continueCourse.title}</h3>
+                <p className="mt-2 text-sm font-medium text-[#64748b]">
+                  {continueCourse.code} · {continueCourse.deliveryModes.slice(0, 2).join(" · ")}
+                </p>
+                <div className="mt-4 h-2 rounded-full bg-[#e7edf4]">
+                  <div
+                    className="h-2 rounded-full bg-[#0f6eb8]"
+                    style={{ width: `${continueCourse.progressPercent}%` }}
+                  />
+                </div>
+                <p className="mt-3 text-sm font-medium text-[#475569]">
+                  {continueCourse.completedActivities} of {continueCourse.totalActivities} activities completed
+                </p>
                 <Link
                   href={`/dashboard/course/${continueCourse.slug}`}
-                  className="portal-button-primary inline-flex items-center gap-2 px-5 py-3 text-sm"
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-[#0f6eb8] px-4 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(15,110,184,0.16)]"
                 >
-                  Open workspace
-                  <ArrowRight size={18} />
+                  Resume Course
+                  <ArrowRight size={16} />
+                </Link>
+                <Link
+                  href="/dashboard/my-courses"
+                  className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#0059c8]"
+                >
+                  View my courses
+                  <ArrowRight size={15} />
                 </Link>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="mt-8 rounded-[24px] border border-dashed border-[#c9d9e8] bg-[#fbfdff] p-8 text-center">
-              <p className="text-base font-semibold text-[#5d7389]">
-                Once you enrol in a course, this panel becomes your launch point for lessons, activity tracking, and resources.
+            <div className="mt-6 rounded-[8px] border border-dashed border-[#cbd8e6] bg-[#fbfdff] p-8 text-center">
+              <BookOpen size={34} className="mx-auto text-[#0f6eb8]" />
+              <p className="mt-4 text-sm font-medium leading-6 text-[#475569]">
+                Once you enrol in a course, this panel becomes your launch point for lessons and resources.
               </p>
               <Link
                 href="/dashboard/browse-courses"
-                className="mt-5 inline-flex rounded-[16px] bg-[#081221] px-5 py-3 text-sm font-black text-white"
+                className="mt-5 inline-flex items-center gap-2 rounded-[8px] bg-[#0f6eb8] px-4 py-3 text-sm font-semibold text-white"
               >
                 Browse courses
+                <ArrowRight size={16} />
               </Link>
             </div>
           )}
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div className="portal-card rounded-[28px] p-7 sm:p-8">
-          <div className="flex items-center justify-between gap-4">
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="rounded-[8px] border border-[#dbe3ec] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-2xl font-black tracking-tight text-[#081221]">Next up</h3>
-              <p className="mt-2 text-sm font-semibold text-[#5d7389]">
-                Keep momentum on the activities that still need attention.
-              </p>
+              <h2 className="text-2xl font-black tracking-tight text-[#081221]">Next Tasks</h2>
+              <p className="mt-1 text-sm font-medium text-[#475569]">Keep going. Here are your priority tasks.</p>
             </div>
-            <Link
-              href="/dashboard/my-courses"
-              className="text-sm font-black text-[#0f6eb8]"
-            >
-              View all courses
+            <Link href="/dashboard/my-courses" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0059c8]">
+              View all tasks
+              <ArrowRight size={15} />
             </Link>
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-5 space-y-2">
             {portalData.incompleteActivityFeed.length ? (
-              portalData.incompleteActivityFeed.map((activity) => (
+              portalData.incompleteActivityFeed.slice(0, 3).map((activity, index) => (
                 <Link
                   key={`${activity.courseSlug}-${activity.id}`}
                   href={`/dashboard/course/${activity.courseSlug}/activities/${activity.id}`}
-                  className="portal-subtle-card flex flex-wrap items-center justify-between gap-4 rounded-[20px] p-5 transition hover:border-[#0f6eb8]/30 hover:bg-white"
+                  className="flex items-center gap-4 rounded-[8px] border border-[#e5edf5] bg-white px-4 py-3 transition hover:border-[#0f6eb8]/40"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f6eb8]">
-                      {activity.courseTitle}
-                    </p>
-                    <h4 className="mt-2 text-lg font-black text-[#081221]">{activity.title}</h4>
-                    <p className="mt-1 text-sm font-semibold text-[#5d7389]">{activity.summary}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="rounded-[16px] bg-[#eef5fb] px-3 py-2 text-xs font-black text-[#0f6eb8]">
-                      {formatActivityStatus(activity.status)}
-                    </div>
-                    <p className="mt-2 text-xs font-semibold text-[#7f92a5]">{activity.group}</p>
-                  </div>
+                  <span className={`flex size-10 shrink-0 items-center justify-center rounded-[8px] ${
+                    index === 0 ? "bg-[#fff0f0] text-[#ef4444]" : index === 1 ? "bg-[#fff2e8] text-[#f97316]" : "bg-[#eef5ff] text-[#0f6eb8]"
+                  }`}
+                  >
+                    <FileText size={18} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-[#081221]">{activity.title}</span>
+                    <span className="mt-1 block text-sm font-medium text-[#64748b]">
+                      {activity.subtitle} · {formatActivityStatus(activity.status)}
+                    </span>
+                  </span>
+                  <span className="hidden rounded-[6px] bg-[#eef5ff] px-2.5 py-1 text-xs font-semibold text-[#0f6eb8] sm:inline-flex">
+                    {activity.group}
+                  </span>
+                  <ArrowRight size={18} className="text-[#64748b]" />
                 </Link>
               ))
             ) : (
-              <div className="rounded-[24px] border border-dashed border-[#c9d9e8] bg-[#fbfdff] p-8 text-center">
-                <h4 className="text-xl font-black text-[#081221]">Everything is up to date</h4>
-                <p className="mt-3 text-sm font-semibold text-[#5d7389]">
-                  Once you start working through activities, this feed will keep the next important task in front of you.
+              <div className="rounded-[8px] border border-dashed border-[#cbd8e6] bg-[#fbfdff] p-8 text-center">
+                <CheckCircle2 size={34} className="mx-auto text-[#19a463]" />
+                <h3 className="mt-4 text-lg font-black text-[#081221]">Everything is up to date</h3>
+                <p className="mt-2 text-sm font-medium text-[#475569]">
+                  Your next tasks will show here as course activities become active.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="portal-card rounded-[28px] p-7 sm:p-8">
-          <div className="flex items-center justify-between gap-4">
+        <div className="rounded-[8px] border border-[#dbe3ec] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-2xl font-black tracking-tight text-[#081221]">Recent activity</h3>
-              <p className="mt-2 text-sm font-semibold text-[#5d7389]">
-                Quick recap of the lessons and unit work you touched most recently.
-              </p>
+              <h2 className="text-2xl font-black tracking-tight text-[#081221]">Recent Activity</h2>
+              <p className="mt-1 text-sm font-medium text-[#475569]">A quick look at your latest progress.</p>
             </div>
-            <Clock3 size={18} className="text-[#7f92a5]" />
+            <Link href="/dashboard/my-courses" className="inline-flex items-center gap-2 text-sm font-semibold text-[#0059c8]">
+              View all activity
+              <ArrowRight size={15} />
+            </Link>
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="mt-5 space-y-2">
             {portalData.recentActivity.length ? (
-              portalData.recentActivity.map((activity) => (
+              portalData.recentActivity.slice(0, 3).map((activity) => (
                 <div
                   key={`${activity.id}-${activity.updatedAt ?? "recent"}`}
-                  className="portal-subtle-card rounded-[20px] p-5"
+                  className="flex items-center gap-4 rounded-[8px] border border-[#e5edf5] bg-white px-4 py-3"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <h4 className="text-lg font-black text-[#081221]">{activity.title}</h4>
-                    <span className="rounded-2xl bg-[#e7fff1] px-3 py-1 text-xs font-black text-[#198754]">
-                      {formatActivityStatus(activity.status)}
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-[#e8f8ef] text-[#19a463]">
+                    <CheckCircle2 size={18} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-[#081221]">
+                      {formatActivityStatus(activity.status)}: {activity.title}
                     </span>
-                  </div>
-                  <p className="mt-2 text-sm font-semibold text-[#5d7389]">{activity.subtitle}</p>
-                  <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-[0.14em] text-[#7f92a5]">
-                    <span>{activity.group}</span>
-                    <span>{formatRelativeUpdate(activity.updatedAt)}</span>
-                  </div>
+                    <span className="mt-1 block text-sm font-medium text-[#64748b]">{activity.subtitle}</span>
+                  </span>
+                  <span className="hidden text-right text-xs font-medium text-[#64748b] sm:block">
+                    {formatRelativeUpdate(activity.updatedAt)}
+                  </span>
                 </div>
               ))
             ) : (
-              <div className="rounded-[24px] border border-dashed border-[#c9d9e8] bg-[#fbfdff] p-8 text-center">
-                <h4 className="text-xl font-black text-[#081221]">No recent activity yet</h4>
-                <p className="mt-3 text-sm font-semibold text-[#5d7389]">
-                  Your latest lesson and activity updates will start appearing here as you use the portal.
+              <div className="rounded-[8px] border border-dashed border-[#cbd8e6] bg-[#fbfdff] p-8 text-center">
+                <Clock3 size={34} className="mx-auto text-[#0f6eb8]" />
+                <h3 className="mt-4 text-lg font-black text-[#081221]">No recent activity yet</h3>
+                <p className="mt-2 text-sm font-medium text-[#475569]">
+                  Your latest lesson and activity updates will appear here.
                 </p>
               </div>
             )}
