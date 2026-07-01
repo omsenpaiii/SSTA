@@ -142,6 +142,7 @@ export async function getEnrollmentLead(id: string) {
 export async function updateEnrollmentCheckoutSession(input: {
   enrollmentId: string;
   stripeSessionId: string;
+  provider?: string;
 }) {
   const supabase = getSupabaseAdmin();
 
@@ -153,6 +154,8 @@ export async function updateEnrollmentCheckoutSession(input: {
     .from("enrollment_leads")
     .update({
       stripe_session_id: input.stripeSessionId,
+      payment_provider: input.provider ?? "pinch",
+      payment_session_id: input.stripeSessionId,
       updated_at: new Date().toISOString(),
     })
     .eq("id", input.enrollmentId);
@@ -168,6 +171,8 @@ export async function updateEnrollmentPaymentStatus(input: {
   enrollmentId: string;
   paymentStatus: EnrollmentPaymentStatus;
   stripeSessionId?: string | null;
+  provider?: string;
+  providerPaymentId?: string | null;
   onlyIfCurrentSession?: boolean;
 }) {
   const supabase = getSupabaseAdmin();
@@ -179,6 +184,9 @@ export async function updateEnrollmentPaymentStatus(input: {
   const values: {
     payment_status: EnrollmentPaymentStatus;
     stripe_session_id?: string;
+    payment_provider?: string;
+    payment_session_id?: string;
+    provider_payment_id?: string;
     updated_at: string;
   } = {
     payment_status: input.paymentStatus,
@@ -187,6 +195,15 @@ export async function updateEnrollmentPaymentStatus(input: {
 
   if (input.stripeSessionId) {
     values.stripe_session_id = input.stripeSessionId;
+    values.payment_session_id = input.stripeSessionId;
+  }
+
+  if (input.provider) {
+    values.payment_provider = input.provider;
+  }
+
+  if (input.providerPaymentId) {
+    values.provider_payment_id = input.providerPaymentId;
   }
 
   let query = supabase

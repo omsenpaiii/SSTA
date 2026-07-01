@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAppUrl } from "@/lib/app-url";
 import { getCurrentUser } from "@/lib/auth";
 import { isCourseAvailableForEnrollment } from "@/lib/courses";
 import { getCourse } from "@/lib/course-repository";
@@ -8,7 +7,12 @@ import {
   getEnrollmentLead,
   updateEnrollmentCheckoutSession,
 } from "@/lib/enrollment";
-import { getStripe, isStripeConfigured } from "@/lib/stripe";
+import { createPaymentIntent } from "@/lib/payments";
+import {
+  createPinchPayer,
+  createPinchPaymentLink,
+  isPinchConfigured,
+} from "@/lib/pinch";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const checkoutSchema = z.object({
@@ -19,9 +23,9 @@ const checkoutSchema = z.object({
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  if (!isStripeConfigured()) {
+  if (!isPinchConfigured()) {
     return NextResponse.json(
-      { error: "Stripe is not configured yet." },
+      { error: "Pinch Payments is not configured yet." },
       { status: 503 },
     );
   }
@@ -95,52 +99,55 @@ export async function POST(request: Request) {
     );
   }
 
-  const stripe = getStripe();
-
-  if (!stripe) {
-    return NextResponse.json(
-      { error: "Stripe is not configured yet." },
-      { status: 503 },
-    );
-  }
-
-  const appUrl = getAppUrl();
   const email = enrollment?.email ?? user.email;
+  const amountCents = Math.round(course.priceAud * 100);
   const metadata = {
     userKey: user?.id ?? "",
     courseSlug: course.slug,
     enrollmentId: enrollment?.id ?? "",
+    purpose: "course_enrollment",
   };
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer_email: email,
-    line_items: [
-      {
-        price_data: {
-          currency: "aud",
-          product_data: {
-            name: course.title,
-            description: course.description,
-          },
-          unit_amount: course.priceAud * 100,
-        },
-        quantity: 1,
-      },
-    ],
-    metadata,
-    payment_intent_data: {
-      metadata,
-    },
-    success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl}/cancel?course=${course.slug}`,
+
+  const payer = await createPinchPayer({
+    userKey: user.id,
+    email,
+    name: user.name,
+    firstName: enrollment?.first_name ?? user.firstName,
+    lastName: enrollment?.last_name ?? user.lastName,
+    phone: enrollment?.phone ?? user.phone,
   });
 
-  if (enrollment?.id && session.id) {
+  const paymentLink = await createPinchPaymentLink({
+    amountCents,
+    payerId: payer.id,
+    description: course.title,
+    successPath: "/success",
+    metadata,
+  });
+
+  await createPaymentIntent({
+    provider: "pinch",
+    purpose: "course_enrollment",
+    status: "pending",
+    userKey: user.id,
+    email,
+    courseSlug: course.slug,
+    enrollmentId: enrollment?.id ?? null,
+    amountCents,
+    currency: "AUD",
+    providerPayerId: payer.id,
+    providerPaymentLinkId: paymentLink.id,
+    checkoutUrl: paymentLink.url,
+    metadata,
+  });
+
+  if (enrollment?.id && paymentLink.id) {
     await updateEnrollmentCheckoutSession({
       enrollmentId: enrollment.id,
-      stripeSessionId: session.id,
+      stripeSessionId: paymentLink.id,
+      provider: "pinch",
     });
   }
 
-  return NextResponse.json({ url: session.url });
+  return NextResponse.json({ url: paymentLink.url });
 }

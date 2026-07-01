@@ -13,6 +13,7 @@ import {
   type CppAssignmentResource,
   type StudentCppAssignment,
 } from "@/lib/cpp20218";
+import { AssignmentUnlockPaymentButton } from "@/components/student/AssignmentUnlockPaymentButton";
 import { AssignmentUploadForm } from "@/components/student/AssignmentUploadForm";
 
 type Cpp20218AssignmentsViewProps = {
@@ -60,6 +61,11 @@ function ResourceActions({ resource }: { resource: CppAssignmentResource }) {
   );
 }
 
+function assignmentPaymentsEnabled() {
+  const amount = Number(process.env.CPP20218_ASSIGNMENT_UNLOCK_AMOUNT_CENTS ?? 0);
+  return Number.isFinite(amount) && amount > 0;
+}
+
 function LockedPanel({ assignment }: { assignment: StudentCppAssignment }) {
   return (
     <div className="rounded-[8px] border border-dashed border-[#cbd8e6] bg-[#fbfdff] p-5">
@@ -73,6 +79,10 @@ function LockedPanel({ assignment }: { assignment: StudentCppAssignment }) {
             {assignment.lockReason ??
               "This assignment is locked for now. SSTA will enable payment and unlock access shortly."}
           </p>
+          <AssignmentUnlockPaymentButton
+            assignmentKey={assignment.assignmentKey}
+            enabled={assignmentPaymentsEnabled()}
+          />
         </div>
       </div>
     </div>
