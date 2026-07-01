@@ -6,6 +6,7 @@ import {
   Bell,
   BookOpen,
   ChevronLeft,
+  ClipboardCheck,
   Database,
   Download,
   FileSpreadsheet,
@@ -24,13 +25,14 @@ import {
 } from "lucide-react";
 import type { AdminUser } from "@/lib/admin";
 import type { AdminSnapshot } from "@/lib/admin-data";
+import { formatAssignmentStatus } from "@/lib/cpp20218";
 
 type AdminPortalProps = {
   admin: AdminUser;
   snapshot: AdminSnapshot;
 };
 
-type Section = "dashboard" | "students" | "add-student" | "courses" | "lessons" | "leads" | "excel" | "settings";
+type Section = "dashboard" | "students" | "add-student" | "courses" | "lessons" | "assessments" | "leads" | "excel" | "settings";
 
 const navItems: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -38,6 +40,7 @@ const navItems: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: "add-student", label: "Add Student", icon: UserPlus },
   { id: "courses", label: "Courses", icon: GraduationCap },
   { id: "lessons", label: "Lessons", icon: BookOpen },
+  { id: "assessments", label: "Assessments", icon: ClipboardCheck },
   { id: "leads", label: "Leads", icon: Database },
   { id: "excel", label: "Excel", icon: FileSpreadsheet },
   { id: "settings", label: "Settings", icon: Settings },
@@ -191,6 +194,26 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     const dataResponse = await fetch("/api/admin/data");
     setSnapshot(await dataResponse.json());
     setNotice({ type: "success", text: `Imported ${json.updated} ${entity} rows.` });
+  }
+
+  async function handleAssignmentReview(formData: FormData) {
+    await runAction(
+      "review-assignment",
+      {
+        submissionId: String(formData.get("submissionId") || ""),
+        status: String(formData.get("status") || "not_satisfactory"),
+        adminComment: String(formData.get("adminComment") || ""),
+      },
+      "Assessment review saved.",
+    );
+  }
+
+  async function toggleAssignmentAccess(userKey: string, assignmentKey: string, unlocked: boolean) {
+    await runAction(
+      "update-assignment-access",
+      { userKey, assignmentKey, unlocked },
+      unlocked ? "Assignment unlocked." : "Assignment locked.",
+    );
   }
 
   return (
@@ -502,6 +525,138 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 new Date(lead.created_at).toLocaleDateString("en-AU"),
               ])}
             />
+          ) : null}
+
+          {active === "assessments" ? (
+            <div className="space-y-8">
+              <div>
+                <h1 className="text-4xl font-black tracking-normal">CPP20218 Assessments</h1>
+                <p className="mt-2 text-lg font-bold text-slate-500">
+                  Review learner submissions, manage assignment access, and open assessor answer keys.
+                </p>
+              </div>
+
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-2xl font-black">Assessor answer keys</h2>
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {snapshot.cpp20218.adminResources.length ? snapshot.cpp20218.adminResources.map((resource) => (
+                    <a
+                      key={resource.id}
+                      href={`/api/admin/assignment-file?type=resource&id=${resource.id}`}
+                      target="_blank"
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-[#1f7ac1]"
+                    >
+                      <p className="text-xs font-black uppercase tracking-[0.1em] text-[#1f7ac1]">
+                        {resource.assignment_key.replace("-", " ")}
+                      </p>
+                      <h3 className="mt-2 text-base font-black text-slate-900">{resource.title}</h3>
+                      <p className="mt-2 text-sm font-bold text-slate-500">Admin-only assessor resource</p>
+                    </a>
+                  )) : (
+                    <p className="text-sm font-bold text-slate-500">No assessor keys uploaded yet.</p>
+                  )}
+                </div>
+              </section>
+
+              <div className="space-y-5">
+                {snapshot.cpp20218.students.map((student) => {
+                  const name = `${student.firstName ?? ""} ${student.lastName ?? ""}`.trim() || student.email || student.userKey;
+                  return (
+                    <section key={student.userKey} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-6">
+                        <div>
+                          <h2 className="text-2xl font-black">{name}</h2>
+                          <p className="mt-1 text-sm font-bold text-slate-500">
+                            {student.email ?? "No email"} · {student.phone ?? "No phone"} · Source: {student.source ?? "Unknown"}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-[#eef4fb] px-4 py-2 text-sm font-black text-[#1f7ac1]">
+                          {student.assignments.filter((assignment) => assignment.unlocked).length}/{student.assignments.length} unlocked
+                        </span>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {student.assignments.map((assignment) => (
+                          <div key={assignment.assignmentKey} className="grid gap-4 p-6 xl:grid-cols-[1fr_220px_1.1fr]">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.1em] text-[#1f7ac1]">{assignment.title}</p>
+                              <h3 className="mt-1 text-lg font-black text-slate-900">{assignment.subtitle}</h3>
+                              <p className="mt-2 text-sm font-bold text-slate-500">{assignment.lockReason ?? "Access rule applied."}</p>
+                            </div>
+
+                            <div className="space-y-3">
+                              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${
+                                assignment.status === "satisfactory"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : assignment.status === "not_satisfactory"
+                                    ? "bg-rose-50 text-rose-700"
+                                    : assignment.status === "locked"
+                                      ? "bg-slate-100 text-slate-600"
+                                      : "bg-amber-50 text-amber-700"
+                              }`}>
+                                {formatAssignmentStatus(assignment.status)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => toggleAssignmentAccess(student.userKey, assignment.assignmentKey, !assignment.unlocked)}
+                                className="block h-10 rounded-xl border border-slate-200 px-4 text-sm font-black text-[#1f7ac1]"
+                              >
+                                {assignment.unlocked ? "Lock assignment" : "Unlock assignment"}
+                              </button>
+                            </div>
+
+                            <div>
+                              {assignment.submission ? (
+                                <form action={handleAssignmentReview} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                  <input type="hidden" name="submissionId" value={assignment.submission.id} />
+                                  <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <a
+                                      href={`/api/admin/assignment-file?type=submission&id=${assignment.submission.id}`}
+                                      target="_blank"
+                                      className="text-sm font-black text-[#1f7ac1] underline"
+                                    >
+                                      Open submission
+                                    </a>
+                                    <span className="text-xs font-bold text-slate-500">
+                                      {new Date(assignment.submission.submitted_at).toLocaleString("en-AU")}
+                                    </span>
+                                  </div>
+                                  <textarea
+                                    name="adminComment"
+                                    defaultValue={assignment.submission.admin_comment ?? ""}
+                                    placeholder="Comments for the learner..."
+                                    className="mt-3 min-h-24 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-bold outline-none focus:border-[#1f7ac1]"
+                                  />
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <button
+                                      name="status"
+                                      value="satisfactory"
+                                      className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white"
+                                    >
+                                      Satisfactory
+                                    </button>
+                                    <button
+                                      name="status"
+                                      value="not_satisfactory"
+                                      className="h-10 rounded-xl bg-rose-600 px-4 text-sm font-black text-white"
+                                    >
+                                      Not satisfactory
+                                    </button>
+                                  </div>
+                                </form>
+                              ) : (
+                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
+                                  No submission yet.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </div>
           ) : null}
 
           {active === "excel" ? (

@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { manualStudentKey } from "@/lib/admin";
 import { getCourses } from "@/lib/course-repository";
+import {
+  getAdminCppAssignmentSnapshot,
+  reviewAssignmentSubmission,
+  setStudentAssignmentAccess,
+  type AdminCppStudent,
+  type CppAssignmentResource,
+} from "@/lib/cpp20218";
 import { type Course } from "@/lib/courses";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
@@ -48,6 +55,10 @@ export type AdminSnapshot = {
   students: AdminStudent[];
   enrollments: AdminEnrollment[];
   leads: AdminLead[];
+  cpp20218: {
+    students: AdminCppStudent[];
+    adminResources: CppAssignmentResource[];
+  };
 };
 
 const courseSchema = z.object({
@@ -182,6 +193,7 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       students: [],
       enrollments: [],
       leads: [],
+      cpp20218: { students: [], adminResources: [] },
     };
   }
 
@@ -194,6 +206,7 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       students: [],
       enrollments: [],
       leads: [],
+      cpp20218: { students: [], adminResources: [] },
     };
   }
 
@@ -225,6 +238,8 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       (lead) => ({ ...lead, type: "interest" as const }),
     );
 
+    const cpp20218 = await getAdminCppAssignmentSnapshot();
+
     return {
       isSupabaseConfigured: true,
       courses,
@@ -233,6 +248,7 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       leads: [...enrollmentLeads, ...interestLeads].sort((a, b) =>
         b.created_at.localeCompare(a.created_at),
       ),
+      cpp20218,
     };
   } catch {
     return {
@@ -241,6 +257,7 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       students: [],
       enrollments: [],
       leads: [],
+      cpp20218: { students: [], adminResources: [] },
     };
   }
 }
@@ -454,6 +471,36 @@ export async function upsertAdminLead(input: unknown) {
   }
 
   return lead;
+}
+
+export async function reviewAdminAssignment(input: unknown, reviewedBy: string) {
+  const parsed = z.object({
+    submissionId: z.string().trim().min(1),
+    status: z.enum(["satisfactory", "not_satisfactory"]),
+    adminComment: z.string().trim().default(""),
+  }).parse(input);
+
+  await reviewAssignmentSubmission({
+    submissionId: parsed.submissionId,
+    status: parsed.status,
+    adminComment: parsed.adminComment,
+    reviewedBy,
+  });
+}
+
+export async function updateAdminAssignmentAccess(input: unknown, adminEmail: string) {
+  const parsed = z.object({
+    userKey: z.string().trim().min(1),
+    assignmentKey: z.string().trim().min(1),
+    unlocked: z.coerce.boolean(),
+  }).parse(input);
+
+  await setStudentAssignmentAccess({
+    userKey: parsed.userKey,
+    assignmentKey: parsed.assignmentKey,
+    unlocked: parsed.unlocked,
+    adminEmail,
+  });
 }
 
 export async function deleteAdminCourse(slug: string) {

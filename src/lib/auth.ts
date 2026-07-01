@@ -120,6 +120,14 @@ export async function syncStudentProfileFromUser(user: AuthUser | null | undefin
         .from("lesson_progress")
         .update({ user_key: userKey, updated_at: now })
         .eq("user_key", manualKey);
+      await supabase
+        .from("student_assignment_access")
+        .update({ user_key: userKey, updated_at: now })
+        .eq("user_key", manualKey);
+      await supabase
+        .from("assignment_submissions")
+        .update({ user_key: userKey, updated_at: now })
+        .eq("user_key", manualKey);
       await supabase.from("student_profiles").delete().eq("id", manualProfile.id);
     } else {
       await supabase
@@ -139,6 +147,14 @@ export async function syncStudentProfileFromUser(user: AuthUser | null | undefin
         .eq("user_key", manualKey);
       await supabase
         .from("lesson_progress")
+        .update({ user_key: userKey, updated_at: now })
+        .eq("user_key", manualKey);
+      await supabase
+        .from("student_assignment_access")
+        .update({ user_key: userKey, updated_at: now })
+        .eq("user_key", manualKey);
+      await supabase
+        .from("assignment_submissions")
         .update({ user_key: userKey, updated_at: now })
         .eq("user_key", manualKey);
     }

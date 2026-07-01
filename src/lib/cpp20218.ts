@@ -1,0 +1,403 @@
+import { unstable_noStore as noStore } from "next/cache";
+import { getSupabaseAdmin } from "@/lib/supabase";
+
+export const CPP20218_COURSE_SLUG = "certificate-ii-security-operations";
+
+export type AssignmentStatus =
+  | "locked"
+  | "not_submitted"
+  | "submitted"
+  | "satisfactory"
+  | "not_satisfactory";
+
+export type AssignmentResourceKind =
+  | "slides"
+  | "learning_resource"
+  | "assessment"
+  | "assessor_key";
+
+export type CppAssignmentResource = {
+  id: string;
+  course_slug: string;
+  assignment_key: string;
+  resource_key: string;
+  audience: "student" | "admin";
+  kind: AssignmentResourceKind;
+  title: string;
+  description: string;
+  original_bucket: string;
+  original_path: string | null;
+  original_mime_type: string | null;
+  preview_bucket: string;
+  preview_path: string | null;
+  preview_mime_type: string | null;
+  downloadable: boolean;
+  position: number;
+};
+
+export type CppAssignmentSubmission = {
+  id: string;
+  user_key: string;
+  course_slug: string;
+  assignment_key: string;
+  file_bucket: string;
+  file_path: string;
+  file_name: string;
+  mime_type: string | null;
+  file_size: number | null;
+  status: "submitted" | "satisfactory" | "not_satisfactory";
+  admin_comment: string | null;
+  reviewed_by: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  updated_at: string | null;
+};
+
+type AssignmentRow = {
+  assignment_key: string;
+  title: string;
+  subtitle: string;
+  overview: string;
+  position: number;
+};
+
+type AccessRow = {
+  assignment_key: string;
+  unlocked: boolean;
+  source: string | null;
+  reason: string | null;
+};
+
+export type StudentCppAssignment = {
+  courseSlug: string;
+  assignmentKey: string;
+  title: string;
+  subtitle: string;
+  overview: string;
+  position: number;
+  unlocked: boolean;
+  source: string | null;
+  lockReason: string | null;
+  status: AssignmentStatus;
+  resources: CppAssignmentResource[];
+  submission: CppAssignmentSubmission | null;
+};
+
+export type AdminCppStudent = {
+  userKey: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  source: string | null;
+  assignments: StudentCppAssignment[];
+};
+
+function statusFor(unlocked: boolean, submission: CppAssignmentSubmission | null): AssignmentStatus {
+  if (!unlocked) return "locked";
+  if (!submission) return "not_submitted";
+  return submission.status;
+}
+
+export function formatAssignmentStatus(status: AssignmentStatus) {
+  if (status === "locked") return "Locked";
+  if (status === "not_submitted") return "Not submitted";
+  if (status === "submitted") return "Submitted";
+  if (status === "satisfactory") return "Satisfactory";
+  return "Not satisfactory";
+}
+
+export function isCpp20218Slug(slug: string) {
+  return slug === CPP20218_COURSE_SLUG;
+}
+
+export async function getStudentCppAssignments(userKey: string): Promise<StudentCppAssignment[]> {
+  noStore();
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    return [];
+  }
+
+  const [assignmentResult, accessResult, resourceResult, submissionResult] = await Promise.all([
+    supabase
+      .from("course_assignments")
+      .select("assignment_key,title,subtitle,overview,position")
+      .eq("course_slug", CPP20218_COURSE_SLUG)
+      .eq("is_active", true)
+      .order("position", { ascending: true }),
+    supabase
+      .from("student_assignment_access")
+      .select("assignment_key,unlocked,source,reason")
+      .eq("course_slug", CPP20218_COURSE_SLUG)
+      .eq("user_key", userKey),
+    supabase
+      .from("course_assignment_resources")
+      .select("*")
+      .eq("course_slug", CPP20218_COURSE_SLUG)
+      .eq("audience", "student")
+      .order("position", { ascending: true }),
+    supabase
+      .from("assignment_submissions")
+      .select("*")
+      .eq("course_slug", CPP20218_COURSE_SLUG)
+      .eq("user_key", userKey),
+  ]);
+
+  const assignments = (assignmentResult.data ?? []) as AssignmentRow[];
+  const access = new Map(
+    ((accessResult.data ?? []) as AccessRow[]).map((row) => [row.assignment_key, row]),
+  );
+  const resources = ((resourceResult.data ?? []) as CppAssignmentResource[]).reduce(
+    (map, row) => {
+      const list = map.get(row.assignment_key) ?? [];
+      list.push(row);
+      map.set(row.assignment_key, list);
+      return map;
+    },
+    new Map<string, CppAssignmentResource[]>(),
+  );
+  const submissions = new Map(
+    ((submissionResult.data ?? []) as CppAssignmentSubmission[]).map((row) => [
+      row.assignment_key,
+      row,
+    ]),
+  );
+
+  return assignments.map((assignment) => {
+    const accessRow = access.get(assignment.assignment_key);
+    const unlocked = Boolean(accessRow?.unlocked);
+    const submission = submissions.get(assignment.assignment_key) ?? null;
+
+    return {
+      courseSlug: CPP20218_COURSE_SLUG,
+      assignmentKey: assignment.assignment_key,
+      title: assignment.title,
+      subtitle: assignment.subtitle,
+      overview: assignment.overview,
+      position: assignment.position,
+      unlocked,
+      source: accessRow?.source ?? null,
+      lockReason: accessRow?.reason ?? null,
+      status: statusFor(unlocked, submission),
+      resources: resources.get(assignment.assignment_key) ?? [],
+      submission,
+    };
+  });
+}
+
+export async function getStudentCppAssignment(
+  userKey: string,
+  assignmentKey: string,
+) {
+  const assignments = await getStudentCppAssignments(userKey);
+  return assignments.find((assignment) => assignment.assignmentKey === assignmentKey) ?? null;
+}
+
+export async function getAdminCppAssignmentSnapshot(): Promise<{
+  students: AdminCppStudent[];
+  adminResources: CppAssignmentResource[];
+}> {
+  noStore();
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    return { students: [], adminResources: [] };
+  }
+
+  const [profilesResult, enrollmentsResult, adminResourceResult] = await Promise.all([
+    supabase
+      .from("student_profiles")
+      .select("user_key,first_name,last_name,email,phone")
+      .order("first_name", { ascending: true }),
+    supabase
+      .from("course_enrollments")
+      .select("user_key,source")
+      .eq("course_slug", CPP20218_COURSE_SLUG)
+      .eq("status", "active"),
+    supabase
+      .from("course_assignment_resources")
+      .select("*")
+      .eq("course_slug", CPP20218_COURSE_SLUG)
+      .eq("audience", "admin")
+      .order("position", { ascending: true }),
+  ]);
+
+  const enrolled = new Map(
+    ((enrollmentsResult.data ?? []) as { user_key: string; source: string | null }[]).map(
+      (row) => [row.user_key, row.source],
+    ),
+  );
+  const profiles = ((profilesResult.data ?? []) as Array<{
+    user_key: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    phone: string | null;
+  }>).filter((profile) => enrolled.has(profile.user_key));
+
+  const students = await Promise.all(
+    profiles.map(async (profile) => ({
+      userKey: profile.user_key,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      email: profile.email,
+      phone: profile.phone,
+      source: enrolled.get(profile.user_key) ?? null,
+      assignments: await getStudentCppAssignments(profile.user_key),
+    })),
+  );
+
+  return {
+    students,
+    adminResources: (adminResourceResult.data ?? []) as CppAssignmentResource[],
+  };
+}
+
+export async function getAssignmentResourceForStudent(input: {
+  userKey: string;
+  resourceId: string;
+  mode: "preview" | "download";
+}) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) return null;
+
+  const { data: resource } = await supabase
+    .from("course_assignment_resources")
+    .select("*")
+    .eq("id", input.resourceId)
+    .eq("audience", "student")
+    .maybeSingle();
+
+  if (!resource) return null;
+
+  const row = resource as CppAssignmentResource;
+
+  if (input.mode === "download" && !row.downloadable) {
+    return null;
+  }
+
+  const { data: access } = await supabase
+    .from("student_assignment_access")
+    .select("id")
+    .eq("user_key", input.userKey)
+    .eq("course_slug", row.course_slug)
+    .eq("assignment_key", row.assignment_key)
+    .eq("unlocked", true)
+    .maybeSingle();
+
+  if (!access) return null;
+
+  const bucket = input.mode === "preview" ? row.preview_bucket : row.original_bucket;
+  const path = input.mode === "preview" ? row.preview_path : row.original_path;
+  const mimeType = input.mode === "preview" ? row.preview_mime_type : row.original_mime_type;
+
+  if (!path) return null;
+
+  return { bucket, path, mimeType, title: row.title };
+}
+
+export async function getAssignmentResourceForAdmin(resourceId: string) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) return null;
+
+  const { data: resource } = await supabase
+    .from("course_assignment_resources")
+    .select("*")
+    .eq("id", resourceId)
+    .maybeSingle();
+
+  if (!resource) return null;
+
+  const row = resource as CppAssignmentResource;
+  const path = row.original_path ?? row.preview_path;
+  const bucket = row.original_path ? row.original_bucket : row.preview_bucket;
+  const mimeType = row.original_path ? row.original_mime_type : row.preview_mime_type;
+
+  if (!path) return null;
+
+  return { bucket, path, mimeType, title: row.title };
+}
+
+export async function getAssignmentSubmissionForAdmin(submissionId: string) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) return null;
+
+  const { data } = await supabase
+    .from("assignment_submissions")
+    .select("*")
+    .eq("id", submissionId)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const submission = data as CppAssignmentSubmission;
+  return {
+    bucket: submission.file_bucket,
+    path: submission.file_path,
+    mimeType: submission.mime_type,
+    title: submission.file_name,
+  };
+}
+
+export async function setStudentAssignmentAccess(input: {
+  userKey: string;
+  assignmentKey: string;
+  unlocked: boolean;
+  adminEmail: string;
+}) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { error } = await supabase.from("student_assignment_access").upsert(
+    {
+      user_key: input.userKey,
+      course_slug: CPP20218_COURSE_SLUG,
+      assignment_key: input.assignmentKey,
+      unlocked: input.unlocked,
+      reason: input.unlocked
+        ? `Unlocked by ${input.adminEmail}`
+        : `Locked by ${input.adminEmail}`,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_key,course_slug,assignment_key" },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function reviewAssignmentSubmission(input: {
+  submissionId: string;
+  status: "satisfactory" | "not_satisfactory";
+  adminComment: string;
+  reviewedBy: string;
+}) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { error } = await supabase
+    .from("assignment_submissions")
+    .update({
+      status: input.status,
+      admin_comment: input.adminComment || null,
+      reviewed_by: input.reviewedBy,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.submissionId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}

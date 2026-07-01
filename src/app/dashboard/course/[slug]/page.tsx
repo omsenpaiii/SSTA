@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Award, CheckCircle2, FileText, GraduationCap, Mail } from "lucide-react";
 import { ActivityCompletionButton } from "@/components/student/ActivityCompletionButton";
+import { Cpp20218AssignmentsView } from "@/components/student/Cpp20218AssignmentsView";
 import { getCurrentUser } from "@/lib/auth";
+import { getStudentCppAssignments, isCpp20218Slug } from "@/lib/cpp20218";
 import {
   formatActivityStatus,
   formatRelativeUpdate,
@@ -50,6 +52,16 @@ export default async function CourseWorkspacePage({
   if (!course) {
     notFound();
   }
+
+  const cppAssignments = isCpp20218Slug(course.slug)
+    ? await getStudentCppAssignments(user.id)
+    : [];
+  const cppCompleted = cppAssignments.filter((assignment) => assignment.status === "satisfactory").length;
+  const cppRemaining = cppAssignments.filter((assignment) => assignment.status !== "satisfactory").length;
+  const cppProgressPercent = cppAssignments.length
+    ? Math.round((cppCompleted / cppAssignments.length) * 100)
+    : course.progressPercent;
+  const cppIncomplete = cppAssignments.filter((assignment) => assignment.status !== "satisfactory");
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
@@ -136,6 +148,9 @@ export default async function CourseWorkspacePage({
             ) : null}
 
             {tab === "activities" ? (
+              isCpp20218Slug(course.slug) ? (
+                <Cpp20218AssignmentsView assignments={cppAssignments} mode="activities" />
+              ) : (
               <div className="mt-6 space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   {[
@@ -221,9 +236,13 @@ export default async function CourseWorkspacePage({
                   ))}
                 </div>
               </div>
+              )
             ) : null}
 
             {tab === "resources" ? (
+              isCpp20218Slug(course.slug) ? (
+                <Cpp20218AssignmentsView assignments={cppAssignments} mode="resources" />
+              ) : (
               <div className="mt-6 grid gap-4">
                 {course.resources.map((resource) => (
                   <article
@@ -253,6 +272,7 @@ export default async function CourseWorkspacePage({
                   </article>
                 ))}
               </div>
+              )
             ) : null}
           </div>
         </div>
@@ -263,22 +283,26 @@ export default async function CourseWorkspacePage({
           <h3 className="text-3xl font-black tracking-tight text-[#081221]">Your Progress</h3>
           <div className="mt-6 flex items-center justify-between gap-4">
             <span className="text-xl font-black text-[#081221]">Course Completion</span>
-            <span className="text-2xl font-black text-[#081221]">{course.progressPercent}%</span>
+            <span className="text-2xl font-black text-[#081221]">{cppProgressPercent}%</span>
           </div>
           <div className="mt-4 h-4 rounded-full bg-[#edf3f8]">
             <div
               className="h-4 rounded-full bg-[linear-gradient(90deg,#19b468_0%,#63d39b_100%)]"
-              style={{ width: `${course.progressPercent}%` }}
+              style={{ width: `${cppProgressPercent}%` }}
             />
           </div>
 
           <div className="mt-8 grid grid-cols-2 gap-4 text-center">
             <div className="rounded-[24px] bg-[#f6fff8] px-4 py-5">
-              <p className="text-4xl font-black text-[#19b468]">{course.completedActivities}</p>
+              <p className="text-4xl font-black text-[#19b468]">
+                {isCpp20218Slug(course.slug) ? cppCompleted : course.completedActivities}
+              </p>
               <p className="mt-2 text-base font-semibold text-[#5d7389]">Completed</p>
             </div>
             <div className="rounded-[24px] bg-[#f4f8fc] px-4 py-5">
-              <p className="text-4xl font-black text-[#8c9cb0]">{course.remainingActivities}</p>
+              <p className="text-4xl font-black text-[#8c9cb0]">
+                {isCpp20218Slug(course.slug) ? cppRemaining : course.remainingActivities}
+              </p>
               <p className="mt-2 text-base font-semibold text-[#5d7389]">Remaining</p>
             </div>
           </div>
@@ -286,7 +310,26 @@ export default async function CourseWorkspacePage({
           <div className="mt-8">
             <h4 className="text-2xl font-black tracking-tight text-[#081221]">Incomplete Activities</h4>
             <div className="mt-4 space-y-3">
-              {course.incompleteActivities.slice(0, 5).map((activity) => (
+              {isCpp20218Slug(course.slug) ? (
+                cppIncomplete.slice(0, 5).map((assignment) => (
+                  <Link
+                    key={assignment.assignmentKey}
+                    href={`/dashboard/course/${course.slug}?tab=activities`}
+                    className="portal-subtle-card flex items-center justify-between gap-4 rounded-[18px] p-4 transition hover:border-[#0f6eb8]/30 hover:bg-white"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <h5 className="truncate text-base font-black text-[#081221]">{assignment.title}</h5>
+                      <p className="mt-1 text-sm font-semibold text-[#5d7389]">{assignment.subtitle}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="rounded-[14px] bg-[#eef5fb] px-3 py-1 text-xs font-black text-[#0f6eb8]">
+                        {assignment.unlocked ? "Open" : "Locked"}
+                      </span>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+              course.incompleteActivities.slice(0, 5).map((activity) => (
                 <Link
                   key={activity.id}
                   href={`/dashboard/course/${course.slug}/activities/${activity.id}`}
@@ -302,7 +345,8 @@ export default async function CourseWorkspacePage({
                     </span>
                   </div>
                 </Link>
-              ))}
+              ))
+              )}
             </div>
           </div>
 

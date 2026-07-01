@@ -3,7 +3,9 @@ import { requireAdmin } from "@/lib/admin";
 import {
   deleteAdminCourse,
   getAdminSnapshot,
+  reviewAdminAssignment,
   seedCoursesToSupabase,
+  updateAdminAssignmentAccess,
   upsertAdminCourse,
   upsertAdminLesson,
   upsertAdminStudent,
@@ -26,7 +28,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const body = await request.json();
     const action = String(body?.action ?? "");
     const payload = body?.payload;
@@ -41,6 +43,10 @@ export async function POST(request: Request) {
       await deleteAdminCourse(String(payload?.slug ?? ""));
     } else if (action === "seed-defaults") {
       await seedCoursesToSupabase(getFallbackCourses());
+    } else if (action === "review-assignment") {
+      await reviewAdminAssignment(payload, admin.email);
+    } else if (action === "update-assignment-access") {
+      await updateAdminAssignmentAccess(payload, admin.email);
     } else {
       return NextResponse.json({ error: "Unknown admin action." }, { status: 400 });
     }
