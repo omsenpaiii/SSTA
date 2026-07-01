@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   ChevronDown,
   Download,
@@ -12,6 +13,8 @@ import {
   Lock,
   MessageSquareText,
   MonitorPlay,
+  PanelLeft,
+  ShieldCheck,
 } from "lucide-react";
 import {
   formatAssignmentStatus,
@@ -106,7 +109,7 @@ function PreviewFrame({ resource }: { resource: CppAssignmentResource }) {
       <iframe
         title={`${resource.title} preview`}
         src={`/api/student/resources/${resource.id}?mode=preview#toolbar=0&navpanes=0`}
-        className="h-[520px] w-full bg-[#f8fbfe]"
+        className="h-[min(68vh,680px)] min-h-[460px] w-full bg-[#f8fbfe]"
       />
     </div>
   );
@@ -288,6 +291,7 @@ function ClusterSection({
 
 export function Cpp20218AssignmentsView({
   assignments,
+  mode,
 }: Cpp20218AssignmentsViewProps) {
   const initialAssignment = useMemo(
     () => assignments.find((assignment) => assignment.unlocked) ?? assignments[0],
@@ -295,8 +299,8 @@ export function Cpp20218AssignmentsView({
   );
   const [selectedKey, setSelectedKey] = useState(initialAssignment?.assignmentKey ?? "");
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
-    introduction: false,
-    learning: false,
+    introduction: mode === "activities",
+    learning: mode === "resources",
     assessment: false,
   });
 
@@ -325,27 +329,44 @@ export function Cpp20218AssignmentsView({
   }
 
   return (
-    <div className="mt-6 space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: "Clusters", value: assignments.length },
-          { label: "Unlocked", value: unlocked },
-          { label: "Submitted", value: submitted },
-          { label: "Satisfactory", value: satisfactory },
-        ].map((item) => (
-          <div key={item.label} className="rounded-xl border border-[#dbe3ec] bg-white p-4">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#6b7f95]">{item.label}</p>
-            <p className="mt-2 text-3xl font-black text-[#081221]">{item.value}</p>
+    <div className="mt-5 overflow-hidden rounded-[22px] border border-[#dbe7f2] bg-white shadow-[0_18px_55px_rgba(8,18,33,0.08)]">
+      <div className="border-b border-[#e7eff7] bg-[#fbfdff] px-5 py-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf4ff] text-[#0f6eb8]">
+              <PanelLeft size={20} />
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f6eb8]">
+                CPP20218 learning workspace
+              </p>
+              <h3 className="mt-1 text-2xl font-black tracking-tight text-[#081221]">
+                Work through each cluster, review resources, and submit your assessment.
+              </h3>
+            </div>
           </div>
-        ))}
+          <div className="grid gap-2 sm:grid-cols-4 xl:min-w-[520px]">
+            {[
+              { label: "Clusters", value: assignments.length },
+              { label: "Unlocked", value: unlocked },
+              { label: "Submitted", value: submitted },
+              { label: "Satisfactory", value: satisfactory },
+            ].map((item) => (
+              <div key={item.label} className="rounded-2xl border border-[#dbe7f2] bg-white px-4 py-3">
+                <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[#71869c]">{item.label}</p>
+                <p className="mt-1 text-2xl font-black text-[#081221]">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-5 2xl:grid-cols-[260px_1fr]">
-        <aside className="rounded-xl border border-[#dbe3ec] bg-white p-3">
-          <p className="px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#6b7f95]">
-            CPP20218 clusters
+      <div className="grid min-h-[760px] lg:grid-cols-[300px_minmax(0,1fr)] 2xl:grid-cols-[300px_minmax(0,1fr)_310px]">
+        <aside className="border-b border-[#e7eff7] bg-[#f7fbff] p-4 lg:border-b-0 lg:border-r">
+          <p className="px-2 text-xs font-black uppercase tracking-[0.16em] text-[#6b7f95]">
+            Course clusters
           </p>
-          <div className="mt-2 space-y-2">
+          <div className="mt-3 grid gap-2">
             {assignments.map((assignment) => {
               const active = assignment.assignmentKey === selected.assignmentKey;
               return (
@@ -353,24 +374,24 @@ export function Cpp20218AssignmentsView({
                   key={assignment.assignmentKey}
                   type="button"
                   onClick={() => setSelectedKey(assignment.assignmentKey)}
-                  className={`w-full rounded-xl border px-3 py-3 text-left transition ${
+                  className={`group w-full rounded-2xl border p-3 text-left transition ${
                     active
-                      ? "border-[#0f6eb8] bg-[#eef5ff]"
-                      : "border-transparent bg-white hover:border-[#dbe3ec] hover:bg-[#fbfdff]"
+                      ? "border-[#0f6eb8] bg-white shadow-[0_12px_32px_rgba(15,110,184,0.12)]"
+                      : "border-transparent bg-transparent hover:border-[#dbe3ec] hover:bg-white"
                   }`}
                 >
-                  <span className="flex items-center justify-between gap-2">
+                  <span className="flex items-center justify-between gap-3">
                     <span className="text-sm font-black text-[#081221]">{clusterLabel(assignment)}</span>
-                    {assignment.unlocked ? (
-                      <CheckCircle2 size={16} className="text-emerald-600" />
-                    ) : (
-                      <Lock size={15} className="text-[#94a3b8]" />
-                    )}
+                    <span className={`flex size-8 items-center justify-center rounded-xl ${
+                      assignment.unlocked ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                    }`}>
+                      {assignment.unlocked ? <CheckCircle2 size={16} /> : <Lock size={15} />}
+                    </span>
                   </span>
-                  <span className="mt-1 line-clamp-2 block text-xs font-bold leading-5 text-[#5d7389]">
+                  <span className="mt-2 line-clamp-2 block text-sm font-bold leading-5 text-[#53677d]">
                     {assignment.subtitle}
                   </span>
-                  <span className={`mt-3 inline-flex rounded-lg px-2 py-1 text-[11px] font-black ${statusStyles[assignment.status]}`}>
+                  <span className={`mt-3 inline-flex rounded-lg px-2.5 py-1.5 text-[11px] font-black ${statusStyles[assignment.status]}`}>
                     {formatAssignmentStatus(assignment.status)}
                   </span>
                 </button>
@@ -379,31 +400,63 @@ export function Cpp20218AssignmentsView({
           </div>
         </aside>
 
-        <article className="rounded-xl border border-[#dbe3ec] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.04)]">
-          <header className="border-b border-[#edf3f8] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+        <main className="min-w-0 bg-white">
+          <header className="border-b border-[#e7eff7] px-5 py-5 sm:px-7">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f6eb8]">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f6eb8]">
                   {clusterLabel(selected)}
                 </p>
                 <h3 className="mt-2 text-3xl font-black tracking-tight text-[#081221]">
                   {selected.subtitle}
                 </h3>
-                <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-[#5d7389]">
+                <p className="mt-3 max-w-4xl text-sm font-semibold leading-6 text-[#53677d]">
                   {selected.overview}
                 </p>
               </div>
-              <span className={`inline-flex rounded-lg px-3 py-2 text-xs font-black ${statusStyles[selected.status]}`}>
+              <span className={`w-fit rounded-xl px-3 py-2 text-xs font-black ${statusStyles[selected.status]}`}>
                 {formatAssignmentStatus(selected.status)}
               </span>
             </div>
           </header>
 
-          <div className="space-y-4 p-5">
+          <div className="space-y-4 px-5 py-5 sm:px-7">
             {!selected.unlocked ? (
               <LockedPanel assignment={selected} />
             ) : (
               <>
+                <div className="rounded-2xl border border-[#dbe7f2] bg-[#f8fbff] p-3">
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {(["introduction", "learning", "assessment"] as SectionKey[]).map((sectionKey) => {
+                      const copy = sectionCopy[sectionKey];
+                      const Icon = copy.icon;
+                      const open = openSections[sectionKey];
+                      return (
+                        <button
+                          key={sectionKey}
+                          type="button"
+                          onClick={() => toggleSection(sectionKey)}
+                          className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                            open
+                              ? "border-[#0f6eb8] bg-white shadow-sm"
+                              : "border-transparent bg-transparent hover:bg-white"
+                          }`}
+                        >
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf4ff] text-[#0f6eb8]">
+                            <Icon size={18} />
+                          </span>
+                          <span>
+                            <span className="block text-sm font-black text-[#081221]">{copy.title}</span>
+                            <span className="mt-0.5 block text-xs font-bold text-[#6b7f95]">
+                              {resourcesFor(selected, sectionKey).length || "Pending"} item(s)
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {(["introduction", "learning", "assessment"] as SectionKey[]).map((sectionKey) => (
                   <ClusterSection
                     key={sectionKey}
@@ -416,7 +469,61 @@ export function Cpp20218AssignmentsView({
               </>
             )}
           </div>
-        </article>
+        </main>
+
+        <aside className="hidden border-l border-[#e7eff7] bg-[#fbfdff] p-5 2xl:block">
+          <div className="sticky top-24 space-y-4">
+            <section className="rounded-2xl border border-[#dbe7f2] bg-white p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                  <ShieldCheck size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-[#081221]">Cluster status</p>
+                  <p className="mt-0.5 text-xs font-bold text-[#6b7f95]">
+                    {formatAssignmentStatus(selected.status)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 text-center">
+                <div className="rounded-xl bg-[#f4f8fc] px-3 py-3">
+                  <p className="text-2xl font-black text-[#081221]">{unlocked}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.1em] text-[#71869c]">Unlocked</p>
+                </div>
+                <div className="rounded-xl bg-[#f6fff8] px-3 py-3">
+                  <p className="text-2xl font-black text-emerald-600">{satisfactory}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.1em] text-[#71869c]">Passed</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[#dbe7f2] bg-white p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-[#eaf4ff] text-[#0f6eb8]">
+                  <BookOpen size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-black text-[#081221]">How to complete</p>
+                  <p className="mt-0.5 text-xs font-bold text-[#6b7f95]">Follow the three sections</p>
+                </div>
+              </div>
+              <ol className="mt-4 space-y-3 text-sm font-semibold leading-6 text-[#53677d]">
+                <li>1. Watch the introduction preview.</li>
+                <li>2. Read the learner resource and keep a copy.</li>
+                <li>3. Download, complete, and upload the assessment.</li>
+              </ol>
+            </section>
+
+            {selected.submission?.admin_comment ? (
+              <section className="rounded-2xl border border-[#dbe7f2] bg-white p-4">
+                <p className="text-sm font-black text-[#081221]">Latest assessor feedback</p>
+                <p className="mt-2 text-sm font-semibold leading-6 text-[#53677d]">
+                  {selected.submission.admin_comment}
+                </p>
+              </section>
+            ) : null}
+          </div>
+        </aside>
       </div>
     </div>
   );

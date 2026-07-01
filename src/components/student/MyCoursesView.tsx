@@ -159,10 +159,14 @@ export function MyCoursesView({ courses }: MyCoursesViewProps) {
                     {course.remainingActivities} activities left
                   </div>
                   <Link
-                    href={`/dashboard/course/${course.slug}`}
+                    href={
+                      course.code === "CPP20218"
+                        ? `/dashboard/course/${course.slug}?tab=activities`
+                        : `/dashboard/course/${course.slug}`
+                    }
                     className="portal-button-primary px-5 py-3 text-sm"
                   >
-                    Open workspace
+                    {course.code === "CPP20218" ? "Open clusters" : "Open workspace"}
                   </Link>
                 </div>
               </div>

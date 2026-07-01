@@ -63,6 +63,78 @@ export default async function CourseWorkspacePage({
     : course.progressPercent;
   const cppIncomplete = cppAssignments.filter((assignment) => assignment.status !== "satisfactory");
 
+  if (isCpp20218Slug(course.slug) && tab !== "info") {
+    return (
+      <div className="space-y-5">
+        <section className="portal-card overflow-hidden rounded-[24px]">
+          <div className="relative bg-[linear-gradient(120deg,#062846_0%,#0f6eb8_58%,#1596db_100%)] px-6 py-7 text-white sm:px-8">
+            <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.18)_1px,transparent_1px)] [background-size:44px_44px]" />
+            <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_520px] xl:items-end">
+              <div>
+                <div className="inline-flex rounded-full bg-white/14 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-white/82 backdrop-blur">
+                  Currently enrolled
+                </div>
+                <h2 className="mt-5 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl">
+                  {course.title}
+                </h2>
+                <p className="mt-4 max-w-3xl text-base font-semibold leading-7 text-white/82">
+                  {course.overview}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-4 text-sm font-black text-white/80">
+                  <span className="inline-flex items-center gap-2">
+                    <FileText size={16} />
+                    Program Code: {course.code}
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <Award size={16} />
+                    Nationally aligned training
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <GraduationCap size={16} />
+                    {course.deliveryModes.slice(0, 3).join(" • ")}
+                  </span>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Course completion", value: `${cppProgressPercent}%` },
+                  { label: "Satisfactory", value: cppCompleted },
+                  { label: "Remaining", value: cppRemaining },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-2xl border border-white/18 bg-white/12 p-4 backdrop-blur"
+                  >
+                    <p className="text-[11px] font-black uppercase tracking-[0.12em] text-white/70">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-3xl font-black text-white">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e7eff7] bg-white px-5 py-4">
+            <div className="inline-flex rounded-[16px] bg-[#eef5fb] p-1.5">
+              <TabLink href={`/dashboard/course/${course.slug}`} label="Course Information" active={false} />
+              <TabLink href={`/dashboard/course/${course.slug}?tab=activities`} label="Activities" active={tab === "activities"} />
+              <TabLink href={`/dashboard/course/${course.slug}?tab=resources`} label="Resources" active={tab === "resources"} />
+            </div>
+            <Link
+              href="/dashboard/contact"
+              className="portal-button-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            >
+              <Mail size={16} />
+              Email Instructor
+            </Link>
+          </div>
+        </section>
+
+        <Cpp20218AssignmentsView assignments={cppAssignments} mode={tab} />
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <section className="space-y-6">
