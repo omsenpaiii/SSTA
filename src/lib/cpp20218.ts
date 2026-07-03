@@ -48,6 +48,8 @@ export type CppAssignmentSubmission = {
   status: "submitted" | "satisfactory" | "not_satisfactory";
   student_comment: string | null;
   resubmission_count: number | null;
+  submitted_by: "student" | "admin";
+  uploaded_by_admin_email: string | null;
   admin_comment: string | null;
   reviewed_by: string | null;
   submitted_at: string;
@@ -91,6 +93,7 @@ export type AdminCppStudent = {
   lastName: string | null;
   email: string | null;
   phone: string | null;
+  batchNumber: number;
   source: string | null;
   assignments: StudentCppAssignment[];
 };
@@ -210,7 +213,7 @@ export async function getAdminCppAssignmentSnapshot(): Promise<{
   const [profilesResult, enrollmentsResult, adminResourceResult] = await Promise.all([
     supabase
       .from("student_profiles")
-      .select("user_key,first_name,last_name,email,phone")
+      .select("user_key,first_name,last_name,email,phone,batch_number")
       .order("first_name", { ascending: true }),
     supabase
       .from("course_enrollments")
@@ -236,6 +239,7 @@ export async function getAdminCppAssignmentSnapshot(): Promise<{
     last_name: string | null;
     email: string | null;
     phone: string | null;
+    batch_number: number | null;
   }>).filter((profile) => enrolled.has(profile.user_key));
 
   const students = await Promise.all(
@@ -245,6 +249,7 @@ export async function getAdminCppAssignmentSnapshot(): Promise<{
       lastName: profile.last_name,
       email: profile.email,
       phone: profile.phone,
+      batchNumber: profile.batch_number ?? 2,
       source: enrolled.get(profile.user_key) ?? null,
       assignments: await getStudentCppAssignments(profile.user_key),
     })),

@@ -34,6 +34,13 @@ type AdminPortalProps = {
 };
 
 type Section = "dashboard" | "students" | "add-student" | "courses" | "lessons" | "assessments" | "leads" | "excel" | "settings";
+type AssessmentStatusFilter =
+  | "all"
+  | "submitted"
+  | "satisfactory"
+  | "not_satisfactory"
+  | "not_submitted"
+  | "locked";
 
 const navItems: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -63,10 +70,23 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function matchesAssessmentStatus(status: string, filter: AssessmentStatusFilter) {
+  if (filter === "all") return true;
+  if (filter === "submitted") {
+    return status === "submitted" || status === "satisfactory" || status === "not_satisfactory";
+  }
+  return status === filter;
+}
+
 export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalProps) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [active, setActive] = useState<Section>("dashboard");
   const [query, setQuery] = useState("");
+  const [assessmentQuery, setAssessmentQuery] = useState("");
+  const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatusFilter>("all");
+  const [assessmentCluster, setAssessmentCluster] = useState("all");
+  const [assessmentSource, setAssessmentSource] = useState("all");
+  const [assessmentBatch, setAssessmentBatch] = useState("all");
   const [selectedCourseSlug, setSelectedCourseSlug] = useState(initialSnapshot.courses[0]?.slug ?? "");
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -90,6 +110,47 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     const count = snapshot.enrollments.filter((item) => item.course_slug === course.slug).length;
     return { course, count };
   });
+  const monthlyEnrollmentCounts = Array.from({ length: 12 }).map((_, index) =>
+    snapshot.enrollments.filter((item) => {
+      const date = new Date(item.created_at);
+      return date.getMonth() === index;
+    }).length,
+  );
+  const maxMonthlyEnrollment = Math.max(1, ...monthlyEnrollmentCounts);
+  const assessmentSources = Array.from(
+    new Set(snapshot.cpp20218.students.map((student) => student.source).filter(Boolean) as string[]),
+  ).sort((a, b) => a.localeCompare(b));
+  const assessmentBatches = Array.from(
+    new Set(snapshot.cpp20218.students.map((student) => student.batchNumber ?? 2)),
+  ).sort((a, b) => a - b);
+  const filteredCppStudents = snapshot.cpp20218.students
+    .map((student) => {
+      const name = `${student.firstName ?? ""} ${student.lastName ?? ""}`.trim() || student.email || student.userKey;
+      const haystack = `${name} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase();
+      const matchesSearch = haystack.includes(assessmentQuery.trim().toLowerCase());
+      const matchesSource = assessmentSource === "all" || student.source === assessmentSource;
+      const matchesBatch = assessmentBatch === "all" || String(student.batchNumber ?? 2) === assessmentBatch;
+      const assignments = student.assignments
+        .filter((assignment) => assessmentCluster === "all" || String(assignment.position) === assessmentCluster)
+        .filter((assignment) => matchesAssessmentStatus(assignment.status, assessmentStatus))
+        .sort((a, b) => {
+          const aSubmitted = a.submission ? 1 : 0;
+          const bSubmitted = b.submission ? 1 : 0;
+          if (aSubmitted !== bSubmitted) return bSubmitted - aSubmitted;
+          return a.position - b.position;
+        });
+
+      return { ...student, displayName: name, assignments, matchesSearch, matchesSource, matchesBatch };
+    })
+    .filter((student) => student.matchesSearch && student.matchesSource && student.matchesBatch && student.assignments.length)
+    .sort((a, b) => {
+      if (assessmentStatus === "submitted") {
+        const aNeedsReview = a.assignments.some((assignment) => assignment.status === "submitted") ? 1 : 0;
+        const bNeedsReview = b.assignments.some((assignment) => assignment.status === "submitted") ? 1 : 0;
+        if (aNeedsReview !== bNeedsReview) return bNeedsReview - aNeedsReview;
+      }
+      return a.displayName.localeCompare(b.displayName);
+    });
   const metricCards: { label: string; value: string; icon: LucideIcon }[] = [
     { label: "Total Students", value: String(snapshot.students.length), icon: Users },
     { label: "Active Enrolments", value: String(activeEnrollments), icon: GraduationCap },
@@ -149,6 +210,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         lastName: String(formData.get("lastName") || ""),
         email: String(formData.get("email") || ""),
         phone: String(formData.get("phone") || ""),
+        batchNumber: Number(formData.get("batchNumber") || 2),
         courseSlug: String(formData.get("courseSlug") || ""),
         status: "active",
       },
@@ -215,6 +277,23 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       { userKey, assignmentKey, unlocked },
       unlocked ? "Assignment unlocked." : "Assignment locked.",
     );
+  }
+
+  async function handleAdminAssignmentUpload(formData: FormData) {
+    setNotice(null);
+    const response = await fetch("/api/admin/assignments/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const json = await response.json();
+
+    if (!response.ok) {
+      setNotice({ type: "error", text: json.error ?? "Unable to upload assessment." });
+      return;
+    }
+
+    setSnapshot(json.snapshot);
+    setNotice({ type: "success", text: "Assessment uploaded for learner." });
   }
 
   return (
@@ -333,25 +412,45 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               </div>
               <div className="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
                 <section className="rounded-xl border border-slate-200 bg-white p-7 shadow-sm">
-                  <h2 className="text-2xl font-black">Enrollment Trends</h2>
-                  <div className="mt-8 flex h-72 items-end gap-3 border-b border-l border-dashed border-slate-200 px-4">
-                    {Array.from({ length: 12 }).map((_, index) => {
-                      const monthCount = snapshot.enrollments.filter((item) => {
-                        const date = new Date(item.created_at);
-                        return date.getMonth() === index;
-                      }).length;
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-black">Enrollment Trends</h2>
+                      <p className="mt-1 text-sm font-bold text-slate-500">Monthly active enrollment volume</p>
+                    </div>
+                    <span className="rounded-full bg-[#eef4fb] px-3 py-1 text-xs font-black text-[#1f7ac1]">
+                      Max {maxMonthlyEnrollment}
+                    </span>
+                  </div>
+                  <div className="mt-6 grid h-72 grid-cols-[42px_1fr] gap-3">
+                    <div className="flex flex-col justify-between border-r border-dashed border-slate-200 pr-3 text-right text-xs font-black text-slate-400">
+                      <span>{maxMonthlyEnrollment}</span>
+                      <span>{Math.ceil(maxMonthlyEnrollment / 2)}</span>
+                      <span>0</span>
+                    </div>
+                    <div className="relative">
+                      <div className="absolute inset-0 grid grid-rows-4">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                          <span key={index} className="border-t border-dashed border-slate-100" />
+                        ))}
+                      </div>
+                      <div className="relative flex h-full items-end gap-2 pb-7">
+                        {monthlyEnrollmentCounts.map((monthCount, index) => {
+                          const height = Math.max(8, Math.round((monthCount / maxMonthlyEnrollment) * 220));
                       return (
-                        <div key={index} className="flex flex-1 flex-col items-center gap-2">
+                        <div key={index} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
                           <div
-                            className="w-full rounded-t-lg bg-[#1f7ac1]/80"
-                            style={{ height: `${Math.max(monthCount * 28, 6)}px` }}
+                            className="w-full max-w-9 rounded-t-lg bg-[#1f7ac1]/80 transition"
+                            style={{ height: `${height}px` }}
+                            title={`${monthCount} enrollments`}
                           />
-                          <span className="text-xs font-bold text-slate-500">
+                          <span className="text-[11px] font-bold text-slate-500">
                             {new Date(2026, index, 1).toLocaleDateString("en-AU", { month: "short" })}
                           </span>
                         </div>
                       );
                     })}
+                      </div>
+                    </div>
                   </div>
                 </section>
                 <section className="rounded-xl border border-slate-200 bg-white p-7 shadow-sm">
@@ -382,11 +481,12 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               title="Students"
               actionLabel="Add Student"
               onAction={() => setActive("add-student")}
-              columns={["Name", "Email", "Phone", "Access Key", "Created"]}
+              columns={["Name", "Email", "Phone", "Batch", "Access Key", "Created"]}
               rows={filteredStudents.map((student) => [
                 `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || "Unnamed",
                 student.email ?? "",
                 student.phone ?? "",
+                `Batch ${student.batch_number ?? 2}`,
                 student.user_key,
                 new Date(student.created_at).toLocaleDateString("en-AU"),
               ])}
@@ -400,6 +500,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 <TextField name="lastName" label="Last name" required />
                 <TextField name="email" label="Email address" type="email" required />
                 <TextField name="phone" label="Phone number" />
+                <TextField name="batchNumber" label="Batch number" type="number" defaultValue="2" />
                 <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-2">
                   Course access
                   <select name="courseSlug" className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
@@ -535,6 +636,67 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 </p>
               </div>
 
+              <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="grid gap-3 xl:grid-cols-[1.5fr_repeat(4,minmax(150px,1fr))]">
+                  <label className="relative block">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                      value={assessmentQuery}
+                      onChange={(event) => setAssessmentQuery(event.target.value)}
+                      placeholder="Search student, email, or phone..."
+                      className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-bold outline-none focus:border-[#1f7ac1] focus:bg-white"
+                    />
+                  </label>
+                  <select
+                    value={assessmentStatus}
+                    onChange={(event) => setAssessmentStatus(event.target.value as AssessmentStatusFilter)}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+                  >
+                    <option value="all">All statuses</option>
+                    <option value="submitted">Submitted/reviewed</option>
+                    <option value="satisfactory">Satisfactory</option>
+                    <option value="not_satisfactory">Not satisfactory</option>
+                    <option value="not_submitted">Not submitted</option>
+                    <option value="locked">Locked</option>
+                  </select>
+                  <select
+                    value={assessmentCluster}
+                    onChange={(event) => setAssessmentCluster(event.target.value)}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+                  >
+                    <option value="all">All clusters</option>
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <option key={index + 1} value={String(index + 1)}>
+                        Cluster {index + 1}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={assessmentSource}
+                    onChange={(event) => setAssessmentSource(event.target.value)}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+                  >
+                    <option value="all">All sources</option>
+                    {assessmentSources.map((source) => (
+                      <option key={source} value={source}>{source}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={assessmentBatch}
+                    onChange={(event) => setAssessmentBatch(event.target.value)}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+                  >
+                    <option value="all">All batches</option>
+                    {assessmentBatches.map((batch) => (
+                      <option key={batch} value={String(batch)}>Batch {batch}</option>
+                    ))}
+                  </select>
+                </div>
+                <p className="mt-3 text-sm font-bold text-slate-500">
+                  Showing {filteredCppStudents.reduce((sum, student) => sum + student.assignments.length, 0)} cluster rows across {filteredCppStudents.length} students.
+                </p>
+              </section>
+
               <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 className="text-2xl font-black">Assessor answer keys</h2>
                 <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -558,15 +720,15 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               </section>
 
               <div className="space-y-5">
-                {snapshot.cpp20218.students.map((student) => {
-                  const name = `${student.firstName ?? ""} ${student.lastName ?? ""}`.trim() || student.email || student.userKey;
+                {filteredCppStudents.length ? filteredCppStudents.map((student) => {
+                  const name = student.displayName;
                   return (
                     <section key={student.userKey} className="rounded-xl border border-slate-200 bg-white shadow-sm">
                       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-6">
                         <div>
                           <h2 className="text-2xl font-black">{name}</h2>
                           <p className="mt-1 text-sm font-bold text-slate-500">
-                            {student.email ?? "No email"} · {student.phone ?? "No phone"} · Source: {student.source ?? "Unknown"}
+                            {student.email ?? "No email"} · {student.phone ?? "No phone"} · Source: {student.source ?? "Unknown"} · Batch {student.batchNumber ?? 2}
                           </p>
                         </div>
                         <span className="rounded-full bg-[#eef4fb] px-4 py-2 text-sm font-black text-[#1f7ac1]">
@@ -607,68 +769,141 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 
                             <div>
                               {assignment.submission ? (
-                                <form action={handleAssignmentReview} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                  <input type="hidden" name="submissionId" value={assignment.submission.id} />
-                                  <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <a
-                                      href={`/api/admin/assignment-file?type=submission&id=${assignment.submission.id}`}
-                                      target="_blank"
-                                      className="text-sm font-black text-[#1f7ac1] underline"
-                                    >
-                                      Open submission
-                                    </a>
-                                    <span className="text-xs font-bold text-slate-500">
-                                      {new Date(assignment.submission.submitted_at).toLocaleString("en-AU")}
-                                    </span>
-                                  </div>
-                                  <div className="mt-3 grid gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm font-bold text-slate-600">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                      <span>Student file</span>
-                                      <span className="text-slate-900">{assignment.submission.file_name}</span>
-                                    </div>
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                      <span>Submission cycle</span>
-                                      <span className="text-slate-900">
-                                        {assignment.submission.resubmission_count
-                                          ? `Resubmission ${assignment.submission.resubmission_count}`
-                                          : "First submission"}
+                                <div className="space-y-3">
+                                  <form action={handleAssignmentReview} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <input type="hidden" name="submissionId" value={assignment.submission.id} />
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                      <div className="flex flex-wrap gap-2">
+                                        <a
+                                          href={`/api/admin/assignment-file?type=submission&id=${assignment.submission.id}&mode=inline`}
+                                          target="_blank"
+                                          className="inline-flex h-9 items-center rounded-lg bg-[#1f7ac1] px-3 text-xs font-black text-white"
+                                        >
+                                          Open submission
+                                        </a>
+                                        <a
+                                          href={`/api/admin/assignment-file?type=submission&id=${assignment.submission.id}&mode=download`}
+                                          download
+                                          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-[#1f7ac1]"
+                                        >
+                                          Download submission
+                                        </a>
+                                      </div>
+                                      <span className="text-xs font-bold text-slate-500">
+                                        {new Date(assignment.submission.submitted_at).toLocaleString("en-AU")}
                                       </span>
                                     </div>
-                                    {assignment.submission.student_comment ? (
-                                      <div>
-                                        <span className="block text-slate-500">Student comment</span>
-                                        <p className="mt-1 leading-6 text-slate-900">
-                                          {assignment.submission.student_comment}
-                                        </p>
+                                    <div className="mt-3 grid gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm font-bold text-slate-600">
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span>Student file</span>
+                                        <span className="text-slate-900">{assignment.submission.file_name}</span>
                                       </div>
-                                    ) : null}
-                                  </div>
-                                  <textarea
-                                    name="adminComment"
-                                    defaultValue={assignment.submission.admin_comment ?? ""}
-                                    placeholder="Comments for the learner..."
-                                    className="mt-3 min-h-24 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-bold outline-none focus:border-[#1f7ac1]"
-                                  />
-                                  <div className="mt-3 flex flex-wrap gap-2">
-                                    <button
-                                      name="status"
-                                      value="satisfactory"
-                                      className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white"
-                                    >
-                                      Satisfactory
-                                    </button>
-                                    <button
-                                      name="status"
-                                      value="not_satisfactory"
-                                      className="h-10 rounded-xl bg-rose-600 px-4 text-sm font-black text-white"
-                                    >
-                                      Not satisfactory
-                                    </button>
-                                  </div>
-                                </form>
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span>Submission cycle</span>
+                                        <span className="text-slate-900">
+                                          {assignment.submission.resubmission_count
+                                            ? `Resubmission ${assignment.submission.resubmission_count}`
+                                            : "First submission"}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span>Submitted by</span>
+                                        <span className="text-slate-900">
+                                          {assignment.submission.submitted_by === "admin"
+                                            ? `Admin${assignment.submission.uploaded_by_admin_email ? ` (${assignment.submission.uploaded_by_admin_email})` : ""}`
+                                            : "Student"}
+                                        </span>
+                                      </div>
+                                      {assignment.submission.student_comment ? (
+                                        <div>
+                                          <span className="block text-slate-500">Student/admin upload note</span>
+                                          <p className="mt-1 leading-6 text-slate-900">
+                                            {assignment.submission.student_comment}
+                                          </p>
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                    <textarea
+                                      name="adminComment"
+                                      defaultValue={assignment.submission.admin_comment ?? ""}
+                                      placeholder="Comments for the learner..."
+                                      className="mt-3 min-h-24 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm font-bold outline-none focus:border-[#1f7ac1]"
+                                    />
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      <button
+                                        name="status"
+                                        value="satisfactory"
+                                        className="h-10 rounded-xl bg-emerald-600 px-4 text-sm font-black text-white"
+                                      >
+                                        Satisfactory
+                                      </button>
+                                      <button
+                                        name="status"
+                                        value="not_satisfactory"
+                                        className="h-10 rounded-xl bg-rose-600 px-4 text-sm font-black text-white"
+                                      >
+                                        Not satisfactory
+                                      </button>
+                                    </div>
+                                  </form>
+                                  {assignment.unlocked ? (
+                                    <form action={handleAdminAssignmentUpload} className="rounded-xl border border-dashed border-slate-200 bg-white p-4">
+                                      <input type="hidden" name="userKey" value={student.userKey} />
+                                      <input type="hidden" name="assignmentKey" value={assignment.assignmentKey} />
+                                      <label className="block text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                                        Replace with admin upload
+                                        <input
+                                          name="file"
+                                          type="file"
+                                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                          required
+                                          className="mt-2 block w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm font-bold text-slate-700"
+                                        />
+                                      </label>
+                                      <textarea
+                                        name="studentComment"
+                                        placeholder="Optional note shown to the learner..."
+                                        className="mt-3 min-h-20 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-bold outline-none focus:border-[#1f7ac1]"
+                                      />
+                                      <button className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-[#111c2b] px-4 text-sm font-black text-white">
+                                        <Upload size={14} /> Upload for student
+                                      </button>
+                                    </form>
+                                  ) : null}
+                                </div>
                               ) : (
-                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
-                                  No submission yet.
+                                <div className="space-y-3">
+                                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
+                                    No submission yet.
+                                  </div>
+                                  {assignment.unlocked ? (
+                                    <form action={handleAdminAssignmentUpload} className="rounded-xl border border-dashed border-slate-200 bg-white p-4">
+                                      <input type="hidden" name="userKey" value={student.userKey} />
+                                      <input type="hidden" name="assignmentKey" value={assignment.assignmentKey} />
+                                      <label className="block text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                                        Admin upload completed assessment
+                                        <input
+                                          name="file"
+                                          type="file"
+                                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                          required
+                                          className="mt-2 block w-full rounded-lg border border-slate-200 bg-slate-50 p-2 text-sm font-bold text-slate-700"
+                                        />
+                                      </label>
+                                      <textarea
+                                        name="studentComment"
+                                        placeholder="Optional note shown to the learner..."
+                                        className="mt-3 min-h-20 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm font-bold outline-none focus:border-[#1f7ac1]"
+                                      />
+                                      <button className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-[#111c2b] px-4 text-sm font-black text-white">
+                                        <Upload size={14} /> Upload for student
+                                      </button>
+                                    </form>
+                                  ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-black text-slate-500">
+                                      Unlock this cluster before uploading on behalf of the learner.
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -677,7 +912,11 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                       </div>
                     </section>
                   );
-                })}
+                }) : (
+                  <section className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-500">
+                    No assessment rows match the selected filters.
+                  </section>
+                )}
               </div>
             </div>
           ) : null}

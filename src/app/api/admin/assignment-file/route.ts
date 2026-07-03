@@ -8,9 +8,9 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-function contentDisposition(title: string) {
+function contentDisposition(title: string, mode: "inline" | "download") {
   const safe = title.replace(/[^\w\s.-]/g, "").trim() || "file";
-  return `inline; filename="${safe}"`;
+  return `${mode === "download" ? "attachment" : "inline"}; filename="${safe}"`;
 }
 
 export async function GET(request: Request) {
@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const type = url.searchParams.get("type");
     const id = url.searchParams.get("id") ?? "";
+    const mode = url.searchParams.get("mode") === "download" ? "download" : "inline";
 
     const file =
       type === "submission"
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
     return new NextResponse(await data.arrayBuffer(), {
       headers: {
         "Content-Type": file.mimeType ?? "application/octet-stream",
-        "Content-Disposition": contentDisposition(file.title),
+        "Content-Disposition": contentDisposition(file.title, mode),
         "Cache-Control": "private, no-store",
       },
     });

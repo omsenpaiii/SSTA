@@ -6,11 +6,13 @@ import { CreditCard } from "lucide-react";
 type AssignmentUnlockPaymentButtonProps = {
   assignmentKey: string;
   enabled: boolean;
+  amountCents?: number | null;
 };
 
 export function AssignmentUnlockPaymentButton({
   assignmentKey,
   enabled,
+  amountCents,
 }: AssignmentUnlockPaymentButtonProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -44,16 +46,27 @@ export function AssignmentUnlockPaymentButton({
     }
   }
 
+  const amountLabel = amountCents
+    ? new Intl.NumberFormat("en-AU", {
+        style: "currency",
+        currency: "AUD",
+        maximumFractionDigits: 0,
+      }).format(amountCents / 100)
+    : null;
+
   if (!enabled) {
     return (
       <p className="mt-3 text-sm font-semibold leading-6 text-[#5d7389]">
-        Payment gateway integration is almost ready. SSTA will publish access pricing shortly.
+        Payment is not available yet. SSTA will publish access pricing shortly.
       </p>
     );
   }
 
   return (
     <div className="mt-4">
+      <p className="mb-3 text-sm font-semibold leading-6 text-[#5d7389]">
+        One {amountLabel ?? "payment"} unlocks all remaining CPP20218 clusters for your learner account.
+      </p>
       <button
         type="button"
         onClick={startPayment}
@@ -61,7 +74,7 @@ export function AssignmentUnlockPaymentButton({
         className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#0f6eb8] px-4 text-sm font-black text-white shadow-[0_8px_18px_rgba(15,110,184,0.18)] transition hover:bg-[#0b5f9f] disabled:cursor-not-allowed disabled:opacity-60"
       >
         <CreditCard size={16} />
-        {isLoading ? "Starting payment..." : "Unlock with Pinch"}
+        {isLoading ? "Starting payment..." : `Unlock remaining clusters${amountLabel ? ` - ${amountLabel}` : ""}`}
       </button>
       {message ? (
         <p className="mt-2 text-sm font-semibold text-rose-600">{message}</p>

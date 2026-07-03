@@ -81,6 +81,8 @@ export async function POST(request: Request, { params }: SubmitRouteProps) {
       status: "submitted",
       student_comment: studentComment || null,
       resubmission_count: previous.data ? Number(previous.data.resubmission_count ?? 0) + 1 : 0,
+      submitted_by: "student",
+      uploaded_by_admin_email: null,
       admin_comment: null,
       reviewed_by: null,
       reviewed_at: null,

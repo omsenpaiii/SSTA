@@ -28,6 +28,7 @@ import { AssignmentUploadForm } from "@/components/student/AssignmentUploadForm"
 type Cpp20218AssignmentsViewProps = {
   assignments: StudentCppAssignment[];
   mode: "activities" | "resources";
+  unlockAmountCents?: number | null;
 };
 
 type SectionKey = "introduction" | "learning" | "assessment";
@@ -60,11 +61,6 @@ const sectionCopy: Record<SectionKey, { title: string; description: string; icon
 
 function clusterLabel(assignment: StudentCppAssignment) {
   return `Cluster ${assignment.position}`;
-}
-
-function assignmentPaymentsEnabled() {
-  const amount = Number(process.env.CPP20218_ASSIGNMENT_UNLOCK_AMOUNT_CENTS ?? 0);
-  return Number.isFinite(amount) && amount > 0;
 }
 
 function resourcesFor(assignment: StudentCppAssignment, key: SectionKey) {
@@ -142,7 +138,15 @@ function DownloadButtons({ resource }: { resource: CppAssignmentResource }) {
   );
 }
 
-function LockedPanel({ assignment }: { assignment: StudentCppAssignment }) {
+function LockedPanel({
+  assignment,
+  unlockAmountCents,
+}: {
+  assignment: StudentCppAssignment;
+  unlockAmountCents?: number | null;
+}) {
+  const paymentsEnabled = Boolean(unlockAmountCents && unlockAmountCents > 0);
+
   return (
     <div className="rounded-xl border border-dashed border-[#cbd8e6] bg-[#fbfdff] p-5">
       <div className="flex items-start gap-3">
@@ -150,14 +154,17 @@ function LockedPanel({ assignment }: { assignment: StudentCppAssignment }) {
           <Lock size={18} />
         </span>
         <div>
-          <h4 className="text-base font-black text-[#081221]">Payment gateway integration coming soon</h4>
+          <h4 className="text-base font-black text-[#081221]">
+            {paymentsEnabled ? "Unlock remaining CPP20218 clusters" : "Payment gateway integration coming soon"}
+          </h4>
           <p className="mt-2 text-sm font-semibold leading-6 text-[#5d7389]">
             {assignment.lockReason ??
               "This cluster is locked for now. SSTA will enable payment and unlock access shortly."}
           </p>
           <AssignmentUnlockPaymentButton
             assignmentKey={assignment.assignmentKey}
-            enabled={assignmentPaymentsEnabled()}
+            enabled={paymentsEnabled}
+            amountCents={unlockAmountCents}
           />
         </div>
       </div>
@@ -292,6 +299,7 @@ function ClusterSection({
 export function Cpp20218AssignmentsView({
   assignments,
   mode,
+  unlockAmountCents,
 }: Cpp20218AssignmentsViewProps) {
   const initialAssignment = useMemo(
     () => assignments.find((assignment) => assignment.unlocked) ?? assignments[0],
@@ -422,7 +430,7 @@ export function Cpp20218AssignmentsView({
 
           <div className="space-y-4 px-5 py-5 sm:px-7">
             {!selected.unlocked ? (
-              <LockedPanel assignment={selected} />
+              <LockedPanel assignment={selected} unlockAmountCents={unlockAmountCents} />
             ) : (
               <>
                 <div className="rounded-2xl border border-[#dbe7f2] bg-[#f8fbff] p-3">

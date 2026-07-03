@@ -31,6 +31,11 @@ function TabLink({ href, label, active }: { href: string; label: string; active:
   );
 }
 
+function getCppUnlockAmountCents() {
+  const amount = Number(process.env.CPP20218_ASSIGNMENT_UNLOCK_AMOUNT_CENTS ?? 0);
+  return Number.isFinite(amount) && amount > 0 ? Math.round(amount) : null;
+}
+
 export default async function CourseWorkspacePage({
   params,
   searchParams,
@@ -62,6 +67,7 @@ export default async function CourseWorkspacePage({
     ? Math.round((cppCompleted / cppAssignments.length) * 100)
     : course.progressPercent;
   const cppIncomplete = cppAssignments.filter((assignment) => assignment.status !== "satisfactory");
+  const cppUnlockAmountCents = getCppUnlockAmountCents();
 
   if (isCpp20218Slug(course.slug) && tab !== "info") {
     return (
@@ -130,7 +136,11 @@ export default async function CourseWorkspacePage({
           </div>
         </section>
 
-        <Cpp20218AssignmentsView assignments={cppAssignments} mode={tab} />
+        <Cpp20218AssignmentsView
+          assignments={cppAssignments}
+          mode={tab}
+          unlockAmountCents={cppUnlockAmountCents}
+        />
       </div>
     );
   }
@@ -221,7 +231,11 @@ export default async function CourseWorkspacePage({
 
             {tab === "activities" ? (
               isCpp20218Slug(course.slug) ? (
-                <Cpp20218AssignmentsView assignments={cppAssignments} mode="activities" />
+                <Cpp20218AssignmentsView
+                  assignments={cppAssignments}
+                  mode="activities"
+                  unlockAmountCents={cppUnlockAmountCents}
+                />
               ) : (
               <div className="mt-6 space-y-6">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -313,7 +327,11 @@ export default async function CourseWorkspacePage({
 
             {tab === "resources" ? (
               isCpp20218Slug(course.slug) ? (
-                <Cpp20218AssignmentsView assignments={cppAssignments} mode="resources" />
+                <Cpp20218AssignmentsView
+                  assignments={cppAssignments}
+                  mode="resources"
+                  unlockAmountCents={cppUnlockAmountCents}
+                />
               ) : (
               <div className="mt-6 grid gap-4">
                 {course.resources.map((resource) => (

@@ -292,6 +292,7 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
         lastName: String(row.last_name ?? row.lastName ?? ""),
         email,
         phone: String(row.phone ?? ""),
+        batchNumber: Number(row.batch_number ?? row.batchNumber ?? 2),
         userKey: String(row.user_key ?? row.userKey ?? ""),
       };
     });

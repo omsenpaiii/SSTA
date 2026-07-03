@@ -18,6 +18,7 @@ export type AdminStudent = {
   last_name: string | null;
   email: string | null;
   phone: string | null;
+  batch_number: number;
   stripe_customer_id: string | null;
   created_at: string;
   updated_at: string | null;
@@ -107,6 +108,7 @@ const studentSchema = z.object({
   lastName: z.string().trim().optional().nullable(),
   email: z.string().trim().email(),
   phone: z.string().trim().optional().nullable(),
+  batchNumber: z.coerce.number().int().positive().default(2),
   userKey: z.string().trim().optional().nullable(),
   courseSlug: z.string().trim().optional().nullable(),
   status: z.enum(["active", "refunded", "revoked"]).default("active"),
@@ -215,7 +217,7 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       await Promise.all([
         supabase
           .from("student_profiles")
-          .select("id,user_key,first_name,last_name,email,phone,stripe_customer_id,created_at,updated_at")
+          .select("id,user_key,first_name,last_name,email,phone,batch_number,stripe_customer_id,created_at,updated_at")
           .order("created_at", { ascending: false }),
         supabase
           .from("course_enrollments")
@@ -357,6 +359,7 @@ export async function upsertAdminStudent(input: unknown) {
       last_name: student.lastName ?? null,
       email: student.email,
       phone: student.phone ?? null,
+      batch_number: student.batchNumber,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_key" },
