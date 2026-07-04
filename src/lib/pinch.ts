@@ -142,13 +142,15 @@ export async function createPinchPayer(input: {
   const fallback = splitName(input.name, input.email);
   const firstName = input.firstName || fallback.firstName;
   const lastName = input.lastName ?? fallback.lastName;
+  const fullName = input.name || [firstName, lastName].filter(Boolean).join(" ");
+  const nameFields = lastName.trim()
+    ? { firstName, lastName }
+    : { fullName };
 
   return pinchRequest<PinchPayer>("/payers", {
     method: "POST",
     body: JSON.stringify({
-      fullName: input.name || [firstName, lastName].filter(Boolean).join(" "),
-      firstName,
-      lastName,
+      ...nameFields,
       emailAddress: input.email,
       mobileNumber: input.phone ?? undefined,
       metadata: JSON.stringify({ userKey: input.userKey }),

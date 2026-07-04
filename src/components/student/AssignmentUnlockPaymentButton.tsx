@@ -9,6 +9,14 @@ type AssignmentUnlockPaymentButtonProps = {
   amountCents?: number | null;
 };
 
+async function readJson<T>(response: Response): Promise<T> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
 export function AssignmentUnlockPaymentButton({
   assignmentKey,
   enabled,
@@ -27,7 +35,7 @@ export function AssignmentUnlockPaymentButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assignmentKey }),
       });
-      const result = (await response.json()) as { url?: string; error?: string; signInUrl?: string };
+      const result = await readJson<{ url?: string; error?: string; signInUrl?: string }>(response);
 
       if (response.status === 401 && result.signInUrl) {
         window.location.assign(result.signInUrl);
