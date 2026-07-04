@@ -3,7 +3,13 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { CPP20218_COURSE_SLUG, getStudentCppAssignments } from "@/lib/cpp20218";
 import { createPaymentIntent } from "@/lib/payments";
-import { createPinchPayer, createPinchPaymentLink, isPinchConfigured } from "@/lib/pinch";
+import {
+  createPinchPayer,
+  createPinchPaymentLink,
+  getPinchHttpStatus,
+  getPinchUserMessage,
+  isPinchConfigured,
+} from "@/lib/pinch";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const checkoutSchema = z.object({
@@ -119,8 +125,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: paymentLink.url });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to start payment.";
+    const message = getPinchUserMessage(error);
     console.error("Assignment checkout failed", error);
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json({ error: message }, { status: getPinchHttpStatus(error) });
   }
 }

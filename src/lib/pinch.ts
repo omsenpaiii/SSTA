@@ -25,6 +25,18 @@ type PinchPaymentLink = {
   currency?: string;
 };
 
+export class PinchApiError extends Error {
+  status: number;
+  rawMessage: string;
+
+  constructor(message: string, status: number, rawMessage: string) {
+    super(message);
+    this.name = "PinchApiError";
+    this.status = status;
+    this.rawMessage = rawMessage;
+  }
+}
+
 export type PinchPayment = {
   id: string;
   amount: number;
@@ -40,6 +52,63 @@ export type PinchPayment = {
 };
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
+
+function parsePinchErrorMessage(text: string, fallback: string) {
+  if (!text) return fallback;
+
+  try {
+    const parsed = JSON.parse(text) as unknown;
+
+    if (Array.isArray(parsed)) {
+      const messages = parsed
+        .map((item) => {
+          if (item && typeof item === "object" && "errorMessage" in item) {
+            return String((item as { errorMessage?: unknown }).errorMessage ?? "").trim();
+          }
+          return "";
+        })
+        .filter(Boolean);
+
+      if (messages.length) return messages.join(" ");
+    }
+
+    if (parsed && typeof parsed === "object") {
+      const value = parsed as { errorMessage?: unknown; message?: unknown; error?: unknown };
+      return String(value.errorMessage ?? value.message ?? value.error ?? fallback).trim();
+    }
+  } catch {
+    return text;
+  }
+
+  return fallback;
+}
+
+export function getPinchUserMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+
+  if (/Merchant is not yet configured/i.test(message)) {
+    return "Online payments are not active yet because the Pinch merchant account is still being configured. Please contact SSTA support to unlock access manually.";
+  }
+
+  if (/Pinch authentication failed/i.test(message)) {
+    return "Online payments are temporarily unavailable. Please contact SSTA support.";
+  }
+
+  if (/Pinch API request failed/i.test(message)) {
+    return message.replace(/^Pinch API request failed:\s*/i, "") || "Unable to start payment.";
+  }
+
+  return message || "Unable to start payment.";
+}
+
+export function getPinchHttpStatus(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+
+  if (/Merchant is not yet configured/i.test(message)) return 503;
+  if (error instanceof PinchApiError) return error.status >= 500 ? 502 : error.status;
+
+  return 502;
+}
 
 export function isPinchConfigured() {
   return Boolean(process.env.PINCH_CLIENT_ID && process.env.PINCH_SECRET_KEY);
@@ -112,7 +181,8 @@ async function pinchRequest<T>(path: string, init: RequestInit = {}) {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Pinch API request failed: ${text || response.statusText}`);
+    const message = parsePinchErrorMessage(text, response.statusText);
+    throw new PinchApiError(`Pinch API request failed: ${message}`, response.status, text);
   }
 
   return (await response.json()) as T;

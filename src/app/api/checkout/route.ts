@@ -11,6 +11,8 @@ import { createPaymentIntent } from "@/lib/payments";
 import {
   createPinchPayer,
   createPinchPaymentLink,
+  getPinchHttpStatus,
+  getPinchUserMessage,
   isPinchConfigured,
 } from "@/lib/pinch";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
@@ -152,8 +154,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: paymentLink.url });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to start checkout.";
+    const message = getPinchUserMessage(error);
     console.error("Course checkout failed", error);
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json({ error: message }, { status: getPinchHttpStatus(error) });
   }
 }
