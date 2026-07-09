@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Award, CheckCircle2, FileText, GraduationCap, Mail } from "lucide-react";
 import { ActivityCompletionButton } from "@/components/student/ActivityCompletionButton";
+import { CourseUnlockCelebration } from "@/components/student/CourseUnlockCelebration";
 import { Cpp20218AssignmentsView } from "@/components/student/Cpp20218AssignmentsView";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentCppAssignments, isCpp20218Slug } from "@/lib/cpp20218";
@@ -15,7 +16,7 @@ import {
 
 type CourseWorkspacePageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; unlocked?: string }>;
 };
 
 function TabLink({ href, label, active }: { href: string; label: string; active: boolean }) {
@@ -72,6 +73,7 @@ export default async function CourseWorkspacePage({
   if (isCpp20218Slug(course.slug) && tab !== "info") {
     return (
       <div className="space-y-5">
+        <CourseUnlockCelebration courseTitle={course.title} isCpp20218 />
         <section className="portal-card overflow-hidden rounded-[24px]">
           <div className="relative bg-[linear-gradient(120deg,#062846_0%,#0f6eb8_58%,#1596db_100%)] px-6 py-7 text-white sm:px-8">
             <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.18)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.18)_1px,transparent_1px)] [background-size:44px_44px]" />
@@ -147,6 +149,10 @@ export default async function CourseWorkspacePage({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <CourseUnlockCelebration
+        courseTitle={course.title}
+        isCpp20218={isCpp20218Slug(course.slug)}
+      />
       <section className="space-y-6">
         <div className="portal-card overflow-hidden rounded-[28px]">
           <div className="relative h-72">

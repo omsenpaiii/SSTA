@@ -147,7 +147,7 @@ export async function fulfillStripeCheckoutSession(input: {
       rawEvent: input.rawEvent ?? null,
     });
 
-    return { fulfilled: false, reason: "payment_not_paid", session: input.session };
+    return { fulfilled: false, reason: "payment_not_paid", session: input.session, intent };
   }
 
   await markPaymentIntent({
@@ -159,7 +159,7 @@ export async function fulfillStripeCheckoutSession(input: {
   });
   await fulfillPaidIntent(intent, input.session);
 
-  return { fulfilled: true, session: input.session };
+  return { fulfilled: true, session: input.session, intent };
 }
 
 export async function cancelStripeCheckoutSession(input: {

@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       name: course.title,
       description: course.overview,
       customerEmail: email,
-      successPath: "/success",
+      successPath: `/success?course=${course.slug}`,
       cancelPath: `/enroll?course=${course.slug}`,
       metadata,
     });
