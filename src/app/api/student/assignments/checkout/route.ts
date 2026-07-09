@@ -3,13 +3,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { CPP20218_COURSE_SLUG, getStudentCppAssignments } from "@/lib/cpp20218";
 import { createPaymentIntent } from "@/lib/payments";
-import {
-  createPinchPayer,
-  createPinchPaymentLink,
-  getPinchHttpStatus,
-  getPinchUserMessage,
-  isPinchConfigured,
-} from "@/lib/pinch";
+import { createStripeCheckoutSession, getStripeUserMessage, isStripeConfigured } from "@/lib/stripe";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const checkoutSchema = z.object({
@@ -34,9 +28,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isPinchConfigured()) {
+    if (!isStripeConfigured()) {
       return NextResponse.json(
-        { error: "Pinch Payments is not configured yet." },
+        { error: "Stripe payments are not configured yet." },
         { status: 503 },
       );
     }
@@ -86,30 +80,24 @@ export async function POST(request: Request) {
       );
     }
 
-    const payer = await createPinchPayer({
-      userKey: user.id,
-      email: user.email,
-      name: user.name,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phone: user.phone,
-    });
     const metadata = {
       userKey: user.id,
       courseSlug: CPP20218_COURSE_SLUG,
       assignmentKey: body.data.assignmentKey ?? "all_locked",
       purpose: "assignment_unlock",
     };
-    const paymentLink = await createPinchPaymentLink({
+    const session = await createStripeCheckoutSession({
       amountCents,
-      payerId: payer.id,
-      description: "CPP20218 assignment access unlock",
+      name: "CPP20218 remaining cluster unlock",
+      description: "Unlock all remaining Certificate II Security Operations clusters.",
+      customerEmail: user.email,
       successPath: `/success?course=${CPP20218_COURSE_SLUG}`,
+      cancelPath: `/dashboard/course/${CPP20218_COURSE_SLUG}?tab=activities`,
       metadata,
     });
 
     await createPaymentIntent({
-      provider: "pinch",
+      provider: "stripe",
       purpose: "assignment_unlock",
       userKey: user.id,
       email: user.email,
@@ -117,16 +105,16 @@ export async function POST(request: Request) {
       assignmentKey: body.data.assignmentKey ?? "all_locked",
       amountCents,
       currency: "AUD",
-      providerPayerId: payer.id,
-      providerPaymentLinkId: paymentLink.id,
-      checkoutUrl: paymentLink.url,
+      providerPayerId: typeof session.customer === "string" ? session.customer : null,
+      providerPaymentLinkId: session.id,
+      checkoutUrl: session.url,
       metadata,
     });
 
-    return NextResponse.json({ url: paymentLink.url });
+    return NextResponse.json({ url: session.url });
   } catch (error) {
-    const message = getPinchUserMessage(error);
+    const message = getStripeUserMessage(error);
     console.error("Assignment checkout failed", error);
-    return NextResponse.json({ error: message }, { status: getPinchHttpStatus(error) });
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

@@ -1,61 +1,43 @@
+import type Stripe from "stripe";
 import { grantCourseAccess } from "@/lib/access";
 import { CPP20218_COURSE_SLUG, setStudentAssignmentAccess } from "@/lib/cpp20218";
 import { updateEnrollmentPaymentStatus } from "@/lib/enrollment";
-import { getPaymentIntentByPinchReference, markPaymentIntent, type PaymentIntentRecord } from "@/lib/payments";
-import { getPinchPayment, isPinchFailedStatus, isPinchPaidStatus, type PinchPayment } from "@/lib/pinch";
+import { getPaymentIntentByStripeSession, markPaymentIntent, type PaymentIntentRecord } from "@/lib/payments";
+import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
-function getPaymentMetadata(payment: PinchPayment) {
-  if (!payment.metadata) return null;
-
-  try {
-    return JSON.parse(payment.metadata) as Record<string, string>;
-  } catch {
-    return null;
-  }
+function getSessionId(session: Stripe.Checkout.Session) {
+  return session.id;
 }
 
-async function findPaymentIntent(payment: PinchPayment, paymentLinkId?: string | null) {
-  const byPayment = await getPaymentIntentByPinchReference({
-    paymentId: payment.id,
-    paymentLinkId: null,
-  });
+function getPaymentIntentId(session: Stripe.Checkout.Session) {
+  return typeof session.payment_intent === "string"
+    ? session.payment_intent
+    : session.payment_intent?.id ?? null;
+}
 
-  if (byPayment) return byPayment;
+function getCustomerId(session: Stripe.Checkout.Session) {
+  return typeof session.customer === "string"
+    ? session.customer
+    : session.customer?.id ?? null;
+}
 
-  const byLink = await getPaymentIntentByPinchReference({
-    paymentLinkId,
-    paymentId: null,
-  });
+async function findStripePaymentIntent(session: Stripe.Checkout.Session) {
+  const bySession = await getPaymentIntentByStripeSession(getSessionId(session));
 
-  if (byLink) return byLink;
+  if (bySession) return bySession;
 
-  const metadata = getPaymentMetadata(payment);
+  const metadata = session.metadata;
   const supabase = getSupabaseAdmin();
-  if (!supabase) return null;
 
-  if (metadata?.paymentIntentId) {
-    const { data, error } = await supabase
-      .from("payment_intents")
-      .select("*")
-      .eq("id", metadata.paymentIntentId)
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data as PaymentIntentRecord | null;
-  }
-
-  if (!metadata?.userKey || !metadata.courseSlug || !metadata.purpose) {
+  if (!supabase || !metadata?.userKey || !metadata.courseSlug || !metadata.purpose) {
     return null;
   }
 
   let query = supabase
     .from("payment_intents")
     .select("*")
-    .eq("provider", "pinch")
+    .eq("provider", "stripe")
     .eq("status", "pending")
     .eq("user_key", metadata.userKey)
     .eq("course_slug", metadata.courseSlug)
@@ -81,14 +63,47 @@ async function findPaymentIntent(payment: PinchPayment, paymentLinkId?: string |
   return data as PaymentIntentRecord | null;
 }
 
-async function fulfillPaidIntent(intent: PaymentIntentRecord, payment: PinchPayment) {
+async function unlockCpp20218Assignments(intent: PaymentIntentRecord) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { data: lockedAssignments, error } = await supabase
+    .from("student_assignment_access")
+    .select("assignment_key")
+    .eq("user_key", intent.user_key)
+    .eq("course_slug", CPP20218_COURSE_SLUG)
+    .eq("unlocked", false);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  await Promise.all(
+    (lockedAssignments ?? []).map((assignment) =>
+      setStudentAssignmentAccess({
+        userKey: intent.user_key,
+        assignmentKey: assignment.assignment_key,
+        unlocked: true,
+        adminEmail: "stripe-payment",
+      }),
+    ),
+  );
+}
+
+async function fulfillPaidIntent(intent: PaymentIntentRecord, session: Stripe.Checkout.Session) {
+  const sessionId = getSessionId(session);
+  const paymentIntentId = getPaymentIntentId(session);
+
   if (intent.enrollment_id) {
     await updateEnrollmentPaymentStatus({
       enrollmentId: intent.enrollment_id,
       paymentStatus: "paid",
-      stripeSessionId: intent.provider_payment_link_id,
-      provider: "pinch",
-      providerPaymentId: payment.id,
+      stripeSessionId: sessionId,
+      provider: "stripe",
+      providerPaymentId: paymentIntentId,
     });
   }
 
@@ -96,101 +111,99 @@ async function fulfillPaidIntent(intent: PaymentIntentRecord, payment: PinchPaym
     await grantCourseAccess({
       userKey: intent.user_key,
       courseSlug: intent.course_slug,
-      stripeCustomerId: intent.provider_payer_id,
-      stripeSessionId: intent.provider_payment_id ?? intent.provider_payment_link_id,
-      paymentProvider: "pinch",
-      providerPaymentId: payment.id,
-      amountPaid: payment.amount ?? intent.amount_cents,
-      currency: payment.currency ?? intent.currency,
-      email: payment.payer?.emailAddress ?? payment.payer?.email ?? intent.email,
+      stripeCustomerId: getCustomerId(session),
+      stripeSessionId: sessionId,
+      paymentProvider: "stripe",
+      providerPaymentId: paymentIntentId,
+      amountPaid: session.amount_total ?? intent.amount_cents,
+      currency: session.currency ?? intent.currency,
+      email: session.customer_details?.email ?? intent.email,
     });
   }
 
   if (intent.purpose === "assignment_unlock" && intent.course_slug === CPP20218_COURSE_SLUG) {
-    const supabase = getSupabaseAdmin();
-
-    if (!supabase) {
-      throw new Error("Supabase is not configured.");
-    }
-
-    const { data: lockedAssignments, error } = await supabase
-      .from("student_assignment_access")
-      .select("assignment_key")
-      .eq("user_key", intent.user_key)
-      .eq("course_slug", CPP20218_COURSE_SLUG)
-      .eq("unlocked", false);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    await Promise.all(
-      (lockedAssignments ?? []).map((assignment) =>
-        setStudentAssignmentAccess({
-          userKey: intent.user_key,
-          assignmentKey: assignment.assignment_key,
-          unlocked: true,
-          adminEmail: "pinch-payment",
-        }),
-      ),
-    );
+    await unlockCpp20218Assignments(intent);
   }
 }
 
-export async function fulfillPinchPayment(input: {
-  paymentId: string;
-  paymentLinkId?: string | null;
+export async function fulfillStripeCheckoutSession(input: {
+  session: Stripe.Checkout.Session;
   rawEvent?: Record<string, unknown> | null;
 }) {
-  const payment = await getPinchPayment(input.paymentId);
-  const intent = await findPaymentIntent(payment, input.paymentLinkId);
+  const intent = await findStripePaymentIntent(input.session);
 
   if (!intent) {
-    return { fulfilled: false, reason: "payment_intent_not_found", payment };
+    return { fulfilled: false, reason: "payment_intent_not_found", session: input.session };
   }
 
-  if (isPinchFailedStatus(payment.status)) {
-    await markPaymentIntent({
-      id: intent.id,
-      status: "failed",
-      providerPaymentId: payment.id,
-      providerStatus: payment.status,
-      rawEvent: input.rawEvent ?? null,
-    });
+  const paymentIntentId = getPaymentIntentId(input.session);
 
-    if (intent.enrollment_id) {
-      await updateEnrollmentPaymentStatus({
-        enrollmentId: intent.enrollment_id,
-        paymentStatus: "failed",
-        stripeSessionId: intent.provider_payment_link_id,
-        provider: "pinch",
-        providerPaymentId: payment.id,
-      });
-    }
-
-    return { fulfilled: false, reason: "payment_failed", payment };
-  }
-
-  if (!isPinchPaidStatus(payment.status)) {
+  if (input.session.payment_status !== "paid") {
     await markPaymentIntent({
       id: intent.id,
       status: "pending",
-      providerPaymentId: payment.id,
-      providerStatus: payment.status,
+      providerPaymentId: paymentIntentId,
+      providerStatus: input.session.payment_status,
       rawEvent: input.rawEvent ?? null,
     });
 
-    return { fulfilled: false, reason: "payment_not_approved", payment };
+    return { fulfilled: false, reason: "payment_not_paid", session: input.session };
   }
 
   await markPaymentIntent({
     id: intent.id,
     status: "paid",
-    providerPaymentId: payment.id,
-    providerStatus: payment.status,
+    providerPaymentId: paymentIntentId,
+    providerStatus: input.session.payment_status,
     rawEvent: input.rawEvent ?? null,
   });
-  await fulfillPaidIntent(intent, payment);
+  await fulfillPaidIntent(intent, input.session);
 
-  return { fulfilled: true, payment };
+  return { fulfilled: true, session: input.session };
+}
+
+export async function cancelStripeCheckoutSession(input: {
+  session: Stripe.Checkout.Session;
+  rawEvent?: Record<string, unknown> | null;
+}) {
+  const intent = await findStripePaymentIntent(input.session);
+
+  if (!intent) {
+    return { cancelled: false, reason: "payment_intent_not_found", session: input.session };
+  }
+
+  await markPaymentIntent({
+    id: intent.id,
+    status: "cancelled",
+    providerPaymentId: getPaymentIntentId(input.session),
+    providerStatus: input.session.status ?? "expired",
+    rawEvent: input.rawEvent ?? null,
+  });
+
+  if (intent.enrollment_id) {
+    await updateEnrollmentPaymentStatus({
+      enrollmentId: intent.enrollment_id,
+      paymentStatus: "cancelled",
+      stripeSessionId: input.session.id,
+      provider: "stripe",
+      providerPaymentId: getPaymentIntentId(input.session),
+      onlyIfCurrentSession: true,
+    });
+  }
+
+  return { cancelled: true, session: input.session };
+}
+
+export async function fulfillStripeCheckoutSessionId(sessionId: string) {
+  const stripe = getStripe();
+
+  if (!stripe) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent", "customer"],
+  });
+
+  return fulfillStripeCheckoutSession({ session });
 }

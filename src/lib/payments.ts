@@ -5,7 +5,7 @@ export type PaymentStatus = "pending" | "paid" | "failed" | "cancelled";
 
 export type PaymentIntentRecord = {
   id: string;
-  provider: "pinch";
+  provider: string;
   purpose: PaymentPurpose;
   status: PaymentStatus;
   user_key: string;
@@ -23,7 +23,7 @@ export type PaymentIntentRecord = {
 };
 
 export async function createPaymentIntent(input: {
-  provider: "pinch";
+  provider: string;
   purpose: PaymentPurpose;
   status?: PaymentStatus;
   userKey: string;
@@ -72,7 +72,8 @@ export async function createPaymentIntent(input: {
   return data as PaymentIntentRecord;
 }
 
-export async function getPaymentIntentByPinchReference(input: {
+export async function getPaymentIntentByProviderReference(input: {
+  provider: string;
   paymentLinkId?: string | null;
   paymentId?: string | null;
 }) {
@@ -80,7 +81,7 @@ export async function getPaymentIntentByPinchReference(input: {
 
   if (!supabase) return null;
 
-  let query = supabase.from("payment_intents").select("*").eq("provider", "pinch");
+  let query = supabase.from("payment_intents").select("*").eq("provider", input.provider);
 
   if (input.paymentId) {
     query = query.eq("provider_payment_id", input.paymentId);
@@ -97,6 +98,15 @@ export async function getPaymentIntentByPinchReference(input: {
   }
 
   return data as PaymentIntentRecord | null;
+}
+
+export async function getPaymentIntentByStripeSession(sessionId: string | null | undefined) {
+  if (!sessionId) return null;
+
+  return getPaymentIntentByProviderReference({
+    provider: "stripe",
+    paymentLinkId: sessionId,
+  });
 }
 
 export async function markPaymentIntent(input: {

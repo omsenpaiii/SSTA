@@ -88,6 +88,10 @@ The enrollment form stores a lead in Supabase, emails the configured intake
 mailbox, then redirects to Stripe. The webhook marks the enrollment paid and
 grants course access in Supabase after a successful one-time payment.
 
+The CPP20218 student portal also uses Stripe Checkout for the locked-cluster
+unlock. One successful payment unlocks all remaining CPP20218 clusters for that
+student.
+
 Payments are intentionally 503-safe until `STRIPE_SECRET_KEY` and
 `STRIPE_WEBHOOK_SECRET` are configured. Checkout also refuses payment until
 Supabase Auth is configured, because course access is granted to the signed-in

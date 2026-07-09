@@ -8,13 +8,7 @@ import {
   updateEnrollmentCheckoutSession,
 } from "@/lib/enrollment";
 import { createPaymentIntent } from "@/lib/payments";
-import {
-  createPinchPayer,
-  createPinchPaymentLink,
-  getPinchHttpStatus,
-  getPinchUserMessage,
-  isPinchConfigured,
-} from "@/lib/pinch";
+import { createStripeCheckoutSession, getStripeUserMessage, isStripeConfigured } from "@/lib/stripe";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const checkoutSchema = z.object({
@@ -26,9 +20,9 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!isPinchConfigured()) {
+    if (!isStripeConfigured()) {
       return NextResponse.json(
-        { error: "Pinch Payments is not configured yet." },
+        { error: "Stripe payments are not configured yet." },
         { status: 503 },
       );
     }
@@ -111,25 +105,18 @@ export async function POST(request: Request) {
       purpose: "course_enrollment",
     };
 
-    const payer = await createPinchPayer({
-      userKey: user.id,
-      email,
-      name: user.name,
-      firstName: enrollment?.first_name ?? user.firstName,
-      lastName: enrollment?.last_name ?? user.lastName,
-      phone: enrollment?.phone ?? user.phone,
-    });
-
-    const paymentLink = await createPinchPaymentLink({
+    const session = await createStripeCheckoutSession({
       amountCents,
-      payerId: payer.id,
-      description: course.title,
+      name: course.title,
+      description: course.overview,
+      customerEmail: email,
       successPath: "/success",
+      cancelPath: `/enroll?course=${course.slug}`,
       metadata,
     });
 
     await createPaymentIntent({
-      provider: "pinch",
+      provider: "stripe",
       purpose: "course_enrollment",
       status: "pending",
       userKey: user.id,
@@ -138,24 +125,24 @@ export async function POST(request: Request) {
       enrollmentId: enrollment?.id ?? null,
       amountCents,
       currency: "AUD",
-      providerPayerId: payer.id,
-      providerPaymentLinkId: paymentLink.id,
-      checkoutUrl: paymentLink.url,
+      providerPayerId: typeof session.customer === "string" ? session.customer : null,
+      providerPaymentLinkId: session.id,
+      checkoutUrl: session.url,
       metadata,
     });
 
-    if (enrollment?.id && paymentLink.id) {
+    if (enrollment?.id && session.id) {
       await updateEnrollmentCheckoutSession({
         enrollmentId: enrollment.id,
-        stripeSessionId: paymentLink.id,
-        provider: "pinch",
+        stripeSessionId: session.id,
+        provider: "stripe",
       });
     }
 
-    return NextResponse.json({ url: paymentLink.url });
+    return NextResponse.json({ url: session.url });
   } catch (error) {
-    const message = getPinchUserMessage(error);
+    const message = getStripeUserMessage(error);
     console.error("Course checkout failed", error);
-    return NextResponse.json({ error: message }, { status: getPinchHttpStatus(error) });
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }

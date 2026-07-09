@@ -1,32 +1,29 @@
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import { fulfillPinchPayment } from "@/lib/payment-fulfillment";
+import { fulfillStripeCheckoutSessionId } from "@/lib/payment-fulfillment";
 
 type SuccessPageProps = {
   searchParams?: Promise<{
-    paymentId?: string;
-    paymentLinkId?: string;
-    PaymentId?: string;
-    PaymentLinkId?: string;
+    session_id?: string;
+    course?: string;
   }>;
 };
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const params = await searchParams;
-  const paymentId = params?.paymentId ?? params?.PaymentId;
-  const paymentLinkId = params?.paymentLinkId ?? params?.PaymentLinkId;
+  const sessionId = params?.session_id;
   let message =
-    "Pinch will confirm the payment and unlock access in your student dashboard.";
+    "Stripe will confirm the payment and unlock access in your student dashboard.";
 
-  if (paymentId) {
+  if (sessionId) {
     try {
-      const result = await fulfillPinchPayment({ paymentId, paymentLinkId });
+      const result = await fulfillStripeCheckoutSessionId(sessionId);
       message = result.fulfilled
-        ? "Your Pinch payment has been confirmed and access has been updated."
-        : "Your payment is being processed by Pinch. Access will update automatically after confirmation.";
+        ? "Your Stripe payment has been confirmed and access has been updated."
+        : "Your payment is being processed by Stripe. Access will update automatically after confirmation.";
     } catch {
       message =
-        "Your payment was received by Pinch. Access will update once the webhook confirms it.";
+        "Your payment was received by Stripe. Access will update once the webhook confirms it.";
     }
   }
 

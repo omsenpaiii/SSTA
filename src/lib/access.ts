@@ -95,7 +95,7 @@ export async function grantCourseAccess(input: {
       status: "active",
       stripe_customer_id: input.stripeCustomerId,
       stripe_session_id: input.stripeSessionId,
-      payment_provider: input.paymentProvider ?? "pinch",
+      payment_provider: input.paymentProvider ?? "stripe",
       payment_session_id: input.stripeSessionId,
       provider_payment_id: input.providerPaymentId ?? null,
       amount_paid: input.amountPaid,

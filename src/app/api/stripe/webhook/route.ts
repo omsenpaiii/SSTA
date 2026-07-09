@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { grantCourseAccess } from "@/lib/access";
-import { updateEnrollmentPaymentStatus } from "@/lib/enrollment";
+import { cancelStripeCheckoutSession, fulfillStripeCheckoutSession } from "@/lib/payment-fulfillment";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -36,47 +35,19 @@ export async function POST(request: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
-      const userKey = session.metadata?.userKey;
-      const courseSlug = session.metadata?.courseSlug;
-      const enrollmentId = session.metadata?.enrollmentId;
-
-      if (enrollmentId && session.payment_status === "paid") {
-        await updateEnrollmentPaymentStatus({
-          enrollmentId,
-          paymentStatus: "paid",
-          stripeSessionId: session.id,
-        });
-      }
-
-      if (userKey && courseSlug && session.payment_status === "paid") {
-        await grantCourseAccess({
-          userKey,
-          courseSlug,
-          stripeCustomerId:
-            typeof session.customer === "string"
-              ? session.customer
-              : session.customer?.id,
-          stripeSessionId: session.id,
-          amountPaid: session.amount_total,
-          currency: session.currency,
-          email: session.customer_details?.email,
-        });
-      }
+      await fulfillStripeCheckoutSession({
+        session,
+        rawEvent: event as unknown as Record<string, unknown>,
+      });
       break;
     }
 
     case "checkout.session.expired": {
       const session = event.data.object;
-      const enrollmentId = session.metadata?.enrollmentId;
-
-      if (enrollmentId) {
-        await updateEnrollmentPaymentStatus({
-          enrollmentId,
-          paymentStatus: "cancelled",
-          stripeSessionId: session.id,
-          onlyIfCurrentSession: true,
-        });
-      }
+      await cancelStripeCheckoutSession({
+        session,
+        rawEvent: event as unknown as Record<string, unknown>,
+      });
       break;
     }
   }

@@ -154,7 +154,7 @@ export async function updateEnrollmentCheckoutSession(input: {
     .from("enrollment_leads")
     .update({
       stripe_session_id: input.stripeSessionId,
-      payment_provider: input.provider ?? "pinch",
+      payment_provider: input.provider ?? "stripe",
       payment_session_id: input.stripeSessionId,
       updated_at: new Date().toISOString(),
     })

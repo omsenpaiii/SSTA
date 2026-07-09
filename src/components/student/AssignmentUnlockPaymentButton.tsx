@@ -75,6 +75,9 @@ export function AssignmentUnlockPaymentButton({
       <p className="mb-3 text-sm font-semibold leading-6 text-[#5d7389]">
         One {amountLabel ?? "payment"} unlocks all remaining CPP20218 clusters for your learner account.
       </p>
+      <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-[#0f6eb8]">
+        Secure checkout powered by Stripe
+      </p>
       <button
         type="button"
         onClick={startPayment}
