@@ -11,13 +11,10 @@ import {
   BriefcaseBusiness,
   CalendarCheck,
   CheckSquare,
-  CircleHelp,
-  GraduationCap,
+  Home,
   LayoutDashboard,
-  Link2,
   LogOut,
   Menu,
-  ScanSearch,
   Users,
   X,
 } from "lucide-react";
@@ -36,13 +33,10 @@ type StudentPortalShellProps = {
 };
 
 const navItems = [
+  { href: "/", label: "Home", icon: Home },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/browse-courses", label: "Browse Courses", icon: BriefcaseBusiness },
-  { href: "/dashboard/my-courses", label: "My Courses", icon: GraduationCap },
-  { href: "/dashboard/lln", label: "LLN", icon: CircleHelp },
-  { href: "/dashboard/useful-links", label: "Useful Links", icon: Link2 },
-  { href: "/dashboard/contact", label: "Contact", icon: Bell },
-  { href: "/dashboard/verify-certificate", label: "Verify Certificate", icon: ScanSearch },
+  { href: "/courses", label: "Browse Courses", icon: BriefcaseBusiness },
+  { href: "/contact", label: "Contact", icon: Bell },
 ];
 
 const statItems = [
