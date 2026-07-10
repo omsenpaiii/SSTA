@@ -382,6 +382,8 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
         email,
         phone: String(row.phone ?? ""),
         courseSlug: String(row.course_slug ?? row.courseSlug ?? ""),
+        disabilityStatus: String(row.disability_status ?? row.disabilityStatus ?? "no") || "no",
+        disabilityDetails: String(row.disability_details ?? row.disabilityDetails ?? ""),
         paymentStatus: String(row.payment_status ?? row.paymentStatus ?? "pending"),
         emailStatus: String(row.email_status ?? row.emailStatus ?? "pending"),
       };

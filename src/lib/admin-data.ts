@@ -45,6 +45,8 @@ export type AdminLead = {
   email: string;
   phone: string;
   course_slug: string;
+  disability_status?: "no" | "yes" | "prefer_not_to_say" | null;
+  disability_details?: string | null;
   payment_status?: string | null;
   email_status?: string | null;
   created_at: string;
@@ -131,6 +133,8 @@ const leadSchema = z.object({
   email: z.string().trim().email(),
   phone: z.string().trim().min(1),
   courseSlug: z.string().trim().min(1),
+  disabilityStatus: z.enum(["no", "yes", "prefer_not_to_say"]).default("no"),
+  disabilityDetails: z.string().trim().optional().nullable(),
   paymentStatus: z.enum(["pending", "paid", "failed", "cancelled"]).default("pending"),
   emailStatus: z.enum(["pending", "sent", "failed"]).default("pending"),
 });
@@ -225,7 +229,7 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
           .order("created_at", { ascending: false }),
         supabase
           .from("enrollment_leads")
-          .select("id,first_name,last_name,email,phone,course_slug,payment_status,email_status,created_at")
+          .select("id,first_name,last_name,email,phone,course_slug,disability_status,disability_details,payment_status,email_status,created_at")
           .order("created_at", { ascending: false }),
         supabase
           .from("interest_leads")
@@ -237,7 +241,12 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       (lead) => ({ ...lead, type: "enrollment" as const }),
     );
     const interestLeads = ((interestLeadsResult.data ?? []) as Omit<AdminLead, "type">[]).map(
-      (lead) => ({ ...lead, type: "interest" as const }),
+      (lead) => ({
+        ...lead,
+        type: "interest" as const,
+        disability_status: null,
+        disability_details: null,
+      }),
     );
 
     const cpp20218 = await getAdminCppAssignmentSnapshot();
@@ -448,6 +457,11 @@ export async function upsertAdminLead(input: unknown) {
       usi: "UNKNOWN000",
       address: "Imported by SSTA admin",
       course_slug: lead.courseSlug,
+      disability_status: lead.disabilityStatus,
+      disability_details:
+        lead.disabilityStatus === "yes" && lead.disabilityDetails
+          ? lead.disabilityDetails
+          : null,
       payment_status: lead.paymentStatus,
       email_status: lead.emailStatus,
       updated_at: new Date().toISOString(),

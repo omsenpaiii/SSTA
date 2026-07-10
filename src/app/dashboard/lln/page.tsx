@@ -20,6 +20,15 @@ export default function LlnPage() {
             <p>Give SSTA enough context to adjust guidance, pacing, or next steps where possible.</p>
           </div>
         </div>
+        <div className="mt-6">
+          <Link
+            href="/dashboard/lln/cpp20218"
+            className="portal-button-primary inline-flex items-center gap-2 px-5 py-3 text-sm"
+          >
+            Take CPP20218 prerequisite test
+            <ArrowRight size={16} />
+          </Link>
+        </div>
       </section>
 
       <section className="space-y-6">

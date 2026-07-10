@@ -35,10 +35,21 @@ export function AssignmentUnlockPaymentButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assignmentKey }),
       });
-      const result = await readJson<{ url?: string; error?: string; signInUrl?: string }>(response);
+      const result = await readJson<{
+        url?: string;
+        error?: string;
+        signInUrl?: string;
+        llnRequired?: boolean;
+        llnUrl?: string;
+      }>(response);
 
       if (response.status === 401 && result.signInUrl) {
         window.location.assign(result.signInUrl);
+        return;
+      }
+
+      if (response.status === 403 && result.llnRequired && result.llnUrl) {
+        window.location.assign(result.llnUrl);
         return;
       }
 

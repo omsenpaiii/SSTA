@@ -207,7 +207,7 @@ const baseCourses: Course[] = [
     title: "Certificate II Security Operations",
     category: "Security",
     label: "Most popular",
-    priceAud: 1195,
+    priceAud: 1295,
     enrolmentFee: 500,
     duration: "291 nominal hours",
     description:
@@ -283,7 +283,7 @@ const baseCourses: Course[] = [
     title: "Certificate III Security Operations",
     category: "Security",
     label: "Advanced",
-    priceAud: 2840,
+    priceAud: 2390,
     enrolmentFee: 500,
     duration: "228 nominal hours",
     description:
@@ -341,7 +341,7 @@ const baseCourses: Course[] = [
     title: "Batons & Handcuffs Skill Set",
     category: "Security",
     label: "One day",
-    priceAud: 450,
+    priceAud: 250,
     duration: "1 day",
     description:
       "A practical extension for licensed officers who need baton and handcuff capability for approved work roles.",
@@ -1058,11 +1058,11 @@ const baseCourses: Course[] = [
   },
   {
     slug: "certificate-iii-individual-support",
-    code: "Coming soon",
+    code: "CPC30220",
     title: "Certificate III in Individual Support",
     category: "Community Services",
     label: "Coming soon",
-    priceAud: 0,
+    priceAud: 13628,
     duration: "Details to follow",
     description:
       "Individual support training information will be added soon for learners exploring care and support pathways.",
@@ -1078,7 +1078,7 @@ const baseCourses: Course[] = [
     units: [unit("TBA", "Course structure to be confirmed")],
     lessons: previewLessons("individual-support", "Individual support course preview"),
     availability: "coming-soon",
-    priceLabel: "Coming soon",
+    priceLabel: "$13,628",
     statusNote: "Certificate III details are coming soon.",
   },
   {

@@ -27,7 +27,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "description": "This qualification reflects the role of a security officer, responsible for maintaining safety and security by patrolling, protecting or guarding property while unarmed,.",
     "duration": "The total Nominal hours applied to this CPP20218 Certificate II in Security Operations qualification is 291 hours.",
     "durationDetails": "The total Nominal hours applied to this CPP20218 Certificate II in Security Operations qualification is 291 hours.",
-    "feeDetails": "Tuition Fee: $1,195 Enrolment Fee: $500",
+    "feeDetails": "Tuition Fee: $1,295 Enrolment Fee: $500",
     "entryRequirements": [
       "• Ability to read and write • Good numeracy skills • Must be over 18"
     ],
@@ -109,9 +109,9 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
       }
     ],
     "unitSummary": "14 units of competency.",
-    "priceAud": 1195,
+    "priceAud": 1295,
     "enrolmentFee": 500,
-    "priceLabel": "$1,195"
+    "priceLabel": "$1,295"
   },
   "certificate-iii-security-operations-armed-cash-in-transit": {
     "image": "/baker-course-assets/certificate-iii-security-operations-armed-guard-cash-in-transit-cpp31318.jpg",
@@ -120,7 +120,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "description": "This qualification reflects the role of a security officer, responsible for maintaining safety and security by patrolling, protecting and guarding property, and.",
     "duration": "The total Nominal hours applied to this CPP31318 Certificate II in Security Operations qualification is 228 hours.",
     "durationDetails": "The total Nominal hours applied to this CPP31318 Certificate II in Security Operations qualification is 228 hours.",
-    "feeDetails": "Tuition Fee: $2,840 Enrolment Fee: $500",
+    "feeDetails": "Tuition Fee: $2,390 Enrolment Fee: $500",
     "entryRequirements": [
       "Must hold a current Security Officers licensing in the relevant jurisdiction. • Ability to read and write • Good numeracy skills • Must be over 18"
     ],
@@ -129,9 +129,9 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     ],
     "deliveryStrategy": "⦁ Face to face ⦁ Online ⦁ Recognition of Prior Learning (for experienced leaders and managers who have evidence to support their current competence in the relevant units of competency which comprise the qualification). ⦁ Blended (using a combination of the modes described).",
     "sourceArchiveUrl": "https://web.archive.org/web/20250214121804/https://bakerebert.edu.au/course/certificate-iii-security-operations-armed-guard-cash-in-transit-cpp31318/",
-    "priceAud": 2840,
+    "priceAud": 2390,
     "enrolmentFee": 500,
-    "priceLabel": "$2,840"
+    "priceLabel": "$2,390"
   },
   "batons-and-handcuffs-skill-set": {
     "image": "/baker-course-assets/certificate-iii-security-operations-batons-handcuffs-cpp31318.jpg",
@@ -140,7 +140,7 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     "description": "The Baton and Handcuffs training is vital for a licensed Security Officer wanting to advance their career in the security industry. For example, employers will consider.",
     "duration": "This is a one day in-class experience with a qualified and experienced trainer. Students will complete theory components in class.",
     "durationDetails": "This is a one day in-class experience with a qualified and experienced trainer. Students will complete theory components in class.",
-    "feeDetails": "Tuition Fee: $450",
+    "feeDetails": "Tuition Fee: $250",
     "entryRequirements": [
       "Must hold a current Security Officers licensing in the relevant jurisdiction. • Ability to read and write • Good numeracy skills • Must be over 18"
     ],
@@ -149,8 +149,8 @@ export const bakerCourseOverrides: Record<string, Partial<Course>> = {
     ],
     "deliveryStrategy": "⦁ Face to face ⦁ Online ⦁ Recognition of Prior Learning (for experienced leaders and managers who have evidence to support their current competence in the relevant units of competency which comprise the qualification). ⦁ Blended (using a combination of the modes described).",
     "sourceArchiveUrl": "https://web.archive.org/web/20250117034617/https://bakerebert.edu.au/course/certificate-iii-security-operations-batons-handcuffs-cpp31318/",
-    "priceAud": 450,
-    "priceLabel": "$450"
+    "priceAud": 250,
+    "priceLabel": "$250"
   },
   "certificate-iv-accounting-bookkeeping": {
     "image": "/baker-course-assets/certificate-iv-in-accounting-and-bookkeeping-fns40222.jpg",

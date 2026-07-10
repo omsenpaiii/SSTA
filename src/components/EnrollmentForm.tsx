@@ -26,6 +26,8 @@ const formSchema = z.object({
   dob: z.string().min(1, "Date of birth is required"),
   usi: z.string().min(10, "USI must be exactly 10 characters").max(10, "USI must be exactly 10 characters"),
   address: z.string().min(10, "Please provide your full address"),
+  disabilityStatus: z.enum(["no", "yes", "prefer_not_to_say"]),
+  disabilityDetails: z.string().max(1000, "Support details must be under 1000 characters").optional(),
   courseId: z.string().min(1, "Please select a course"),
   captchaToken: z.string().min(1, "Please confirm you are not a robot"),
 });
@@ -82,6 +84,8 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
       dob: "",
       usi: "",
       address: "",
+      disabilityStatus: "no",
+      disabilityDetails: "",
       courseId: validInitialCourse,
       captchaToken: "",
     },
@@ -155,11 +159,18 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
         url?: string;
         error?: string;
         signInUrl?: string;
+        llnRequired?: boolean;
+        llnUrl?: string;
       }>(checkoutResponse);
 
       if (!checkoutResponse.ok || !checkoutResult.url) {
         if (checkoutResponse.status === 401 && checkoutResult.signInUrl) {
           window.location.assign(checkoutResult.signInUrl);
+          return;
+        }
+
+        if (checkoutResponse.status === 403 && checkoutResult.llnRequired && checkoutResult.llnUrl) {
+          window.location.assign(checkoutResult.llnUrl);
           return;
         }
 
@@ -181,7 +192,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
   const getFieldsForStep = (stepIndex: number): (keyof FormValues)[] => {
     switch (stepIndex) {
       case 0: return ["firstName", "lastName", "email", "phone", "dob"];
-      case 1: return ["usi", "address"];
+      case 1: return ["usi", "address", "disabilityStatus", "disabilityDetails"];
       case 2: return ["courseId"];
       default: return [];
     }
@@ -346,6 +357,48 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
                       />
                       {errors.address && <p className="text-xs text-red-500 font-bold">{errors.address.message}</p>}
                     </div>
+
+                    <div className="space-y-2">
+                      <Label className="font-bold text-[#020d24]">
+                        Do you have a disability, medical condition, or learning support need that may affect your participation in training?
+                      </Label>
+                      <Controller
+                        control={control}
+                        name="disabilityStatus"
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger className="h-12 bg-slate-50 focus:ring-[#18aee5] font-semibold border-slate-200">
+                              <SelectValue placeholder="Select an option" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="no" className="font-semibold">No</SelectItem>
+                              <SelectItem value="yes" className="font-semibold">Yes</SelectItem>
+                              <SelectItem value="prefer_not_to_say" className="font-semibold">Prefer not to say</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.disabilityStatus ? (
+                        <p className="text-xs text-red-500 font-bold">{errors.disabilityStatus.message}</p>
+                      ) : null}
+                    </div>
+
+                    {formValues.disabilityStatus === "yes" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="disabilityDetails" className="font-bold text-[#020d24]">
+                          Optional support details
+                        </Label>
+                        <textarea
+                          id="disabilityDetails"
+                          placeholder="Tell us what support may help you participate confidently."
+                          {...register("disabilityDetails")}
+                          className={`min-h-28 w-full rounded-xl border bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[#18aee5] ${errors.disabilityDetails ? "border-red-500" : "border-slate-200"}`}
+                        />
+                        {errors.disabilityDetails ? (
+                          <p className="text-xs text-red-500 font-bold">{errors.disabilityDetails.message}</p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
@@ -405,6 +458,16 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
                       <div className="p-4 flex justify-between items-center">
                         <span className="text-sm font-bold text-slate-500">Selected Program</span>
                         <span className="font-bold text-[#0067b1]">{selectedCourse?.title}</span>
+                      </div>
+                      <div className="p-4 bg-slate-50 flex justify-between items-center gap-4">
+                        <span className="text-sm font-bold text-slate-500">Support needs</span>
+                        <span className="text-right font-bold text-[#020d24]">
+                          {formValues.disabilityStatus === "yes"
+                            ? "Yes"
+                            : formValues.disabilityStatus === "prefer_not_to_say"
+                              ? "Prefer not to say"
+                              : "No"}
+                        </span>
                       </div>
                     </div>
                     

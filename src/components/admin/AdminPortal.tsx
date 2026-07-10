@@ -615,13 +615,19 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           {active === "leads" ? (
             <TableSection
               title="Enrollment & Interest Leads"
-              columns={["Type", "Name", "Email", "Phone", "Course", "Created"]}
+              columns={["Type", "Name", "Email", "Phone", "Course", "Support Needs", "Support Details", "Created"]}
               rows={snapshot.leads.map((lead) => [
                 lead.type,
                 `${lead.first_name} ${lead.last_name}`,
                 lead.email,
                 lead.phone,
                 courseBySlug.get(lead.course_slug)?.title ?? lead.course_slug,
+                lead.disability_status === "yes"
+                  ? "Yes"
+                  : lead.disability_status === "prefer_not_to_say"
+                    ? "Prefer not to say"
+                    : "No",
+                lead.disability_details ?? "",
                 new Date(lead.created_at).toLocaleDateString("en-AU"),
               ])}
             />

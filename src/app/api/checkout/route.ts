@@ -7,6 +7,11 @@ import {
   getEnrollmentLead,
   updateEnrollmentCheckoutSession,
 } from "@/lib/enrollment";
+import {
+  buildCpp20218LlnUrl,
+  CPP20218_LLN_COURSE_SLUG,
+  hasPassedCpp20218Lln,
+} from "@/lib/lln";
 import { createPaymentIntent } from "@/lib/payments";
 import { createStripeCheckoutSession, getStripeUserMessage, isStripeConfigured } from "@/lib/stripe";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
@@ -94,6 +99,23 @@ export async function POST(request: Request) {
         { error: "This enrollment has already been paid." },
         { status: 409 },
       );
+    }
+
+    if (course.slug === CPP20218_LLN_COURSE_SLUG) {
+      const hasPassedLln = await hasPassedCpp20218Lln(user.id);
+
+      if (!hasPassedLln) {
+        const returnTo = `/enroll?course=${course.slug}`;
+
+        return NextResponse.json(
+          {
+            error: "Please complete the CPP20218 LLN prerequisite before payment.",
+            llnRequired: true,
+            llnUrl: buildCpp20218LlnUrl(returnTo),
+          },
+          { status: 403 },
+        );
+      }
     }
 
     const email = enrollment?.email ?? user.email;

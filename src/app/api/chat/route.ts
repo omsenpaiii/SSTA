@@ -246,10 +246,10 @@ function getMockResponse(messages: ChatMessage[]): string {
 
   if (latestMessage.includes("security")) {
     return `SSTA offers several industry-ready security qualifications:
-* **Certificate II in Security Operations (CPP20218)**: Our most popular licensing pathway for unarmed guards and crowd controllers. Cost is $1,195 (plus $500 enrolment fee).
-* **Certificate III in Security Operations (CPP31318)**: Advanced training for armed guards and cash-in-transit officers. Cost is $2,840.
+* **Certificate II in Security Operations (CPP20218)**: Our most popular licensing pathway for unarmed guards and crowd controllers. Cost is $1,295 (plus $500 enrolment fee).
+* **Certificate III in Security Operations (CPP31318)**: Advanced training for armed guards and cash-in-transit officers. Cost is $2,390.
 * **Certificate IV in Security Management (CPP40719)**: For supervisors and business operations. Cost is $2,650.
-* **Batons & Handcuffs Skill Set**: Specialist 1-day course for licensed officers ($450).
+* **Batons & Handcuffs Skill Set**: Specialist 1-day course for licensed officers ($250).
 
 Would you like details on how to register or the duration of any of these courses?`;
   }

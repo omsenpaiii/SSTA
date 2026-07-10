@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { CPP20218_COURSE_SLUG, getStudentCppAssignments } from "@/lib/cpp20218";
+import { buildCpp20218LlnUrl, hasPassedCpp20218Lln } from "@/lib/lln";
 import { createPaymentIntent } from "@/lib/payments";
 import { createStripeCheckoutSession, getStripeUserMessage, isStripeConfigured } from "@/lib/stripe";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
@@ -68,6 +69,21 @@ export async function POST(request: Request) {
 
     if (!body.success) {
       return NextResponse.json({ error: "Invalid payment request." }, { status: 400 });
+    }
+
+    const hasPassedLln = await hasPassedCpp20218Lln(user.id);
+
+    if (!hasPassedLln) {
+      const returnTo = `/dashboard/course/${CPP20218_COURSE_SLUG}?tab=activities`;
+
+      return NextResponse.json(
+        {
+          error: "Please complete the CPP20218 LLN prerequisite before unlocking more clusters.",
+          llnRequired: true,
+          llnUrl: buildCpp20218LlnUrl(returnTo),
+        },
+        { status: 403 },
+      );
     }
 
     const assignments = await getStudentCppAssignments(user.id);
