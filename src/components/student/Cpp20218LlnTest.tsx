@@ -2,13 +2,26 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, ClipboardCheck, Loader2, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
-import type { LlnAttemptSummary, PublicLlnQuestion } from "@/lib/lln";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ClipboardCheck,
+  CreditCard,
+  Loader2,
+  RotateCcw,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react";
+import type { Cpp20218LlnMode, LlnAttemptSummary, PublicLlnQuestion } from "@/lib/lln";
 
 type Cpp20218LlnTestProps = {
   questions: PublicLlnQuestion[];
   latestAttempt: LlnAttemptSummary | null;
   returnTo: string;
+  mode: Cpp20218LlnMode;
+  assignmentKey?: string | null;
+  buyAmountCents: number;
+  unlockAmountCents: number;
 };
 
 type SubmitResult = {
@@ -24,15 +37,29 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 }
 
+function formatAud(amountCents: number) {
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    maximumFractionDigits: 0,
+  }).format(amountCents / 100);
+}
+
 export function Cpp20218LlnTest({
   questions,
   latestAttempt,
   returnTo,
+  mode,
+  assignmentKey,
+  buyAmountCents,
+  unlockAmountCents,
 }: Cpp20218LlnTestProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [attempt, setAttempt] = useState<LlnAttemptSummary | null>(latestAttempt);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
 
   const groupedQuestions = useMemo(() => {
     return questions.reduce<Record<string, PublicLlnQuestion[]>>((groups, question) => {
@@ -45,6 +72,18 @@ export function Cpp20218LlnTest({
   const answeredCount = Object.keys(answers).length;
   const canSubmit = answeredCount === questions.length;
   const latestPassed = attempt?.passed ?? false;
+  const isPurchaseMode = mode === "buy";
+  const isUnlockMode = mode === "unlock";
+  const actionAmount = isUnlockMode ? unlockAmountCents : buyAmountCents;
+  const actionLabel = isUnlockMode
+    ? `Unlock remaining clusters - ${formatAud(actionAmount)}`
+    : `Buy Now - ${formatAud(actionAmount)}`;
+  const passedHeading = isUnlockMode
+    ? "Prerequisite cleared. You can unlock the remaining clusters now."
+    : "Prerequisite cleared. You can buy CPP20218 now.";
+  const passedCopy = isUnlockMode
+    ? "Your LLN result is saved. Continue to secure Stripe checkout to unlock all remaining CPP20218 clusters."
+    : "Your LLN result is saved. Continue to secure Stripe checkout to purchase Certificate II Security Operations.";
 
   async function submitTest() {
     if (!canSubmit) {
@@ -80,6 +119,54 @@ export function Cpp20218LlnTest({
     setAttempt(null);
     setError(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function startCheckout() {
+    setIsStartingCheckout(true);
+    setCheckoutError(null);
+
+    try {
+      const response = await fetch(isUnlockMode ? "/api/student/assignments/checkout" : "/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          isUnlockMode
+            ? { assignmentKey: assignmentKey ?? "all_locked" }
+            : { courseSlug: "certificate-ii-security-operations" },
+        ),
+      });
+      const result = await readJson<{
+        url?: string;
+        error?: string;
+        signInUrl?: string;
+        llnRequired?: boolean;
+        llnUrl?: string;
+      }>(response);
+
+      if (response.status === 401 && result.signInUrl) {
+        window.location.assign(result.signInUrl);
+        return;
+      }
+
+      if (response.status === 403 && result.llnRequired && result.llnUrl) {
+        window.location.assign(result.llnUrl);
+        return;
+      }
+
+      if (!response.ok || !result.url) {
+        throw new Error(result.error ?? "Unable to start secure checkout.");
+      }
+
+      window.location.assign(result.url);
+    } catch (checkoutStartError) {
+      setCheckoutError(
+        checkoutStartError instanceof Error
+          ? checkoutStartError.message
+          : "Unable to start secure checkout.",
+      );
+    } finally {
+      setIsStartingCheckout(false);
+    }
   }
 
   return (
@@ -212,13 +299,38 @@ export function Cpp20218LlnTest({
           )}
 
           {latestPassed ? (
-            <Link
-              href={returnTo}
-              className="portal-button-primary mt-5 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm"
-            >
-              Continue to checkout
-              <ArrowRight size={16} />
-            </Link>
+            <div className="mt-5 rounded-[20px] border border-emerald-200 bg-emerald-50/70 p-5">
+              <p className="text-base font-black leading-6 text-[#081221]">{passedHeading}</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-[#5d7389]">{passedCopy}</p>
+              {isPurchaseMode || isUnlockMode ? (
+                <button
+                  type="button"
+                  onClick={startCheckout}
+                  disabled={isStartingCheckout}
+                  className="portal-button-primary mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isStartingCheckout ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <CreditCard size={16} />
+                  )}
+                  {isStartingCheckout ? "Starting checkout..." : actionLabel}
+                </button>
+              ) : (
+                <Link
+                  href={returnTo}
+                  className="portal-button-primary mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm"
+                >
+                  Continue
+                  <ArrowRight size={16} />
+                </Link>
+              )}
+              {checkoutError ? (
+                <p className="mt-3 rounded-[14px] border border-rose-200 bg-white px-3 py-2 text-sm font-bold text-rose-700">
+                  {checkoutError}
+                </p>
+              ) : null}
+            </div>
           ) : attempt ? (
             <div className="mt-5 grid gap-3">
               <button
@@ -242,7 +354,7 @@ export function Cpp20218LlnTest({
         <section className="portal-card rounded-[28px] p-6">
           <h2 className="text-xl font-black tracking-tight text-[#081221]">What happens next?</h2>
           <div className="mt-4 space-y-3 text-sm font-semibold leading-6 text-[#5d7389]">
-            <p>Pass with 60% or higher to continue to secure checkout.</p>
+            <p>Pass with 60% or higher to continue to secure Stripe checkout.</p>
             <p>If you do not pass, you can retake the test. SSTA can also support you if any learning needs come up.</p>
             <p>Reference students keep current Cluster 1 access; this check is only required before buying further access.</p>
           </div>

@@ -387,9 +387,33 @@ export function normalizeLlnReturnTo(value: string | null | undefined) {
   return value;
 }
 
-export function buildCpp20218LlnUrl(returnTo?: string | null) {
+export type Cpp20218LlnMode = "buy" | "unlock" | "continue";
+
+export function normalizeCpp20218LlnMode(value: string | null | undefined): Cpp20218LlnMode {
+  if (value === "buy" || value === "unlock") {
+    return value;
+  }
+
+  return "continue";
+}
+
+export function buildCpp20218LlnUrl(
+  returnTo?: string | null,
+  mode?: Cpp20218LlnMode,
+  assignmentKey?: string | null,
+) {
   const normalizedReturnTo = normalizeLlnReturnTo(returnTo);
-  return `/dashboard/lln/cpp20218?returnTo=${encodeURIComponent(normalizedReturnTo)}`;
+  const params = new URLSearchParams({ returnTo: normalizedReturnTo });
+
+  if (mode && mode !== "continue") {
+    params.set("mode", mode);
+  }
+
+  if (assignmentKey) {
+    params.set("assignmentKey", assignmentKey);
+  }
+
+  return `/dashboard/lln/cpp20218?${params.toString()}`;
 }
 
 export function gradeCpp20218LlnAnswers(answers: Record<string, string>) {

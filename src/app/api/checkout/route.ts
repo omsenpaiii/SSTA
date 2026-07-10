@@ -68,12 +68,14 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
+      const signInReturnTo = course.slug === CPP20218_LLN_COURSE_SLUG && !body.data.enrollmentId
+        ? buildCpp20218LlnUrl(`/course/${course.slug}`, "buy")
+        : `/enroll?course=${course.slug}`;
+
       return NextResponse.json(
         {
           error: "Please sign in before continuing to secure checkout.",
-          signInUrl: `/sign-in?redirect_url=${encodeURIComponent(
-            `/enroll?course=${course.slug}`,
-          )}`,
+          signInUrl: `/sign-in?redirect_url=${encodeURIComponent(signInReturnTo)}`,
         },
         { status: 401 },
       );
@@ -105,13 +107,14 @@ export async function POST(request: Request) {
       const hasPassedLln = await hasPassedCpp20218Lln(user.id);
 
       if (!hasPassedLln) {
-        const returnTo = `/enroll?course=${course.slug}`;
+        const returnTo = body.data.enrollmentId ? `/enroll?course=${course.slug}` : `/course/${course.slug}`;
+        const mode = body.data.enrollmentId ? "continue" : "buy";
 
         return NextResponse.json(
           {
             error: "Please complete the CPP20218 LLN prerequisite before payment.",
             llnRequired: true,
-            llnUrl: buildCpp20218LlnUrl(returnTo),
+            llnUrl: buildCpp20218LlnUrl(returnTo, mode),
           },
           { status: 403 },
         );

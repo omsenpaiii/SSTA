@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         {
           error: "Please complete the CPP20218 LLN prerequisite before unlocking more clusters.",
           llnRequired: true,
-          llnUrl: buildCpp20218LlnUrl(returnTo),
+          llnUrl: buildCpp20218LlnUrl(returnTo, "unlock", body.data.assignmentKey ?? "all_locked"),
         },
         { status: 403 },
       );

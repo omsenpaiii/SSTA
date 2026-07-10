@@ -17,6 +17,22 @@ import {
   type Course,
 } from "@/lib/courses";
 
+const CPP20218_COURSE_SLUG = "certificate-ii-security-operations";
+
+function getCourseEnrollmentCta(course: Course) {
+  if (course.slug === CPP20218_COURSE_SLUG) {
+    return {
+      href: `/dashboard/lln/cpp20218?mode=buy&returnTo=${encodeURIComponent(`/course/${CPP20218_COURSE_SLUG}`)}`,
+      label: "Buy Now",
+    };
+  }
+
+  return {
+    href: `/enroll?course=${course.slug}`,
+    label: "Enrol",
+  };
+}
+
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
@@ -147,10 +163,10 @@ export default function CoursesPage() {
                         </Link>
                         {isContactFirstCourse(course) ? null : isCourseAvailableForEnrollment(course) ? (
                           <Link
-                            href={`/enroll?course=${course.slug}`}
+                            href={getCourseEnrollmentCta(course).href}
                             className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]"
                           >
-                            Enrol
+                            {getCourseEnrollmentCta(course).label}
                           </Link>
                         ) : (
                           <Link
