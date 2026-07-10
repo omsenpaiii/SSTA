@@ -38,6 +38,38 @@ function toGeminiContents(messages: ChatMessage[]) {
     }));
 }
 
+function selectCoursesForPrompt(courses: Course[], latestMessage: string) {
+  const message = latestMessage.toLowerCase();
+  const categoryMatchers: Array<{ category: string; keywords: string[] }> = [
+    { category: "Security", keywords: ["security", "licence", "license", "guard", "crowd", "supervisor", "baton", "handcuff"] },
+    { category: "First Aid", keywords: ["first aid", "cpr", "resuscitation", "emergency"] },
+    { category: "Work Health & Safety", keywords: ["whs", "white card", "safety", "work health"] },
+    { category: "Fire Warden", keywords: ["fire", "warden", "extinguisher"] },
+    { category: "Traffic Management", keywords: ["traffic"] },
+    { category: "RSA", keywords: ["rsa", "alcohol"] },
+    { category: "Food Safety", keywords: ["food"] },
+    { category: "Business", keywords: ["business", "leadership", "management"] },
+    { category: "Community Services", keywords: ["community", "disability", "support"] },
+    { category: "Accounting & Finance", keywords: ["accounting", "finance", "bookkeeping"] },
+    { category: "Building & Construction", keywords: ["building", "construction", "carpentry"] },
+    { category: "Real Estate", keywords: ["real estate", "property"] },
+  ];
+
+  const matchedCategories = categoryMatchers
+    .filter(({ keywords }) => keywords.some((keyword) => message.includes(keyword)))
+    .map(({ category }) => category);
+
+  if (matchedCategories.length > 0) {
+    return courses.filter((course) => matchedCategories.includes(course.category));
+  }
+
+  if (message.includes("course") || message.includes("program") || message.includes("enrol") || message.includes("enroll")) {
+    return courses.slice(0, 20);
+  }
+
+  return courses.slice(0, 12);
+}
+
 // Post API to handle chatbot assistant conversations
 export async function POST(req: NextRequest) {
   let body: ChatRequestBody = {};
@@ -64,9 +96,12 @@ export async function POST(req: NextRequest) {
       const mockResponse = getMockResponse(messages);
       return NextResponse.json({ text: mockResponse });
     }
+
+    const latestMessage = messages[messages.length - 1].content || "";
+    const promptCourses = selectCoursesForPrompt(coursesToUse, latestMessage);
     
     // Format courses list into text for model context
-    const coursesListText = coursesToUse.map((c: Course) => {
+    const coursesListText = promptCourses.map((c: Course) => {
       const priceText = c.priceLabel ?? (c.priceAud === 0 ? "Details to follow/Coming soon" : `$${c.priceAud}`);
       return `- Course: ${c.title} (${c.code || "No Code"})
   - Category: ${c.category}
@@ -108,7 +143,7 @@ Enrolment & trial access guidelines:
 
     const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 25000);
 
     const geminiResponse = await (async () => {
       try {
