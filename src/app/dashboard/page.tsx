@@ -7,6 +7,7 @@ import { getCourses } from "@/lib/course-repository";
 import { getCurrentUser } from "@/lib/auth";
 import { isSupabaseAuthConfigured, isSupabaseConfigured } from "@/lib/supabase";
 import { SetupNotice } from "@/components/SetupNotice";
+import { DashboardHeader } from "@/components/DashboardHeader";
 
 export default async function DashboardPage() {
   await connection();
@@ -31,25 +32,26 @@ export default async function DashboardPage() {
   const courses = await getCourses();
 
   return (
-    <main className="min-h-screen bg-[#eef8ff] px-5 py-12 sm:px-8">
-      <div className="mx-auto max-w-6xl">
-        <Link href="/" className="text-sm font-black text-[#0067b1]">
-          Back to SSTA
-        </Link>
-        <div className="mt-8 rounded-[1.5rem] bg-white p-8 shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
-          <p className="text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
-            Student dashboard
-          </p>
-          <h1 className="mt-3 text-4xl font-black text-[#020d24]">
-            Welcome, {user.firstName ?? "student"}
-          </h1>
-          {!isSupabaseConfigured() ? (
-            <p className="mt-4 rounded-2xl bg-[#fff7dd] p-4 text-sm font-bold text-[#9b5b00]">
-              Supabase env vars are not configured yet, so live enrolments will
-              appear after the database is connected.
+    <>
+      <DashboardHeader
+        user={{ name: user.name, email: user.email, initials: user.initials }}
+      />
+      <main className="min-h-screen bg-[#eef8ff] px-5 py-12 sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-[1.5rem] bg-white p-8 shadow-[0_24px_70px_rgba(0,74,143,0.12)]">
+            <p className="text-sm font-black uppercase tracking-[0.28em] text-[#0067b1]">
+              Student dashboard
             </p>
-          ) : null}
-        </div>
+            <h1 className="mt-3 text-4xl font-black text-[#020d24]">
+              Welcome, {user.firstName ?? "student"}
+            </h1>
+            {!isSupabaseConfigured() ? (
+              <p className="mt-4 rounded-2xl bg-[#fff7dd] p-4 text-sm font-bold text-[#9b5b00]">
+                Supabase env vars are not configured yet, so live enrolments will
+                appear after the database is connected.
+              </p>
+            ) : null}
+          </div>
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
           {courses.map((course) => {
@@ -102,8 +104,9 @@ export default async function DashboardPage() {
               );
             })}
           </div>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
+    </>
   );
 }

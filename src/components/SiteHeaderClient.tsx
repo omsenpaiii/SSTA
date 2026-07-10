@@ -20,6 +20,9 @@ type SiteHeaderClientProps = {
 
 export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigationLinks = user
+    ? [{ label: "Student Portal", href: user.dashboardHref }, ...primaryLinks]
+    : primaryLinks;
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-[0_12px_40px_rgba(0,74,143,0.08)]">
@@ -53,7 +56,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
         </Link>
 
         <div className="hidden items-center gap-8 lg:flex">
-          {primaryLinks.map((link) =>
+          {navigationLinks.map((link) =>
             link.label === "Courses" ? (
               <div key={link.label} className="group relative">
                 <Link
@@ -173,7 +176,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
             className="overflow-hidden border-t border-[#18aee5]/12 bg-white lg:hidden"
           >
             <div className="mx-auto grid max-w-7xl gap-2 px-5 py-5">
-              {primaryLinks.map((link) => (
+              {navigationLinks.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
