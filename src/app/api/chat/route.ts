@@ -26,6 +26,11 @@ type GeminiResponse = {
   };
 };
 
+type GeminiContent = {
+  role: string;
+  parts: Array<{ text: string }>;
+};
+
 function toGeminiContents(messages: ChatMessage[]) {
   const firstUserIndex = messages.findIndex((message) => message.role === "user");
   const usableMessages = firstUserIndex >= 0 ? messages.slice(firstUserIndex) : messages;
@@ -68,6 +73,80 @@ function selectCoursesForPrompt(courses: Course[], latestMessage: string) {
   }
 
   return courses.slice(0, 12);
+}
+
+async function generateGeminiResponse({
+  apiKey,
+  contents,
+  systemInstruction,
+}: {
+  apiKey: string;
+  contents: GeminiContent[];
+  systemInstruction: string;
+}) {
+  const modelCandidates = Array.from(
+    new Set([
+      process.env.GEMINI_MODEL || "gemini-flash-latest",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash-latest",
+    ]),
+  );
+  let lastError = "Gemini API failed";
+
+  for (const modelName of modelCandidates) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    try {
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            "X-goog-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemInstruction }],
+            },
+            contents,
+            generationConfig: {
+              temperature: 0.35,
+              maxOutputTokens: 700,
+            },
+          }),
+        },
+      );
+
+      const geminiPayload = (await geminiResponse.json().catch(() => ({}))) as GeminiResponse;
+
+      if (!geminiResponse.ok) {
+        lastError = geminiPayload.error?.message || `Gemini API returned ${geminiResponse.status}`;
+        continue;
+      }
+
+      const responseText = geminiPayload.candidates
+        ?.flatMap((candidate) => candidate.content?.parts ?? [])
+        .map((part) => part.text)
+        .filter(Boolean)
+        .join("\n")
+        .trim();
+
+      if (responseText) {
+        return { responseText, modelName };
+      }
+
+      lastError = `Gemini model ${modelName} returned an empty response`;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 // Post API to handle chatbot assistant conversations
@@ -141,58 +220,16 @@ Enrolment & trial access guidelines:
       return NextResponse.json({ error: "Missing or invalid user message" }, { status: 400 });
     }
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
-
-    const geminiResponse = await (async () => {
-      try {
-        return await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
-          {
-            method: "POST",
-            signal: controller.signal,
-            headers: {
-              "Content-Type": "application/json",
-              "X-goog-api-key": apiKey,
-            },
-            body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: systemInstruction }],
-              },
-              contents: formattedMessages,
-              generationConfig: {
-                temperature: 0.35,
-                maxOutputTokens: 700,
-              },
-            }),
-          },
-        );
-      } finally {
-        clearTimeout(timeout);
-      }
-    })();
-
-    const geminiPayload = (await geminiResponse.json().catch(() => ({}))) as GeminiResponse;
-
-    if (!geminiResponse.ok) {
-      throw new Error(geminiPayload.error?.message || `Gemini API returned ${geminiResponse.status}`);
-    }
-
-    const responseText = geminiPayload.candidates
-      ?.flatMap((candidate) => candidate.content?.parts ?? [])
-      .map((part) => part.text)
-      .filter(Boolean)
-      .join("\n")
-      .trim();
-
-    if (!responseText) {
-      throw new Error("Gemini API returned an empty response");
-    }
+    const { responseText, modelName } = await generateGeminiResponse({
+      apiKey,
+      contents: formattedMessages,
+      systemInstruction,
+    });
 
     return NextResponse.json({
       text: responseText,
       source: "gemini",
+      model: modelName,
     });
   } catch (error) {
     console.error("Error in SSTA Chatbot API:", error);
