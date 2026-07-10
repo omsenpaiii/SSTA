@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { courseCategories, Course } from "@/lib/courses";
 import { getCourses } from "@/lib/course-repository";
 import { siteInfo } from "@/lib/site-content";
@@ -9,10 +8,30 @@ interface ChatMessage {
   content: string;
 }
 
+type ChatRequestBody = {
+  messages?: ChatMessage[];
+  courses?: Course[];
+};
+
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+      }>;
+    };
+  }>;
+  error?: {
+    message?: string;
+  };
+};
+
 // Post API to handle chatbot assistant conversations
 export async function POST(req: NextRequest) {
+  let body: ChatRequestBody = {};
+
   try {
-    const body = await req.json();
+    body = await req.json();
     const { messages, courses: clientCourses } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -23,16 +42,16 @@ export async function POST(req: NextRequest) {
       ? clientCourses
       : await getCourses();
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
     if (!apiKey) {
       console.warn("GEMINI_API_KEY environment variable is not set. Falling back to SSTA Chatbot Demo Mode.");
       const mockResponse = getMockResponse(messages);
       return NextResponse.json({ text: mockResponse });
     }
-
-    // Initialize Gemini API Client
-    const genAI = new GoogleGenerativeAI(apiKey);
     
     // Format courses list into text for model context
     const coursesListText = coursesToUse.map((c: Course) => {
@@ -69,40 +88,58 @@ Enrolment & trial access guidelines:
 4. Keep your answers concise, friendly, and structured. Use bullet points for readability. Avoid long-winded paragraphs.
 5. If the user asks general or out-of-scope questions unrelated to SSTA, training, or careers in security/first aid/safety, politely steer them back to SSTA course inquiries.`;
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: systemInstruction,
-    });
-
-    // Format messages history for Gemini API
-    const formattedHistory = messages.slice(0, -1).map((msg: ChatMessage) => ({
+    const formattedMessages = messages.map((msg: ChatMessage) => ({
       role: msg.role === "assistant" ? "model" : "user",
       parts: [{ text: msg.content }],
     }));
 
-    const latestMessage = messages[messages.length - 1].content;
+    const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemInstruction }],
+          },
+          contents: formattedMessages,
+          generationConfig: {
+            temperature: 0.35,
+            maxOutputTokens: 700,
+          },
+        }),
+      },
+    );
 
-    // Start chat session with formatted history
-    const chat = model.startChat({
-      history: formattedHistory,
+    const geminiPayload = (await geminiResponse.json().catch(() => ({}))) as GeminiResponse;
+
+    if (!geminiResponse.ok) {
+      throw new Error(geminiPayload.error?.message || `Gemini API returned ${geminiResponse.status}`);
+    }
+
+    const responseText = geminiPayload.candidates
+      ?.flatMap((candidate) => candidate.content?.parts ?? [])
+      .map((part) => part.text)
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+
+    if (!responseText) {
+      throw new Error("Gemini API returned an empty response");
+    }
+
+    return NextResponse.json({
+      text: responseText,
+      source: "gemini",
     });
-
-    const result = await chat.sendMessage(latestMessage);
-    const responseText = result.response.text();
-
-    return NextResponse.json({ text: responseText });
   } catch (error) {
     console.error("Error in SSTA Chatbot API:", error);
-    // Graceful fallback to mock responses on API failure
-    try {
-      const body = await req.json().catch(() => ({}));
-      const mockResponse = getMockResponse(body.messages || []);
-      return NextResponse.json({ text: mockResponse });
-    } catch {
-      return NextResponse.json({
-        text: "I apologize, but I am having trouble connecting to my knowledge base right now. Please feel free to email our team at admin@ssta.net.au for course details!"
-      });
-    }
+    const mockResponse = getMockResponse(body.messages || []);
+    return NextResponse.json({ text: mockResponse, source: "fallback" });
   }
 }
 
