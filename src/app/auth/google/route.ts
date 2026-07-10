@@ -3,15 +3,13 @@ import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const next = url.searchParams.get("redirect_url");
-  const nextPath = next?.startsWith("/") ? next : "/dashboard";
 
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${url.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        redirectTo: `${url.origin}/auth/callback`,
       },
     });
 

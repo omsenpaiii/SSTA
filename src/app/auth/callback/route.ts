@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { syncStudentProfileFromUser } from "@/lib/auth";
+import { isAdminEmail, syncStudentProfileFromUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next");
   const flow = url.searchParams.get("flow");
 
   if (!code) {
@@ -33,14 +32,13 @@ export async function GET(request: Request) {
         "Email confirmed. Sign in with your new account to continue.",
       );
 
-      if (next?.startsWith("/")) {
-        signInUrl.searchParams.set("redirect_url", next);
-      }
+      signInUrl.searchParams.set("redirect_url", "/dashboard");
 
       return NextResponse.redirect(signInUrl);
     }
 
-    return NextResponse.redirect(new URL(next?.startsWith("/") ? next : "/dashboard", url.origin));
+    const destination = isAdminEmail(data.user.email ?? "") ? "/admin" : "/dashboard";
+    return NextResponse.redirect(new URL(destination, url.origin));
   } catch (error) {
     const errorUrl = new URL("/sign-in", url.origin);
     errorUrl.searchParams.set(

@@ -51,19 +51,7 @@ const resetSchema = z
     message: "Passwords do not match.",
   });
 
-function getNextPath(rawRedirect: string | null | undefined, fallback = "/dashboard") {
-  const value = rawRedirect?.trim();
-  if (!value || !value.startsWith("/")) {
-    return fallback;
-  }
-  return value;
-}
-
-function getPostAuthDestination(email: string, redirectUrl?: string | null) {
-  if (redirectUrl && redirectUrl.startsWith("/")) {
-    return redirectUrl;
-  }
-
+function getPostAuthDestination(email: string) {
   return isAdminEmail(email) ? "/admin" : "/dashboard";
 }
 
@@ -103,7 +91,7 @@ export async function signInWithPassword(
   }
 
   await syncStudentProfileFromUser(data.user);
-  redirect(getPostAuthDestination(parsed.data.email, parsed.data.redirectUrl));
+  redirect(getPostAuthDestination(parsed.data.email));
 }
 
 export async function signUpWithPassword(
@@ -123,7 +111,7 @@ export async function signUpWithPassword(
     return { error: parsed.error.issues[0]?.message ?? "Unable to create account." };
   }
 
-  const nextPath = getNextPath(parsed.data.redirectUrl);
+  const nextPath = "/dashboard";
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
@@ -151,7 +139,7 @@ export async function signUpWithPassword(
   }
 
   if (data.session?.user?.email) {
-    redirect(getPostAuthDestination(data.session.user.email, parsed.data.redirectUrl));
+    redirect(getPostAuthDestination(data.session.user.email));
   }
 
   return {
