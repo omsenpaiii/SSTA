@@ -26,6 +26,18 @@ type GeminiResponse = {
   };
 };
 
+function toGeminiContents(messages: ChatMessage[]) {
+  const firstUserIndex = messages.findIndex((message) => message.role === "user");
+  const usableMessages = firstUserIndex >= 0 ? messages.slice(firstUserIndex) : messages;
+
+  return usableMessages
+    .filter((message) => message.content?.trim())
+    .map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content }],
+    }));
+}
+
 // Post API to handle chatbot assistant conversations
 export async function POST(req: NextRequest) {
   let body: ChatRequestBody = {};
@@ -88,32 +100,43 @@ Enrolment & trial access guidelines:
 4. Keep your answers concise, friendly, and structured. Use bullet points for readability. Avoid long-winded paragraphs.
 5. If the user asks general or out-of-scope questions unrelated to SSTA, training, or careers in security/first aid/safety, politely steer them back to SSTA course inquiries.`;
 
-    const formattedMessages = messages.map((msg: ChatMessage) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
-    }));
+    const formattedMessages = toGeminiContents(messages);
+
+    if (formattedMessages.length === 0) {
+      return NextResponse.json({ error: "Missing or invalid user message" }, { status: 400 });
+    }
 
     const modelName = process.env.GEMINI_MODEL || "gemini-flash-latest";
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemInstruction }],
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+
+    const geminiResponse = await (async () => {
+      try {
+        return await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+          {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+              "Content-Type": "application/json",
+              "X-goog-api-key": apiKey,
+            },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: systemInstruction }],
+              },
+              contents: formattedMessages,
+              generationConfig: {
+                temperature: 0.35,
+                maxOutputTokens: 700,
+              },
+            }),
           },
-          contents: formattedMessages,
-          generationConfig: {
-            temperature: 0.35,
-            maxOutputTokens: 700,
-          },
-        }),
-      },
-    );
+        );
+      } finally {
+        clearTimeout(timeout);
+      }
+    })();
 
     const geminiPayload = (await geminiResponse.json().catch(() => ({}))) as GeminiResponse;
 
