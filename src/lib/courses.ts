@@ -53,6 +53,7 @@ export type Course = {
 export type CourseCategory = {
   slug: string;
   title: string;
+  filterCategory?: string;
   description: string;
   image: string;
 };
@@ -192,9 +193,10 @@ export const courseCategories: CourseCategory[] = [
   },
   {
     slug: "other-courses",
-    title: "Other",
+    title: "Non Accredited Courses",
+    filterCategory: "Other",
     description:
-      "Additional professional development and pathway courses accessed with SSTA guidance.",
+      "Practical non-accredited training and professional development courses accessed with SSTA guidance.",
     image:
       "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=900&q=80",
   },

@@ -13,7 +13,7 @@ export async function CategoryLandingPage({ slug }: { slug: string }) {
     if (category.title === "Coming Soon") {
       return course.availability === "coming-soon";
     }
-    return course.category === category.title;
+    return course.category === (category.filterCategory ?? category.title);
   });
 
   return (
@@ -27,7 +27,7 @@ export async function CategoryLandingPage({ slug }: { slug: string }) {
               Course Area
             </p>
             <h1 className="text-5xl font-black leading-tight tracking-normal sm:text-6xl">
-              {category.title} Courses
+              {category.title.endsWith("Courses") ? category.title : `${category.title} Courses`}
             </h1>
             <p className="mt-5 text-lg font-bold leading-8 text-[#53647c]">
               {category.description}

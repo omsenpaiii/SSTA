@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import {
+  archiveAdminStudent,
   deleteAdminCourse,
   getAdminSnapshot,
+  restoreAdminStudent,
   reviewAdminAssignment,
   seedCoursesToSupabase,
   updateAdminAssignmentAccess,
@@ -39,6 +41,10 @@ export async function POST(request: Request) {
       await upsertAdminLesson(payload);
     } else if (action === "upsert-student") {
       await upsertAdminStudent(payload);
+    } else if (action === "archive-student") {
+      await archiveAdminStudent(payload, admin.email);
+    } else if (action === "restore-student") {
+      await restoreAdminStudent(payload);
     } else if (action === "delete-course") {
       await deleteAdminCourse(String(payload?.slug ?? ""));
     } else if (action === "seed-defaults") {

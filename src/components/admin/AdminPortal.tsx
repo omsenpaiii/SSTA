@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
   BookOpen,
   ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   Database,
   Download,
@@ -14,10 +15,13 @@ import {
   LayoutDashboard,
   LogOut,
   Plus,
+  Pencil,
   RefreshCw,
   Search,
   Settings,
   ShieldCheck,
+  RotateCcw,
+  Trash2,
   Upload,
   UserPlus,
   Users,
@@ -26,6 +30,7 @@ import {
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import type { AdminUser } from "@/lib/admin";
 import type { AdminSnapshot } from "@/lib/admin-data";
+import type { AdminStudent } from "@/lib/admin-data";
 import { formatAssignmentStatus } from "@/lib/cpp20218";
 
 type AdminPortalProps = {
@@ -78,9 +83,18 @@ function matchesAssessmentStatus(status: string, filter: AssessmentStatusFilter)
   return status === filter;
 }
 
+const studentNameCollator = new Intl.Collator("en-AU", { sensitivity: "base", numeric: true });
+
+function studentDisplayName(student: AdminStudent) {
+  return `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || student.email || "Unnamed";
+}
+
 export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalProps) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [active, setActive] = useState<Section>("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [studentView, setStudentView] = useState<"active" | "archived">("active");
+  const [editingStudent, setEditingStudent] = useState<AdminStudent | null>(null);
   const [query, setQuery] = useState("");
   const [assessmentQuery, setAssessmentQuery] = useState("");
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatusFilter>("all");
@@ -90,6 +104,21 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [selectedCourseSlug, setSelectedCourseSlug] = useState(initialSnapshot.courses[0]?.slug ?? "");
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setSidebarCollapsed(window.localStorage.getItem("ssta-admin-sidebar-collapsed") === "true");
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  function toggleSidebar() {
+    setSidebarCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem("ssta-admin-sidebar-collapsed", String(next));
+      return next;
+    });
+  }
 
   const courseBySlug = useMemo(
     () => new Map(snapshot.courses.map((course) => [course.slug, course])),
@@ -102,10 +131,16 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     const value = `${course.title} ${course.code} ${course.category}`.toLowerCase();
     return value.includes(query.toLowerCase());
   });
-  const filteredStudents = snapshot.students.filter((student) => {
-    const value = `${student.first_name ?? ""} ${student.last_name ?? ""} ${student.email ?? ""}`.toLowerCase();
-    return value.includes(query.toLowerCase());
-  });
+  const filteredStudents = snapshot.students
+    .filter((student) => (studentView === "archived" ? Boolean(student.archived_at) : !student.archived_at))
+    .filter((student) => {
+      const value = `${student.first_name ?? ""} ${student.last_name ?? ""} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase();
+      return value.includes(query.trim().toLowerCase());
+    })
+    .sort((a, b) => {
+      const nameResult = studentNameCollator.compare(studentDisplayName(a), studentDisplayName(b));
+      return nameResult || studentNameCollator.compare(a.email ?? "", b.email ?? "");
+    });
   const courseBreakdown = snapshot.courses.slice(0, 9).map((course) => {
     const count = snapshot.enrollments.filter((item) => item.course_slug === course.slug).length;
     return { course, count };
@@ -149,10 +184,16 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         const bNeedsReview = b.assignments.some((assignment) => assignment.status === "submitted") ? 1 : 0;
         if (aNeedsReview !== bNeedsReview) return bNeedsReview - aNeedsReview;
       }
-      return a.displayName.localeCompare(b.displayName);
+      const nameResult = studentNameCollator.compare(a.displayName, b.displayName);
+      return nameResult || studentNameCollator.compare(a.email ?? "", b.email ?? "");
     });
+  const editingCourseSlug = editingStudent
+    ? snapshot.enrollments.find(
+        (enrollment) => enrollment.user_key === editingStudent.user_key && enrollment.status === "active",
+      )?.course_slug ?? ""
+    : "";
   const metricCards: { label: string; value: string; icon: LucideIcon }[] = [
-    { label: "Total Students", value: String(snapshot.students.length), icon: Users },
+    { label: "Total Students", value: String(snapshot.students.filter((student) => !student.archived_at).length), icon: Users },
     { label: "Active Enrolments", value: String(activeEnrollments), icon: GraduationCap },
     { label: "Completed", value: String(completedCount), icon: BookOpen },
     { label: "Revenue", value: money(totalRevenue), icon: Database },
@@ -169,11 +210,12 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 
     if (!response.ok) {
       setNotice({ type: "error", text: json.error ?? "Admin action failed." });
-      return;
+      return false;
     }
 
     setSnapshot(json.snapshot);
     setNotice({ type: "success", text: success });
+    return true;
   }
 
   async function handleCourseSubmit(formData: FormData) {
@@ -203,9 +245,11 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   }
 
   async function handleStudentSubmit(formData: FormData) {
-    await runAction(
+    const saved = await runAction(
       "upsert-student",
       {
+        id: editingStudent?.id,
+        userKey: editingStudent?.user_key,
         firstName: String(formData.get("firstName") || ""),
         lastName: String(formData.get("lastName") || ""),
         email: String(formData.get("email") || ""),
@@ -216,6 +260,38 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       },
       "Student saved and access updated.",
     );
+
+    if (saved) {
+      setEditingStudent(null);
+      setStudentView("active");
+      setActive("students");
+    }
+  }
+
+  async function archiveStudent(student: AdminStudent) {
+    if (!window.confirm(`Remove ${studentDisplayName(student)} from active students and revoke their course access? Their history will be preserved.`)) {
+      return;
+    }
+
+    await runAction("archive-student", { id: student.id }, "Student archived and access revoked.");
+  }
+
+  async function restoreStudent(student: AdminStudent) {
+    if (!window.confirm(`Restore ${studentDisplayName(student)} and reactivate their archived enrolments?`)) {
+      return;
+    }
+
+    await runAction("restore-student", { id: student.id }, "Student restored.");
+  }
+
+  function startAddingStudent() {
+    setEditingStudent(null);
+    setActive("add-student");
+  }
+
+  function startEditingStudent(student: AdminStudent) {
+    setEditingStudent(student);
+    setActive("add-student");
   }
 
   async function handleLessonSubmit(formData: FormData) {
@@ -308,12 +384,16 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         </div>
       ) : null}
 
-      <aside className="fixed inset-y-0 left-0 hidden w-[260px] flex-col bg-[#111c2b] text-white lg:flex">
-        <div className="flex h-24 items-center gap-4 px-7">
+      <aside
+        className={`fixed inset-y-0 left-0 hidden flex-col bg-[#111c2b] text-white transition-[width] duration-200 lg:flex ${
+          sidebarCollapsed ? "w-[84px]" : "w-[260px]"
+        }`}
+      >
+        <div className={`flex h-24 items-center gap-4 ${sidebarCollapsed ? "justify-center px-3" : "px-7"}`}>
           <span className="flex size-12 items-center justify-center rounded-xl bg-[#2e7af0]">
             <ShieldCheck size={26} />
           </span>
-          <span>
+          <span className={sidebarCollapsed ? "hidden" : "block"}>
             <span className="block text-xl font-black">SSTA</span>
             <span className="block text-sm font-bold text-white/52">Admin Portal</span>
           </span>
@@ -326,29 +406,46 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             return (
               <button
                 key={item.id}
-                onClick={() => setActive(item.id)}
-                className={`flex h-14 w-full items-center gap-4 rounded-xl px-5 text-left text-base font-black transition ${
+                onClick={() => (item.id === "add-student" ? startAddingStudent() : setActive(item.id))}
+                title={sidebarCollapsed ? item.label : undefined}
+                aria-label={item.label}
+                className={`flex h-14 w-full items-center rounded-xl text-left text-base font-black transition ${
+                  sidebarCollapsed ? "justify-center px-0" : "gap-4 px-5"
+                } ${
                   selected ? "bg-[#2392ee] text-white shadow-lg shadow-blue-950/20" : "text-white/58 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 <Icon size={22} />
-                {item.label}
+                <span className={sidebarCollapsed ? "sr-only" : "block"}>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
         <div className="border-t border-white/10 p-4">
-          <button className="mb-3 flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left font-bold text-white/52">
-            <ChevronLeft size={20} /> Collapse
+          <button
+            onClick={toggleSidebar}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`mb-3 flex h-12 w-full items-center rounded-xl text-left font-bold text-white/52 hover:bg-white/8 hover:text-white ${
+              sidebarCollapsed ? "justify-center px-0" : "gap-4 px-4"
+            }`}
+          >
+            {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            <span className={sidebarCollapsed ? "sr-only" : "block"}>Collapse</span>
           </button>
-          <SignOutButton className="flex h-12 w-full items-center gap-4 rounded-xl px-4 text-left font-bold text-white/52 hover:bg-white/8 hover:text-white disabled:cursor-wait disabled:opacity-70">
-            <LogOut size={20} /> Sign Out
+          <SignOutButton
+            title={sidebarCollapsed ? "Sign out" : undefined}
+            className={`flex h-12 w-full items-center rounded-xl text-left font-bold text-white/52 hover:bg-white/8 hover:text-white disabled:cursor-wait disabled:opacity-70 ${
+              sidebarCollapsed ? "justify-center px-0" : "gap-4 px-4"
+            }`}
+          >
+            <LogOut size={20} /> <span className={sidebarCollapsed ? "sr-only" : "block"}>Sign Out</span>
           </SignOutButton>
         </div>
       </aside>
 
-      <section className="lg:pl-[260px]">
+      <section className={`transition-[padding] duration-200 ${sidebarCollapsed ? "lg:pl-[84px]" : "lg:pl-[260px]"}`}>
         <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-slate-200 bg-white/92 px-5 backdrop-blur lg:px-8">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={22} />
@@ -477,33 +574,33 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           ) : null}
 
           {active === "students" ? (
-            <TableSection
-              title="Students"
-              actionLabel="Add Student"
-              onAction={() => setActive("add-student")}
-              columns={["Name", "Email", "Phone", "Batch", "Access Key", "Created"]}
-              rows={filteredStudents.map((student) => [
-                `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || "Unnamed",
-                student.email ?? "",
-                student.phone ?? "",
-                `Batch ${student.batch_number ?? 2}`,
-                student.user_key,
-                new Date(student.created_at).toLocaleDateString("en-AU"),
-              ])}
+            <StudentTableSection
+              students={filteredStudents}
+              view={studentView}
+              activeCount={snapshot.students.filter((student) => !student.archived_at).length}
+              archivedCount={snapshot.students.filter((student) => Boolean(student.archived_at)).length}
+              onViewChange={setStudentView}
+              onAdd={startAddingStudent}
+              onEdit={startEditingStudent}
+              onArchive={archiveStudent}
+              onRestore={restoreStudent}
             />
           ) : null}
 
           {active === "add-student" ? (
-            <FormSection title="Add Student" description="Create a student profile and optionally grant course access.">
-              <form action={handleStudentSubmit} className="grid gap-5 md:grid-cols-2">
-                <TextField name="firstName" label="First name" required />
-                <TextField name="lastName" label="Last name" required />
-                <TextField name="email" label="Email address" type="email" required />
-                <TextField name="phone" label="Phone number" />
-                <TextField name="batchNumber" label="Batch number" type="number" defaultValue="2" />
+            <FormSection
+              title={editingStudent ? "Edit Student" : "Add Student"}
+              description={editingStudent ? "Update student details without changing their internal access identity." : "Create a student profile and optionally grant course access."}
+            >
+              <form key={editingStudent?.id ?? "new-student"} action={handleStudentSubmit} className="grid gap-5 md:grid-cols-2">
+                <TextField name="firstName" label="First name" required defaultValue={editingStudent?.first_name ?? ""} />
+                <TextField name="lastName" label="Last name (optional)" defaultValue={editingStudent?.last_name ?? ""} />
+                <TextField name="email" label="Email address" type="email" required defaultValue={editingStudent?.email ?? ""} />
+                <TextField name="phone" label="Phone number" defaultValue={editingStudent?.phone ?? ""} />
+                <TextField name="batchNumber" label="Batch number" type="number" defaultValue={String(editingStudent?.batch_number ?? 2)} />
                 <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-2">
-                  Course access
-                  <select name="courseSlug" className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
+                  Course access {editingStudent ? "(optional update)" : ""}
+                  <select name="courseSlug" defaultValue={editingCourseSlug} className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
                     <option value="">No course access yet</option>
                     {snapshot.courses.map((course) => (
                       <option key={course.slug} value={course.slug}>
@@ -512,7 +609,21 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                     ))}
                   </select>
                 </label>
-                <SubmitButton label="Save Student" />
+                <div className="flex flex-wrap gap-3 md:col-span-2">
+                  <SubmitButton label={editingStudent ? "Save Changes" : "Save Student"} />
+                  {editingStudent ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingStudent(null);
+                        setActive("students");
+                      }}
+                      className="inline-flex h-12 items-center rounded-xl border border-slate-200 px-5 text-sm font-black text-slate-600"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </form>
             </FormSection>
           ) : null}
@@ -976,6 +1087,129 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         </div>
       </section>
     </main>
+  );
+}
+
+function StudentTableSection({
+  students,
+  view,
+  activeCount,
+  archivedCount,
+  onViewChange,
+  onAdd,
+  onEdit,
+  onArchive,
+  onRestore,
+}: {
+  students: AdminStudent[];
+  view: "active" | "archived";
+  activeCount: number;
+  archivedCount: number;
+  onViewChange: (view: "active" | "archived") => void;
+  onAdd: () => void;
+  onEdit: (student: AdminStudent) => void;
+  onArchive: (student: AdminStudent) => void;
+  onRestore: (student: AdminStudent) => void;
+}) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-6">
+        <div>
+          <h1 className="text-3xl font-black tracking-normal">Students</h1>
+          <div className="mt-4 flex gap-2" role="tablist" aria-label="Student status">
+            {([
+              ["active", `Active ${activeCount}`],
+              ["archived", `Archived ${archivedCount}`],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={view === value}
+                onClick={() => onViewChange(value)}
+                className={`rounded-lg px-3 py-2 text-xs font-black transition ${
+                  view === value ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button onClick={onAdd} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1f7ac1] px-4 text-sm font-black text-white">
+          <Plus size={18} /> Add Student
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px] text-left">
+          <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.08em] text-slate-500">
+            <tr>
+              {[
+                "Name",
+                "Email",
+                "Phone",
+                "Batch",
+                view === "archived" ? "Archived" : "Created",
+                "Actions",
+              ].map((column) => <th key={column} className="px-6 py-4">{column}</th>)}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {students.length ? students.map((student) => (
+              <tr key={student.id} className="text-sm font-bold text-slate-700">
+                <td className="px-6 py-4 font-black text-slate-900">{studentDisplayName(student)}</td>
+                <td className="px-6 py-4">{student.email || "—"}</td>
+                <td className="px-6 py-4">{student.phone || "—"}</td>
+                <td className="px-6 py-4">Batch {student.batch_number ?? 2}</td>
+                <td className="px-6 py-4">
+                  {new Date(view === "archived" ? student.archived_at! : student.created_at).toLocaleDateString("en-AU")}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    {view === "active" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onEdit(student)}
+                          title="Edit student"
+                          aria-label={`Edit ${studentDisplayName(student)}`}
+                          className="flex size-9 items-center justify-center rounded-lg border border-slate-200 text-[#1f7ac1] hover:bg-[#eef5fb]"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onArchive(student)}
+                          title="Delete student"
+                          aria-label={`Delete ${studentDisplayName(student)}`}
+                          className="flex size-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onRestore(student)}
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 px-3 text-xs font-black text-emerald-700 hover:bg-emerald-50"
+                      >
+                        <RotateCcw size={15} /> Restore
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td className="px-6 py-10 text-center text-sm font-bold text-slate-500" colSpan={6}>
+                  No {view} students found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

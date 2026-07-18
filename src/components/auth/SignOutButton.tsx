@@ -5,9 +5,10 @@ import { useState, type ReactNode } from "react";
 type SignOutButtonProps = {
   children: ReactNode;
   className?: string;
+  title?: string;
 };
 
-export function SignOutButton({ children, className }: SignOutButtonProps) {
+export function SignOutButton({ children, className, title }: SignOutButtonProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   async function signOut() {
@@ -38,6 +39,8 @@ export function SignOutButton({ children, className }: SignOutButtonProps) {
       onClick={signOut}
       disabled={isSigningOut}
       className={className}
+      title={title}
+      aria-label={title}
     >
       {isSigningOut ? "Signing out..." : children}
     </button>

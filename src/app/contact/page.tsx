@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone, ShieldCheck } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { siteInfo } from "@/lib/site-content";
@@ -21,7 +21,7 @@ export default function ContactPage() {
             Use the contact details below or start the enrolment form. SSTA will respond through the configured intake mailbox.
           </p>
 
-          <div className="mt-12 grid gap-6 lg:grid-cols-3">
+          <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             <a href={`mailto:${siteInfo.email}`} className="rounded-[1.5rem] bg-white p-6 shadow-[0_24px_70px_rgba(0,74,143,0.08)]">
               <Mail className="text-[#0067b1]" size={32} />
               <h2 className="mt-5 text-xl font-black">Email</h2>
@@ -36,6 +36,19 @@ export default function ContactPage() {
               <MapPin className="text-[#0067b1]" size={32} />
               <h2 className="mt-5 text-xl font-black">Address</h2>
               <p className="mt-2 text-sm font-bold text-[#53647c]">{siteInfo.address}</p>
+            </div>
+            <div className="rounded-[1.5rem] bg-white p-6 shadow-[0_24px_70px_rgba(0,74,143,0.08)]">
+              <MessageCircle className="text-[#0067b1]" size={32} />
+              <h2 className="mt-5 text-xl font-black">IT Support — {siteInfo.itSupport.name}</h2>
+              <p className="mt-2 text-sm font-bold text-[#53647c]">{siteInfo.itSupport.phone}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <a href={siteInfo.itSupport.phoneHref} className="inline-flex items-center gap-2 rounded-full bg-[#0067b1] px-4 py-2 text-xs font-black text-white">
+                  <Phone size={15} /> Call
+                </a>
+                <a href={siteInfo.itSupport.whatsappHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white">
+                  <MessageCircle size={15} /> WhatsApp
+                </a>
+              </div>
             </div>
           </div>
 

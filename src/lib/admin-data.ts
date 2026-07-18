@@ -22,13 +22,15 @@ export type AdminStudent = {
   stripe_customer_id: string | null;
   created_at: string;
   updated_at: string | null;
+  archived_at: string | null;
+  archived_by_email: string | null;
 };
 
 export type AdminEnrollment = {
   id: string;
   user_key: string;
   course_slug: string;
-  status: "active" | "refunded" | "revoked";
+  status: "active" | "refunded" | "revoked" | "archived";
   stripe_customer_id: string | null;
   stripe_session_id: string | null;
   amount_paid: number | null;
@@ -106,7 +108,8 @@ const lessonSchema = z.object({
 });
 
 const studentSchema = z.object({
-  firstName: z.string().trim().optional().nullable(),
+  id: z.string().uuid().optional().nullable(),
+  firstName: z.string().trim().min(1),
   lastName: z.string().trim().optional().nullable(),
   email: z.string().trim().email(),
   phone: z.string().trim().optional().nullable(),
@@ -221,8 +224,10 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       await Promise.all([
         supabase
           .from("student_profiles")
-          .select("id,user_key,first_name,last_name,email,phone,batch_number,stripe_customer_id,created_at,updated_at")
-          .order("created_at", { ascending: false }),
+          .select("id,user_key,first_name,last_name,email,phone,batch_number,stripe_customer_id,created_at,updated_at,archived_at,archived_by_email")
+          .order("first_name", { ascending: true, nullsFirst: false })
+          .order("last_name", { ascending: true, nullsFirst: false })
+          .order("email", { ascending: true, nullsFirst: false }),
         supabase
           .from("course_enrollments")
           .select("id,user_key,course_slug,status,stripe_customer_id,stripe_session_id,amount_paid,currency,created_at,updated_at")
@@ -359,20 +364,56 @@ export async function replaceAdminCourseUnits(
 export async function upsertAdminStudent(input: unknown) {
   const student = studentSchema.parse(input);
   const supabase = requireSupabase();
-  const userKey = student.userKey || manualStudentKey(student.email);
+  const email = student.email.toLowerCase();
+  const duplicateQuery = supabase
+    .from("student_profiles")
+    .select("id")
+    .ilike("email", email)
+    .limit(1);
+  const { data: duplicateRows, error: duplicateError } = student.id
+    ? await duplicateQuery.neq("id", student.id)
+    : await duplicateQuery;
 
-  const { error: profileError } = await supabase.from("student_profiles").upsert(
-    {
+  if (duplicateError) {
+    throw new Error(duplicateError.message);
+  }
+
+  if (duplicateRows?.length) {
+    throw new Error("A student profile already exists with this email address.");
+  }
+
+  let userKey = student.userKey || manualStudentKey(email);
+  let profileError: { message: string } | null = null;
+  const profileValues = {
+    first_name: student.firstName,
+    last_name: student.lastName || null,
+    email,
+    phone: student.phone || null,
+    batch_number: student.batchNumber,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (student.id) {
+    const { data: existing, error: existingError } = await supabase
+      .from("student_profiles")
+      .select("user_key")
+      .eq("id", student.id)
+      .single();
+
+    if (existingError || !existing) {
+      throw new Error(existingError?.message || "Student profile was not found.");
+    }
+
+    userKey = existing.user_key;
+    const result = await supabase.from("student_profiles").update(profileValues).eq("id", student.id);
+    profileError = result.error;
+  } else {
+    const result = await supabase.from("student_profiles").insert({
+      ...profileValues,
       user_key: userKey,
-      first_name: student.firstName ?? null,
-      last_name: student.lastName ?? null,
-      email: student.email,
-      phone: student.phone ?? null,
-      batch_number: student.batchNumber,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_key" },
-  );
+    });
+    profileError = result.error;
+  }
 
   if (profileError) {
     throw new Error(profileError.message);
@@ -395,6 +436,74 @@ export async function upsertAdminStudent(input: unknown) {
   }
 
   return { ...student, userKey };
+}
+
+const studentLifecycleSchema = z.object({
+  id: z.string().uuid(),
+});
+
+export async function archiveAdminStudent(input: unknown, adminEmail: string) {
+  const { id } = studentLifecycleSchema.parse(input);
+  const supabase = requireSupabase();
+  const { data: profile, error: profileLookupError } = await supabase
+    .from("student_profiles")
+    .select("user_key,archived_at")
+    .eq("id", id)
+    .single();
+
+  if (profileLookupError || !profile) {
+    throw new Error(profileLookupError?.message || "Student profile was not found.");
+  }
+
+  if (profile.archived_at) return;
+
+  const archivedAt = new Date().toISOString();
+  const { error: enrollmentError } = await supabase
+    .from("course_enrollments")
+    .update({ status: "archived", updated_at: archivedAt })
+    .eq("user_key", profile.user_key)
+    .eq("status", "active");
+
+  if (enrollmentError) throw new Error(enrollmentError.message);
+
+  const { error: profileError } = await supabase
+    .from("student_profiles")
+    .update({ archived_at: archivedAt, archived_by_email: adminEmail, updated_at: archivedAt })
+    .eq("id", id);
+
+  if (profileError) throw new Error(profileError.message);
+}
+
+export async function restoreAdminStudent(input: unknown) {
+  const { id } = studentLifecycleSchema.parse(input);
+  const supabase = requireSupabase();
+  const { data: profile, error: profileLookupError } = await supabase
+    .from("student_profiles")
+    .select("user_key,archived_at")
+    .eq("id", id)
+    .single();
+
+  if (profileLookupError || !profile) {
+    throw new Error(profileLookupError?.message || "Student profile was not found.");
+  }
+
+  if (!profile.archived_at) return;
+
+  const restoredAt = new Date().toISOString();
+  const { error: enrollmentError } = await supabase
+    .from("course_enrollments")
+    .update({ status: "active", updated_at: restoredAt })
+    .eq("user_key", profile.user_key)
+    .eq("status", "archived");
+
+  if (enrollmentError) throw new Error(enrollmentError.message);
+
+  const { error: profileError } = await supabase
+    .from("student_profiles")
+    .update({ archived_at: null, archived_by_email: null, updated_at: restoredAt })
+    .eq("id", id);
+
+  if (profileError) throw new Error(profileError.message);
 }
 
 export async function upsertAdminEnrollment(input: unknown) {

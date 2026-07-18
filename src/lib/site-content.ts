@@ -8,6 +8,12 @@ export const siteInfo = {
   phone: "+61 0431 696 558",
   phoneHref: "tel:+610431696558",
   address: "Level 1, 1287 North Road, Huntingdale 3166",
+  itSupport: {
+    name: "Agastya",
+    phone: "+61 478 635 406",
+    phoneHref: "tel:+61478635406",
+    whatsappHref: "https://wa.me/61478635406",
+  },
 };
 
 export const announcementBarMessage =
@@ -38,7 +44,7 @@ export const courseMenu = courseCategories.map((category) => ({
     if (category.title === "Coming Soon") {
       return course.availability === "coming-soon";
     }
-    return course.category === category.title;
+    return course.category === (category.filterCategory ?? category.title);
   }),
 }));
 

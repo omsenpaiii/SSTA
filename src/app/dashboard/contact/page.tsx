@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { siteInfo } from "@/lib/site-content";
 
 export default function ContactPage() {
@@ -14,7 +14,7 @@ export default function ContactPage() {
           Use the details below for course support, scheduling questions, access issues, or student guidance.
         </p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             { label: "Email", value: siteInfo.email, href: `mailto:${siteInfo.email}`, icon: Mail },
             { label: "Phone", value: siteInfo.phone, href: siteInfo.phoneHref, icon: Phone },
@@ -34,6 +34,21 @@ export default function ContactPage() {
               <p className="mt-2 text-base font-black text-[#081221]">{item.value}</p>
             </Link>
           ))}
+          <div className="portal-subtle-card rounded-[20px] p-5">
+            <div className="flex size-11 items-center justify-center rounded-[16px] bg-[#eef5fb] text-[#0f6eb8]">
+              <MessageCircle size={20} />
+            </div>
+            <p className="mt-4 text-sm font-black uppercase tracking-[0.16em] text-[#7f92a5]">IT Support — {siteInfo.itSupport.name}</p>
+            <p className="mt-2 text-base font-black text-[#081221]">{siteInfo.itSupport.phone}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a href={siteInfo.itSupport.phoneHref} className="portal-button-secondary inline-flex items-center gap-2 px-3 py-2 text-xs">
+                <Phone size={14} /> Call
+              </a>
+              <a href={siteInfo.itSupport.whatsappHref} target="_blank" rel="noreferrer" className="portal-button-primary inline-flex items-center gap-2 px-3 py-2 text-xs">
+                <MessageCircle size={14} /> WhatsApp
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
