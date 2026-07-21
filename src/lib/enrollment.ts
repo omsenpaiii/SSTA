@@ -19,6 +19,7 @@ export const enrollmentSchema = z.object({
     .enum(["no", "yes", "prefer_not_to_say"])
     .default("no"),
   disabilityDetails: z.string().trim().max(1000, "Support details must be under 1000 characters").optional(),
+  referredBy: z.string().trim().max(120, "Reference must be under 120 characters").optional(),
   courseId: z.string().trim().min(1, "Please select a course"),
   captchaToken: z.string().trim().min(1, "Please confirm you are not a robot"),
 });
@@ -37,6 +38,8 @@ export type EnrollmentLead = {
   address: string;
   disability_status: "no" | "yes" | "prefer_not_to_say";
   disability_details: string | null;
+  origin: "self_enrolled" | "admin" | "import";
+  referred_by: string | null;
   course_slug: string;
   payment_status: "pending" | "paid" | "failed" | "cancelled";
   stripe_session_id: string | null;
@@ -53,7 +56,7 @@ export type EnrollmentPaymentStatus =
   | "cancelled";
 
 const leadSelect =
-  "id,first_name,last_name,email,phone,date_of_birth,usi,address,disability_status,disability_details,course_slug,payment_status,stripe_session_id,email_status,email_error,email_sent_at,created_at";
+  "id,first_name,last_name,email,phone,date_of_birth,usi,address,disability_status,disability_details,origin,referred_by,course_slug,payment_status,stripe_session_id,email_status,email_error,email_sent_at,created_at";
 
 export async function createEnrollmentLead(input: EnrollmentLeadInput) {
   const course = await getCourse(input.courseId);
@@ -87,6 +90,8 @@ export async function createEnrollmentLead(input: EnrollmentLeadInput) {
         input.disabilityStatus === "yes" && input.disabilityDetails
           ? input.disabilityDetails
           : null,
+      origin: "self_enrolled",
+      referred_by: input.referredBy || null,
       course_slug: course.slug,
       payment_status: "pending",
       email_status: "pending",

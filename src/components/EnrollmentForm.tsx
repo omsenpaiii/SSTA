@@ -28,6 +28,7 @@ const formSchema = z.object({
   address: z.string().min(10, "Please provide your full address"),
   disabilityStatus: z.enum(["no", "yes", "prefer_not_to_say"]),
   disabilityDetails: z.string().max(1000, "Support details must be under 1000 characters").optional(),
+  referredBy: z.string().max(120, "Reference must be under 120 characters").optional(),
   courseId: z.string().min(1, "Please select a course"),
   captchaToken: z.string().min(1, "Please confirm you are not a robot"),
 });
@@ -44,6 +45,7 @@ const steps = [
 type EnrollmentFormProps = {
   initialCourseSlug?: string;
   courses: Course[];
+  initialValues?: Partial<FormValues>;
 };
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -54,7 +56,7 @@ async function readJson<T>(response: Response): Promise<T> {
   }
 }
 
-export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFormProps) {
+export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues = {} }: EnrollmentFormProps) {
   const enrollableCourses = courses.filter((course) => isCourseAvailableForEnrollment(course));
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,15 +79,16 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      dob: "",
-      usi: "",
-      address: "",
-      disabilityStatus: "no",
-      disabilityDetails: "",
+      firstName: initialValues.firstName ?? "",
+      lastName: initialValues.lastName ?? "",
+      email: initialValues.email ?? "",
+      phone: initialValues.phone ?? "",
+      dob: initialValues.dob ?? "",
+      usi: initialValues.usi ?? "",
+      address: initialValues.address ?? "",
+      disabilityStatus: initialValues.disabilityStatus ?? "no",
+      disabilityDetails: initialValues.disabilityDetails ?? "",
+      referredBy: initialValues.referredBy ?? "",
       courseId: validInitialCourse,
       captchaToken: "",
     },
@@ -192,7 +195,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
   const getFieldsForStep = (stepIndex: number): (keyof FormValues)[] => {
     switch (stepIndex) {
       case 0: return ["firstName", "lastName", "email", "phone", "dob"];
-      case 1: return ["usi", "address", "disabilityStatus", "disabilityDetails"];
+      case 1: return ["usi", "address", "disabilityStatus", "disabilityDetails", "referredBy"];
       case 2: return ["courseId"];
       default: return [];
     }
@@ -399,6 +402,19 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
                         ) : null}
                       </div>
                     ) : null}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="referredBy" className="font-bold text-[#020d24]">
+                        Lead reference (optional)
+                      </Label>
+                      <Input
+                        id="referredBy"
+                        placeholder="For example: Abu, Clint, SSTA or another referrer"
+                        {...register("referredBy")}
+                        className={`h-12 bg-slate-50 focus-visible:ring-[#18aee5] ${errors.referredBy ? "border-red-500" : "border-slate-200"}`}
+                      />
+                      {errors.referredBy ? <p className="text-xs font-bold text-red-500">{errors.referredBy.message}</p> : null}
+                    </div>
                   </div>
                 )}
 
@@ -469,6 +485,12 @@ export function EnrollmentForm({ initialCourseSlug = "", courses }: EnrollmentFo
                               : "No"}
                         </span>
                       </div>
+                      {formValues.referredBy ? (
+                        <div className="p-4 flex justify-between items-center gap-4">
+                          <span className="text-sm font-bold text-slate-500">Referred by</span>
+                          <span className="text-right font-bold text-[#020d24]">{formValues.referredBy}</span>
+                        </div>
+                      ) : null}
                     </div>
                     
                     <div className="bg-[#020d24] rounded-2xl p-5 text-white flex justify-between items-center">

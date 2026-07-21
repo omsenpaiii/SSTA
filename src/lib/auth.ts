@@ -96,12 +96,12 @@ export async function syncStudentProfileFromUser(user: AuthUser | null | undefin
   const [{ data: realProfile }, { data: manualProfile }] = await Promise.all([
     supabase
       .from("student_profiles")
-      .select("id,user_key,first_name,last_name,phone,email")
+      .select("id,user_key,first_name,last_name,phone,email,origin")
       .eq("user_key", userKey)
       .maybeSingle(),
     supabase
       .from("student_profiles")
-      .select("id,user_key,first_name,last_name,phone,email")
+      .select("id,user_key,first_name,last_name,phone,email,origin")
       .eq("user_key", manualKey)
       .maybeSingle(),
   ]);
@@ -167,6 +167,7 @@ export async function syncStudentProfileFromUser(user: AuthUser | null | undefin
       first_name: mergedFirstName,
       last_name: mergedLastName,
       phone: mergedPhone,
+      origin: realProfile?.origin ?? manualProfile?.origin ?? "self_enrolled",
       updated_at: now,
     },
     { onConflict: "user_key" },

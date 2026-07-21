@@ -17,7 +17,7 @@ export default async function AdminPage() {
     redirect("/");
   }
 
-  const snapshot = await getAdminSnapshot();
+  const snapshot = await getAdminSnapshot(admin.email);
 
   return <AdminPortal admin={admin} snapshot={snapshot} />;
 }

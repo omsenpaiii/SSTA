@@ -55,6 +55,7 @@ export default function ContactPage() {
           <Link href="/enroll" className="mt-10 inline-flex rounded-full bg-[#0067b1] px-6 py-4 text-sm font-black text-white">
             Start Enrolment
           </Link>
+          <p className="mt-10 text-xs font-semibold text-[#7d90a5]">Powered by Buildshoot</p>
         </div>
       </section>
       <SiteFooter />

@@ -108,6 +108,14 @@ async function fulfillPaidIntent(intent: PaymentIntentRecord, session: Stripe.Ch
   }
 
   if (intent.purpose === "course_enrollment") {
+    const supabase = getSupabaseAdmin();
+    const { data: enrollmentLead } = intent.enrollment_id && supabase
+      ? await supabase
+          .from("enrollment_leads")
+          .select("first_name,last_name,phone,date_of_birth,usi,address,disability_status,disability_details,referred_by")
+          .eq("id", intent.enrollment_id)
+          .maybeSingle()
+      : { data: null };
     await grantCourseAccess({
       userKey: intent.user_key,
       courseSlug: intent.course_slug,
@@ -118,6 +126,17 @@ async function fulfillPaidIntent(intent: PaymentIntentRecord, session: Stripe.Ch
       amountPaid: session.amount_total ?? intent.amount_cents,
       currency: session.currency ?? intent.currency,
       email: session.customer_details?.email ?? intent.email,
+      profile: enrollmentLead ? {
+        firstName: enrollmentLead.first_name,
+        lastName: enrollmentLead.last_name,
+        phone: enrollmentLead.phone,
+        dob: enrollmentLead.date_of_birth,
+        usi: enrollmentLead.usi,
+        address: enrollmentLead.address,
+        disabilityStatus: enrollmentLead.disability_status,
+        disabilityDetails: enrollmentLead.disability_details,
+        referredBy: enrollmentLead.referred_by,
+      } : null,
     });
   }
 

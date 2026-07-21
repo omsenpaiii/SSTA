@@ -7,10 +7,10 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const url = new URL(request.url);
     const entity = parseExcelEntity(url.searchParams.get("entity"));
-    const workbook = await buildExportWorkbook(entity, await getAdminSnapshot());
+    const workbook = await buildExportWorkbook(entity, await getAdminSnapshot(admin.email));
     const buffer = await workbook.xlsx.writeBuffer();
 
     return new Response(buffer, {

@@ -3,6 +3,8 @@ import { EnrollmentForm } from "@/components/EnrollmentForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getCourses } from "@/lib/course-repository";
+import { getCurrentUser } from "@/lib/auth";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 type EnrollPageProps = {
   searchParams: Promise<{
@@ -16,6 +18,31 @@ export default async function EnrollPage({ searchParams }: EnrollPageProps) {
     ? params.course[0]
     : params.course;
   const courses = await getCourses();
+  const user = await getCurrentUser();
+  const supabase = getSupabaseAdmin();
+  const { data: profile } = user && supabase
+    ? await supabase
+        .from("student_profiles")
+        .select("first_name,last_name,email,phone,date_of_birth,usi,residential_address,disability_status,disability_details,referred_by")
+        .eq("user_key", user.id)
+        .maybeSingle()
+    : { data: null };
+  const initialValues = profile ? {
+    firstName: profile.first_name ?? user?.firstName ?? "",
+    lastName: profile.last_name ?? user?.lastName ?? "",
+    email: profile.email ?? user?.email ?? "",
+    phone: profile.phone ?? "",
+    dob: profile.date_of_birth ?? "",
+    usi: profile.usi ?? "",
+    address: profile.residential_address ?? "",
+    disabilityStatus: profile.disability_status ?? "no",
+    disabilityDetails: profile.disability_details ?? "",
+    referredBy: profile.referred_by ?? "",
+  } : user ? {
+    firstName: user.firstName ?? "",
+    lastName: user.lastName ?? "",
+    email: user.email,
+  } : undefined;
 
   return (
     <main className="min-h-screen bg-slate-50 selection:bg-[#18aee5]/30">
@@ -36,7 +63,7 @@ export default async function EnrollPage({ searchParams }: EnrollPageProps) {
           </p>
         </div>
 
-        <EnrollmentForm initialCourseSlug={courseParam} courses={courses} />
+        <EnrollmentForm initialCourseSlug={courseParam} courses={courses} initialValues={initialValues} />
       </section>
 
       <SiteFooter />

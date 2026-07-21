@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { manualStudentKey } from "@/lib/admin";
-import { getCourses } from "@/lib/course-repository";
+import { getAdminCourses, getCourses } from "@/lib/course-repository";
 import {
   getAdminCppAssignmentSnapshot,
   reviewAssignmentSubmission,
@@ -24,6 +24,13 @@ export type AdminStudent = {
   updated_at: string | null;
   archived_at: string | null;
   archived_by_email: string | null;
+  date_of_birth: string | null;
+  usi: string | null;
+  residential_address: string | null;
+  disability_status: "no" | "yes" | "prefer_not_to_say" | null;
+  disability_details: string | null;
+  origin: "admin" | "import" | "self_enrolled";
+  referred_by: string | null;
 };
 
 export type AdminEnrollment = {
@@ -52,14 +59,43 @@ export type AdminLead = {
   payment_status?: string | null;
   email_status?: string | null;
   created_at: string;
+  origin: "admin" | "import" | "self_enrolled";
+  referred_by: string | null;
+};
+
+export type AdminPayment = {
+  id: string;
+  purpose: "course_enrollment" | "assignment_unlock";
+  status: "pending" | "paid" | "failed" | "cancelled";
+  user_key: string;
+  email: string | null;
+  course_slug: string;
+  enrollment_id: string | null;
+  amount_cents: number;
+  currency: string;
+  provider_status: string | null;
+  paid_at: string | null;
+  created_at: string;
+};
+
+export type AdminNotification = {
+  eventKey: string;
+  kind: "lead" | "assessment" | "payment";
+  title: string;
+  detail: string;
+  createdAt: string;
+  section: "leads" | "assessments" | "payments";
+  read: boolean;
 };
 
 export type AdminSnapshot = {
   isSupabaseConfigured: boolean;
-  courses: Course[];
+  courses: (Course & { isActive: boolean; archivedAt: string | null; archivedByEmail: string | null })[];
   students: AdminStudent[];
   enrollments: AdminEnrollment[];
   leads: AdminLead[];
+  payments: AdminPayment[];
+  notifications: AdminNotification[];
   cpp20218: {
     students: AdminCppStudent[];
     adminResources: CppAssignmentResource[];
@@ -113,6 +149,13 @@ const studentSchema = z.object({
   lastName: z.string().trim().optional().nullable(),
   email: z.string().trim().email(),
   phone: z.string().trim().optional().nullable(),
+  dob: z.string().trim().optional().nullable(),
+  usi: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{10}$/, "USI must be 10 letters or numbers").optional().nullable().or(z.literal("")),
+  address: z.string().trim().optional().nullable(),
+  disabilityStatus: z.enum(["no", "yes", "prefer_not_to_say"]).optional().nullable(),
+  disabilityDetails: z.string().trim().max(1000).optional().nullable(),
+  origin: z.enum(["admin", "import", "self_enrolled"]).default("admin"),
+  referredBy: z.string().trim().optional().nullable(),
   batchNumber: z.coerce.number().int().positive().default(2),
   userKey: z.string().trim().optional().nullable(),
   courseSlug: z.string().trim().optional().nullable(),
@@ -140,6 +183,8 @@ const leadSchema = z.object({
   disabilityDetails: z.string().trim().optional().nullable(),
   paymentStatus: z.enum(["pending", "paid", "failed", "cancelled"]).default("pending"),
   emailStatus: z.enum(["pending", "sent", "failed"]).default("pending"),
+  origin: z.enum(["admin", "import", "self_enrolled"]).default("import"),
+  referredBy: z.string().trim().optional().nullable(),
 });
 
 function requireSupabase() {
@@ -192,16 +237,19 @@ function toCourseRow(course: z.infer<typeof courseSchema>) {
   };
 }
 
-export async function getAdminSnapshot(): Promise<AdminSnapshot> {
-  const courses = await getCourses();
+export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> {
+  const publicCourses = await getCourses();
+  const emptyCourses = publicCourses.map((course) => ({ ...course, isActive: true, archivedAt: null, archivedByEmail: null }));
 
   if (!isSupabaseConfigured()) {
     return {
       isSupabaseConfigured: false,
-      courses,
+      courses: emptyCourses,
       students: [],
       enrollments: [],
       leads: [],
+      payments: [],
+      notifications: [],
       cpp20218: { students: [], adminResources: [] },
     };
   }
@@ -211,20 +259,23 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
   if (!supabase) {
     return {
       isSupabaseConfigured: false,
-      courses,
+      courses: emptyCourses,
       students: [],
       enrollments: [],
       leads: [],
+      payments: [],
+      notifications: [],
       cpp20218: { students: [], adminResources: [] },
     };
   }
 
   try {
-    const [studentsResult, enrollmentsResult, enrollmentLeadsResult, interestLeadsResult] =
+    const [courses, studentsResult, enrollmentsResult, enrollmentLeadsResult, interestLeadsResult, paymentsResult, readsResult] =
       await Promise.all([
+        getAdminCourses(),
         supabase
           .from("student_profiles")
-          .select("id,user_key,first_name,last_name,email,phone,batch_number,stripe_customer_id,created_at,updated_at,archived_at,archived_by_email")
+          .select("id,user_key,first_name,last_name,email,phone,batch_number,stripe_customer_id,created_at,updated_at,archived_at,archived_by_email,date_of_birth,usi,residential_address,disability_status,disability_details,origin,referred_by")
           .order("first_name", { ascending: true, nullsFirst: false })
           .order("last_name", { ascending: true, nullsFirst: false })
           .order("email", { ascending: true, nullsFirst: false }),
@@ -234,12 +285,20 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
           .order("created_at", { ascending: false }),
         supabase
           .from("enrollment_leads")
-          .select("id,first_name,last_name,email,phone,course_slug,disability_status,disability_details,payment_status,email_status,created_at")
+          .select("id,first_name,last_name,email,phone,course_slug,disability_status,disability_details,payment_status,email_status,created_at,origin,referred_by")
           .order("created_at", { ascending: false }),
         supabase
           .from("interest_leads")
-          .select("id,first_name,last_name,email,phone,course_slug,created_at")
+          .select("id,first_name,last_name,email,phone,course_slug,created_at,origin,referred_by")
           .order("created_at", { ascending: false }),
+        supabase
+          .from("payment_intents")
+          .select("id,purpose,status,user_key,email,course_slug,enrollment_id,amount_cents,currency,provider_status,paid_at,created_at")
+          .eq("provider", "stripe")
+          .order("created_at", { ascending: false }),
+        adminEmail
+          ? supabase.from("admin_notification_reads").select("event_key").eq("admin_email", adminEmail.toLowerCase())
+          : Promise.resolve({ data: [], error: null }),
       ]);
 
     const enrollmentLeads = ((enrollmentLeadsResult.data ?? []) as Omit<AdminLead, "type">[]).map(
@@ -255,6 +314,39 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
     );
 
     const cpp20218 = await getAdminCppAssignmentSnapshot();
+    const payments = (paymentsResult.data ?? []) as AdminPayment[];
+    const readKeys = new Set((readsResult.data ?? []).map((row) => String(row.event_key)));
+    const notifications: AdminNotification[] = [
+      ...[...enrollmentLeads, ...interestLeads].map((lead) => ({
+        eventKey: `lead:${lead.type}:${lead.id}`,
+        kind: "lead" as const,
+        title: lead.type === "enrollment" ? "New enrollment lead" : "New course enquiry",
+        detail: `${lead.first_name} ${lead.last_name} · ${lead.course_slug}`,
+        createdAt: lead.created_at,
+        section: "leads" as const,
+        read: readKeys.has(`lead:${lead.type}:${lead.id}`),
+      })),
+      ...cpp20218.students.flatMap((student) => student.assignments
+        .filter((assignment) => assignment.submission?.status === "submitted")
+        .map((assignment) => ({
+          eventKey: `assessment:${assignment.submission!.id}`,
+          kind: "assessment" as const,
+          title: "Assessment ready for review",
+          detail: `${student.firstName ?? ""} ${student.lastName ?? ""} · Cluster ${assignment.position}`.trim(),
+          createdAt: assignment.submission!.submitted_at,
+          section: "assessments" as const,
+          read: readKeys.has(`assessment:${assignment.submission!.id}`),
+        }))),
+      ...payments.filter((payment) => payment.status === "paid" || payment.status === "failed").map((payment) => ({
+        eventKey: `payment:${payment.id}:${payment.status}`,
+        kind: "payment" as const,
+        title: payment.status === "paid" ? "Stripe payment received" : "Stripe payment failed",
+        detail: `${payment.email ?? "Learner"} · ${payment.course_slug}`,
+        createdAt: payment.paid_at ?? payment.created_at,
+        section: "payments" as const,
+        read: readKeys.has(`payment:${payment.id}:${payment.status}`),
+      })),
+    ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
     return {
       isSupabaseConfigured: true,
@@ -264,15 +356,19 @@ export async function getAdminSnapshot(): Promise<AdminSnapshot> {
       leads: [...enrollmentLeads, ...interestLeads].sort((a, b) =>
         b.created_at.localeCompare(a.created_at),
       ),
+      payments,
+      notifications,
       cpp20218,
     };
   } catch {
     return {
       isSupabaseConfigured: true,
-      courses,
+      courses: emptyCourses,
       students: [],
       enrollments: [],
       leads: [],
+      payments: [],
+      notifications: [],
       cpp20218: { students: [], adminResources: [] },
     };
   }
@@ -378,9 +474,11 @@ export async function upsertAdminStudent(input: unknown) {
     throw new Error(duplicateError.message);
   }
 
-  if (duplicateRows?.length) {
+  if (duplicateRows?.length && student.id) {
     throw new Error("A student profile already exists with this email address.");
   }
+
+  const profileId = student.id ?? duplicateRows?.[0]?.id ?? null;
 
   let userKey = student.userKey || manualStudentKey(email);
   let profileError: { message: string } | null = null;
@@ -390,14 +488,21 @@ export async function upsertAdminStudent(input: unknown) {
     email,
     phone: student.phone || null,
     batch_number: student.batchNumber,
+    date_of_birth: student.dob || null,
+    usi: student.usi ? student.usi.toUpperCase() : null,
+    residential_address: student.address || null,
+    disability_status: student.disabilityStatus || null,
+    disability_details: student.disabilityStatus === "yes" ? student.disabilityDetails || null : null,
+    origin: student.origin,
+    referred_by: student.referredBy || null,
     updated_at: new Date().toISOString(),
   };
 
-  if (student.id) {
+  if (profileId) {
     const { data: existing, error: existingError } = await supabase
       .from("student_profiles")
       .select("user_key")
-      .eq("id", student.id)
+      .eq("id", profileId)
       .single();
 
     if (existingError || !existing) {
@@ -405,7 +510,7 @@ export async function upsertAdminStudent(input: unknown) {
     }
 
     userKey = existing.user_key;
-    const result = await supabase.from("student_profiles").update(profileValues).eq("id", student.id);
+    const result = await supabase.from("student_profiles").update(profileValues).eq("id", profileId);
     profileError = result.error;
   } else {
     const result = await supabase.from("student_profiles").insert({
@@ -509,9 +614,10 @@ export async function restoreAdminStudent(input: unknown) {
 export async function upsertAdminEnrollment(input: unknown) {
   const enrollment = enrollmentSchema.parse(input);
   const supabase = requireSupabase();
-  const userKey =
-    enrollment.userKey ||
-    (enrollment.email ? manualStudentKey(enrollment.email) : null);
+  const { data: existingProfile } = enrollment.email
+    ? await supabase.from("student_profiles").select("user_key").ilike("email", enrollment.email).limit(1).maybeSingle()
+    : { data: null };
+  const userKey = enrollment.userKey || existingProfile?.user_key || (enrollment.email ? manualStudentKey(enrollment.email) : null);
 
   if (!userKey) {
     throw new Error("Enrollment import needs userKey or email.");
@@ -522,6 +628,7 @@ export async function upsertAdminEnrollment(input: unknown) {
       {
         user_key: userKey,
         email: enrollment.email,
+        origin: "import",
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_key" },
@@ -554,10 +661,20 @@ export async function upsertAdminEnrollment(input: unknown) {
 export async function upsertAdminLead(input: unknown) {
   const lead = leadSchema.parse(input);
   const supabase = requireSupabase();
+  const table = lead.type === "enrollment" ? "enrollment_leads" : "interest_leads";
+  const { data: existingLead, error: existingError } = await supabase
+    .from(table)
+    .select("id")
+    .ilike("email", lead.email)
+    .eq("course_slug", lead.courseSlug)
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+  const leadId = lead.id || existingLead?.id || null;
 
   if (lead.type === "enrollment") {
     const values = {
-      ...(lead.id ? { id: lead.id } : {}),
+      ...(leadId ? { id: leadId } : {}),
       first_name: lead.firstName,
       last_name: lead.lastName,
       email: lead.email,
@@ -573,23 +690,31 @@ export async function upsertAdminLead(input: unknown) {
           : null,
       payment_status: lead.paymentStatus,
       email_status: lead.emailStatus,
+      origin: lead.origin,
+      referred_by: lead.referredBy || null,
       updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from("enrollment_leads").upsert(values);
+    const { error } = leadId
+      ? await supabase.from("enrollment_leads").update(values).eq("id", leadId)
+      : await supabase.from("enrollment_leads").insert(values);
 
     if (error) {
       throw new Error(error.message);
     }
   } else {
     const values = {
-      ...(lead.id ? { id: lead.id } : {}),
+      ...(leadId ? { id: leadId } : {}),
       first_name: lead.firstName,
       last_name: lead.lastName,
       email: lead.email,
       phone: lead.phone,
       course_slug: lead.courseSlug,
+      origin: lead.origin,
+      referred_by: lead.referredBy || null,
     };
-    const { error } = await supabase.from("interest_leads").upsert(values);
+    const { error } = leadId
+      ? await supabase.from("interest_leads").update(values).eq("id", leadId)
+      : await supabase.from("interest_leads").insert(values);
 
     if (error) {
       throw new Error(error.message);
@@ -629,16 +754,53 @@ export async function updateAdminAssignmentAccess(input: unknown, adminEmail: st
   });
 }
 
-export async function deleteAdminCourse(slug: string) {
+export async function archiveAdminCourse(slug: string, adminEmail: string) {
   const supabase = requireSupabase();
+  const archivedAt = new Date().toISOString();
   const { error } = await supabase
     .from("courses")
-    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .update({ is_active: false, archived_at: archivedAt, archived_by_email: adminEmail, updated_at: archivedAt })
     .eq("slug", slug);
 
   if (error) {
     throw new Error(error.message);
   }
+}
+
+export async function restoreAdminCourse(slug: string) {
+  const supabase = requireSupabase();
+  const { error } = await supabase
+    .from("courses")
+    .update({ is_active: true, archived_at: null, archived_by_email: null, updated_at: new Date().toISOString() })
+    .eq("slug", slug);
+
+  if (error) throw new Error(error.message);
+}
+
+const notificationSchema = z.object({ eventKey: z.string().trim().min(1) });
+
+export async function markAdminNotificationRead(input: unknown, adminEmail: string) {
+  const { eventKey } = notificationSchema.parse(input);
+  const supabase = requireSupabase();
+  const { error } = await supabase.from("admin_notification_reads").upsert({
+    admin_email: adminEmail.toLowerCase(),
+    event_key: eventKey,
+    read_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function markAllAdminNotificationsRead(eventKeys: string[], adminEmail: string) {
+  if (!eventKeys.length) return;
+  const supabase = requireSupabase();
+  const { error } = await supabase.from("admin_notification_reads").upsert(
+    eventKeys.map((eventKey) => ({
+      admin_email: adminEmail.toLowerCase(),
+      event_key: eventKey,
+      read_at: new Date().toISOString(),
+    })),
+  );
+  if (error) throw new Error(error.message);
 }
 
 export async function seedCoursesToSupabase(courses: Course[]) {

@@ -85,6 +85,7 @@ export default function ContactPage() {
           </Link>
         </article>
       </section>
+      <p className="text-right text-xs font-semibold text-[#7d90a5] xl:col-span-2">Powered by Buildshoot</p>
     </div>
   );
 }

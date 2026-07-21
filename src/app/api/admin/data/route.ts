@@ -2,24 +2,25 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import {
   archiveAdminStudent,
-  deleteAdminCourse,
+  archiveAdminCourse,
   getAdminSnapshot,
+  markAdminNotificationRead,
+  markAllAdminNotificationsRead,
+  restoreAdminCourse,
   restoreAdminStudent,
   reviewAdminAssignment,
-  seedCoursesToSupabase,
   updateAdminAssignmentAccess,
   upsertAdminCourse,
   upsertAdminLesson,
   upsertAdminStudent,
 } from "@/lib/admin-data";
-import { getFallbackCourses } from "@/lib/course-repository";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    await requireAdmin();
-    return NextResponse.json(await getAdminSnapshot());
+    const admin = await requireAdmin();
+    return NextResponse.json(await getAdminSnapshot(admin.email));
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unauthorized." },
@@ -45,10 +46,17 @@ export async function POST(request: Request) {
       await archiveAdminStudent(payload, admin.email);
     } else if (action === "restore-student") {
       await restoreAdminStudent(payload);
-    } else if (action === "delete-course") {
-      await deleteAdminCourse(String(payload?.slug ?? ""));
-    } else if (action === "seed-defaults") {
-      await seedCoursesToSupabase(getFallbackCourses());
+    } else if (action === "archive-course") {
+      await archiveAdminCourse(String(payload?.slug ?? ""), admin.email);
+    } else if (action === "restore-course") {
+      await restoreAdminCourse(String(payload?.slug ?? ""));
+    } else if (action === "mark-notification-read") {
+      await markAdminNotificationRead(payload, admin.email);
+    } else if (action === "mark-all-notifications-read") {
+      await markAllAdminNotificationsRead(
+        Array.isArray(payload?.eventKeys) ? payload.eventKeys.map(String) : [],
+        admin.email,
+      );
     } else if (action === "review-assignment") {
       await reviewAdminAssignment(payload, admin.email);
     } else if (action === "update-assignment-access") {
@@ -57,7 +65,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unknown admin action." }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, snapshot: await getAdminSnapshot() });
+    return NextResponse.json({ success: true, snapshot: await getAdminSnapshot(admin.email) });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Admin action failed." },

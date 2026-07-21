@@ -37,6 +37,8 @@ type CourseRow = {
   delivery_strategy: string | null;
   source_archive_url: string | null;
   is_active: boolean | null;
+  archived_at: string | null;
+  archived_by_email: string | null;
 };
 
 type LessonRow = {
@@ -88,6 +90,8 @@ const courseSelect = [
   "delivery_strategy",
   "source_archive_url",
   "is_active",
+  "archived_at",
+  "archived_by_email",
 ].join(",");
 
 function asStringArray(value: unknown, fallback: string[] = []) {
@@ -108,7 +112,12 @@ function preferCourseText<T extends string | undefined>(
   return trimmed;
 }
 
-function mapRowsToCourses(rows: CourseRow[], lessons: LessonRow[], units: UnitRow[]): Course[] {
+function mapRowsToCourses(
+  rows: CourseRow[],
+  lessons: LessonRow[],
+  units: UnitRow[],
+  includeInactive = false,
+): (Course & { isActive: boolean; archivedAt: string | null; archivedByEmail: string | null })[] {
   const lessonsByCourse = new Map<string, CourseLesson[]>();
   const unitsByCourse = new Map<string, UnitItem[]>();
 
@@ -141,7 +150,7 @@ function mapRowsToCourses(rows: CourseRow[], lessons: LessonRow[], units: UnitRo
     });
 
   return rows
-    .filter((row) => row.is_active !== false)
+    .filter((row) => includeInactive || row.is_active !== false)
     .map((row) => {
       const fallback = getFallbackCourse(row.slug);
       const priceAud = Number(row.price_aud ?? fallback?.priceAud ?? 0);
@@ -175,8 +184,40 @@ function mapRowsToCourses(rows: CourseRow[], lessons: LessonRow[], units: UnitRo
         feeDetails: row.fee_details ?? fallback?.feeDetails,
         deliveryStrategy: row.delivery_strategy ?? fallback?.deliveryStrategy,
         sourceArchiveUrl: row.source_archive_url ?? fallback?.sourceArchiveUrl,
+        isActive: row.is_active !== false,
+        archivedAt: row.archived_at,
+        archivedByEmail: row.archived_by_email,
       };
     });
+}
+
+export async function getAdminCourses() {
+  noStore();
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    return fallbackCourses.map((course) => ({
+      ...course,
+      isActive: true,
+      archivedAt: null,
+      archivedByEmail: null,
+    }));
+  }
+
+  const [{ data: courseRows, error }, { data: lessonRows }, { data: unitRows }] = await Promise.all([
+    supabase.from("courses").select(courseSelect).order("title", { ascending: true }),
+    supabase.from("course_lessons").select("id,course_slug,lesson_key,title,duration,video_provider,video_url,position,is_preview"),
+    supabase.from("course_units").select("course_slug,code,title,type,prerequisite,position"),
+  ]);
+
+  if (error) throw new Error(error.message);
+
+  return mapRowsToCourses(
+    (courseRows ?? []) as unknown as CourseRow[],
+    (lessonRows ?? []) as unknown as LessonRow[],
+    (unitRows ?? []) as unknown as UnitRow[],
+    true,
+  );
 }
 
 export async function getCourses() {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import {
   Bell,
   BookOpen,
@@ -9,6 +8,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Database,
+  CreditCard,
   Download,
   FileSpreadsheet,
   GraduationCap,
@@ -16,9 +16,7 @@ import {
   LogOut,
   Plus,
   Pencil,
-  RefreshCw,
   Search,
-  Settings,
   ShieldCheck,
   RotateCcw,
   Trash2,
@@ -38,7 +36,7 @@ type AdminPortalProps = {
   snapshot: AdminSnapshot;
 };
 
-type Section = "dashboard" | "students" | "add-student" | "courses" | "lessons" | "assessments" | "leads" | "excel" | "settings";
+type Section = "dashboard" | "students" | "add-student" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel";
 type AssessmentStatusFilter =
   | "all"
   | "submitted"
@@ -55,8 +53,8 @@ const navItems: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: "lessons", label: "Lessons", icon: BookOpen },
   { id: "assessments", label: "Assessments", icon: ClipboardCheck },
   { id: "leads", label: "Leads", icon: Database },
+  { id: "payments", label: "Payments", icon: CreditCard },
   { id: "excel", label: "Excel", icon: FileSpreadsheet },
-  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 const exportEntities = ["courses", "students", "enrollments", "leads"] as const;
@@ -95,7 +93,11 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [studentView, setStudentView] = useState<"active" | "archived">("active");
   const [editingStudent, setEditingStudent] = useState<AdminStudent | null>(null);
+  const [editingCourse, setEditingCourse] = useState<AdminSnapshot["courses"][number] | null>(null);
+  const [courseView, setCourseView] = useState<"active" | "archived">("active");
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [assessmentQuery, setAssessmentQuery] = useState("");
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatusFilter>("all");
   const [assessmentCluster, setAssessmentCluster] = useState("all");
@@ -124,10 +126,13 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     () => new Map(snapshot.courses.map((course) => [course.slug, course])),
     [snapshot.courses],
   );
-  const totalRevenue = snapshot.enrollments.reduce((sum, item) => sum + (item.amount_paid ?? 0), 0);
+  const totalRevenue = snapshot.payments
+    .filter((payment) => payment.status === "paid")
+    .reduce((sum, payment) => sum + payment.amount_cents, 0) / 100;
   const activeEnrollments = snapshot.enrollments.filter((item) => item.status === "active").length;
   const completedCount = snapshot.enrollments.filter((item) => item.status === "refunded").length;
   const filteredCourses = snapshot.courses.filter((course) => {
+    if (courseView === "active" ? !course.isActive : course.isActive) return false;
     const value = `${course.title} ${course.code} ${course.category}`.toLowerCase();
     return value.includes(query.toLowerCase());
   });
@@ -141,7 +146,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       const nameResult = studentNameCollator.compare(studentDisplayName(a), studentDisplayName(b));
       return nameResult || studentNameCollator.compare(a.email ?? "", b.email ?? "");
     });
-  const courseBreakdown = snapshot.courses.slice(0, 9).map((course) => {
+  const activeCourses = snapshot.courses.filter((course) => course.isActive);
+  const courseBreakdown = activeCourses.slice(0, 9).map((course) => {
     const count = snapshot.enrollments.filter((item) => item.course_slug === course.slug).length;
     return { course, count };
   });
@@ -198,6 +204,37 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     { label: "Completed", value: String(completedCount), icon: BookOpen },
     { label: "Revenue", value: money(totalRevenue), icon: Database },
   ];
+  const originCounts = snapshot.students.filter((student) => !student.archived_at).reduce(
+    (counts, student) => ({ ...counts, [student.origin]: counts[student.origin] + 1 }),
+    { admin: 0, import: 0, self_enrolled: 0 },
+  );
+  const unreadNotifications = snapshot.notifications.filter((notification) => !notification.read);
+  const enrollmentSearchResults = snapshot.enrollments.map((enrollment) => {
+    const student = snapshot.students.find((item) => item.user_key === enrollment.user_key);
+    const course = courseBySlug.get(enrollment.course_slug);
+    return {
+      label: student ? studentDisplayName(student) : enrollment.user_key,
+      meta: `Enrolment · ${course?.title ?? enrollment.course_slug} · ${enrollment.status}`,
+      haystack: `${student ? studentDisplayName(student) : ""} ${student?.email ?? ""} ${course?.title ?? ""} ${enrollment.course_slug} ${enrollment.status}`.toLowerCase(),
+      section: "students" as Section,
+    };
+  });
+  const assessmentSearchResults = snapshot.cpp20218.students.flatMap((student) =>
+    student.assignments.map((assignment) => ({
+      label: `${student.firstName ?? ""} ${student.lastName ?? ""}`.trim() || student.email || "Learner",
+      meta: `Assessment · Cluster ${assignment.position} · ${assignment.status.replaceAll("_", " ")}`,
+      haystack: `${student.firstName ?? ""} ${student.lastName ?? ""} ${student.email ?? ""} cluster ${assignment.position} ${assignment.title} ${assignment.status}`.toLowerCase(),
+      section: "assessments" as Section,
+    })),
+  );
+  const universalResults = query.trim() ? [
+    ...snapshot.students.filter((student) => `${studentDisplayName(student)} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5).map((student) => ({ label: studentDisplayName(student), meta: student.email ?? "Student", section: "students" as Section })),
+    ...snapshot.courses.filter((course) => `${course.title} ${course.code} ${course.slug}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5).map((course) => ({ label: course.title, meta: course.code, section: "courses" as Section })),
+    ...snapshot.leads.filter((lead) => `${lead.first_name} ${lead.last_name} ${lead.email}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4).map((lead) => ({ label: `${lead.first_name} ${lead.last_name}`, meta: `Lead · ${lead.email}`, section: "leads" as Section })),
+    ...enrollmentSearchResults.filter((item) => item.haystack.includes(query.toLowerCase())).slice(0, 4),
+    ...assessmentSearchResults.filter((item) => item.haystack.includes(query.toLowerCase())).slice(0, 4),
+    ...snapshot.payments.filter((payment) => `${payment.email ?? ""} ${payment.course_slug} ${payment.status}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4).map((payment) => ({ label: payment.email ?? "Stripe payment", meta: `${payment.status} · ${payment.course_slug}`, section: "payments" as Section })),
+  ].slice(0, 12) : [];
 
   async function runAction(action: string, payload: unknown, success: string) {
     setNotice(null);
@@ -220,7 +257,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 
   async function handleCourseSubmit(formData: FormData) {
     const title = String(formData.get("title") ?? "");
-    await runAction(
+    const saved = await runAction(
       "upsert-course",
       {
         slug: String(formData.get("slug") || slugify(title)),
@@ -242,6 +279,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       },
       "Course saved to Supabase.",
     );
+    if (saved) setEditingCourse(null);
   }
 
   async function handleStudentSubmit(formData: FormData) {
@@ -254,6 +292,13 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         lastName: String(formData.get("lastName") || ""),
         email: String(formData.get("email") || ""),
         phone: String(formData.get("phone") || ""),
+        dob: String(formData.get("dob") || ""),
+        usi: String(formData.get("usi") || "").toUpperCase(),
+        address: String(formData.get("address") || ""),
+        disabilityStatus: String(formData.get("disabilityStatus") || ""),
+        disabilityDetails: String(formData.get("disabilityDetails") || ""),
+        origin: String(formData.get("origin") || "admin"),
+        referredBy: String(formData.get("referredBy") || ""),
         batchNumber: Number(formData.get("batchNumber") || 2),
         courseSlug: String(formData.get("courseSlug") || ""),
         status: "active",
@@ -266,6 +311,25 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       setStudentView("active");
       setActive("students");
     }
+  }
+
+  async function archiveCourse(slug: string) {
+    if (!window.confirm("Archive this course? Existing enrolments, payments, lessons, and URLs will be preserved.")) return;
+    await runAction("archive-course", { slug }, "Course archived.");
+  }
+
+  async function restoreCourse(slug: string) {
+    await runAction("restore-course", { slug }, "Course restored.");
+  }
+
+  async function openNotification(eventKey: string, section: Section) {
+    await runAction("mark-notification-read", { eventKey }, "Notification marked as read.");
+    setActive(section);
+    setNotificationOpen(false);
+  }
+
+  async function markAllNotificationsRead() {
+    await runAction("mark-all-notifications-read", { eventKeys: unreadNotifications.map((item) => item.eventKey) }, "All notifications marked as read.");
   }
 
   async function archiveStudent(student: AdminStudent) {
@@ -452,17 +516,62 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search students, courses..."
+              onFocus={() => setSearchOpen(true)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setSearchOpen(false);
+                if (event.key === "Enter" && universalResults[0]) {
+                  setActive(universalResults[0].section);
+                  setSearchOpen(false);
+                }
+              }}
+              placeholder="Search students, courses, leads, payments..."
               className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold outline-none transition focus:border-[#2392ee] focus:bg-white"
             />
+            {searchOpen && query.trim() ? (
+              <div className="absolute left-0 right-0 top-14 z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                {universalResults.length ? universalResults.map((result, index) => (
+                  <button
+                    key={`${result.section}-${result.label}-${index}`}
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setActive(result.section);
+                      setSearchOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-4 border-b border-slate-100 px-4 py-3 text-left last:border-0 hover:bg-slate-50"
+                  >
+                    <span className="font-black text-slate-900">{result.label}</span>
+                    <span className="text-xs font-bold text-slate-500">{result.meta}</span>
+                  </button>
+                )) : <p className="p-4 text-sm font-bold text-slate-500">No operational records found.</p>}
+              </div>
+            ) : null}
           </div>
           <div className="ml-4 flex items-center gap-4">
-            <span className="relative flex size-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500">
+            <div className="relative">
+            <button type="button" onClick={() => setNotificationOpen((current) => !current)} className="relative flex size-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500" aria-label="Open operational notifications">
               <Bell size={22} />
-              <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-[#f5b800] text-xs font-black text-[#101827]">
-                {snapshot.leads.length}
-              </span>
-            </span>
+              {unreadNotifications.length ? <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-[#f5b800] text-xs font-black text-[#101827]">{unreadNotifications.length}</span> : null}
+            </button>
+            {notificationOpen ? (
+              <div className="absolute right-0 top-14 z-50 w-[min(390px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-100 p-4">
+                  <div><p className="font-black">Operational inbox</p><p className="text-xs font-bold text-slate-500">{unreadNotifications.length} unread</p></div>
+                  <button type="button" onClick={markAllNotificationsRead} disabled={!unreadNotifications.length} className="text-xs font-black text-[#1f7ac1] disabled:opacity-40">Mark all read</button>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {snapshot.notifications.slice(0, 20).map((notification) => (
+                    <button key={notification.eventKey} type="button" onClick={() => openNotification(notification.eventKey, notification.section)} className={`block w-full border-b border-slate-100 p-4 text-left last:border-0 hover:bg-slate-50 ${notification.read ? "opacity-60" : "bg-blue-50/40"}`}>
+                      <p className="text-sm font-black">{notification.title}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{notification.detail}</p>
+                      <p className="mt-2 text-[11px] font-bold text-slate-400">{new Date(notification.createdAt).toLocaleString("en-AU")}</p>
+                    </button>
+                  ))}
+                  {!snapshot.notifications.length ? <p className="p-6 text-center text-sm font-bold text-slate-500">You are all caught up.</p> : null}
+                </div>
+              </div>
+            ) : null}
+            </div>
             <span className="hidden items-center gap-3 sm:flex">
               <span className="flex size-12 items-center justify-center rounded-full bg-[#1f7ac1] text-sm font-black text-white">
                 {admin.initials}
@@ -504,6 +613,18 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                       <span className="mr-3 rounded-full bg-emerald-50 px-3 py-1 text-emerald-600">+ live</span>
                       from Supabase
                     </div>
+                  </div>
+                ))}
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {[
+                  ["Admin added", originCounts.admin],
+                  ["Excel imported", originCounts.import],
+                  ["Self enrolled", originCounts.self_enrolled],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+                    <span className="text-sm font-black text-slate-500">{label}</span>
+                    <span className="text-2xl font-black text-[#1f7ac1]">{value}</span>
                   </div>
                 ))}
               </div>
@@ -597,12 +718,37 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 <TextField name="lastName" label="Last name (optional)" defaultValue={editingStudent?.last_name ?? ""} />
                 <TextField name="email" label="Email address" type="email" required defaultValue={editingStudent?.email ?? ""} />
                 <TextField name="phone" label="Phone number" defaultValue={editingStudent?.phone ?? ""} />
+                <TextField name="dob" label="Date of birth (optional)" type="date" defaultValue={editingStudent?.date_of_birth ?? ""} />
+                <TextField name="usi" label="USI (optional, 10 characters)" defaultValue={editingStudent?.usi ?? ""} />
+                <TextField name="address" label="Residential address (optional)" defaultValue={editingStudent?.residential_address ?? ""} />
                 <TextField name="batchNumber" label="Batch number" type="number" defaultValue={String(editingStudent?.batch_number ?? 2)} />
+                <TextField name="referredBy" label="Referred by (optional)" defaultValue={editingStudent?.referred_by ?? ""} />
+                <label className="grid gap-2 text-sm font-black text-slate-700">
+                  Origin
+                  <select name="origin" defaultValue={editingStudent?.origin ?? "admin"} className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
+                    <option value="admin">Admin added</option>
+                    <option value="import">Excel import</option>
+                    <option value="self_enrolled">Self enrolled</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-700">
+                  Disability / support status (optional)
+                  <select name="disabilityStatus" defaultValue={editingStudent?.disability_status ?? ""} className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
+                    <option value="">Not recorded</option>
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-2">
+                  Support details (optional)
+                  <textarea name="disabilityDetails" defaultValue={editingStudent?.disability_details ?? ""} className="min-h-24 rounded-xl border border-slate-200 p-4 font-bold" />
+                </label>
                 <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-2">
                   Course access {editingStudent ? "(optional update)" : ""}
                   <select name="courseSlug" defaultValue={editingCourseSlug} className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
                     <option value="">No course access yet</option>
-                    {snapshot.courses.map((course) => (
+                    {activeCourses.map((course) => (
                       <option key={course.slug} value={course.slug}>
                         {course.title}
                       </option>
@@ -630,44 +776,39 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 
           {active === "courses" ? (
             <div className="space-y-8">
-              <TableSection
-                title="Courses"
-                actionLabel="New Course"
-                columns={["Code", "Title", "Category", "Price", "Duration"]}
-                rows={filteredCourses.map((course) => [
-                  course.code,
-                  course.title,
-                  course.category,
-                  money(course.priceAud),
-                  course.duration,
-                ])}
-              />
-              <FormSection title="Create or Update Course" description="Use an existing slug to update a course.">
-                <form action={handleCourseSubmit} className="grid gap-5 md:grid-cols-2">
-                  <TextField name="title" label="Course title" required />
-                  <TextField name="slug" label="Slug" />
-                  <TextField name="code" label="Code" defaultValue="SSTA" />
-                  <TextField name="category" label="Category" defaultValue="Security" />
-                  <TextField name="label" label="Label" defaultValue="Course" />
-                  <TextField name="priceAud" label="Price AUD" type="number" defaultValue="100" />
-                  <TextField name="enrolmentFee" label="Enrolment fee" type="number" />
-                  <TextField name="duration" label="Duration" defaultValue="1 day" />
-                  <TextField name="image" label="Image URL" />
+              <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-6">
+                  <div><h1 className="text-3xl font-black">Courses</h1><div className="mt-3 flex gap-2">{(["active", "archived"] as const).map((view) => <button key={view} onClick={() => setCourseView(view)} className={`rounded-lg px-3 py-2 text-xs font-black capitalize ${courseView === view ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{view}</button>)}</div></div>
+                  <button onClick={() => setEditingCourse(null)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1f7ac1] px-4 text-sm font-black text-white"><Plus size={18} /> New Course</button>
+                </div>
+                <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left"><thead className="bg-slate-50 text-xs font-black uppercase text-slate-500"><tr>{["Code","Title","Category","Price","Duration","Actions"].map((item) => <th key={item} className="px-6 py-4">{item}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{filteredCourses.map((course) => <tr key={course.slug} className="text-sm font-bold"><td className="px-6 py-4">{course.code}</td><td className="px-6 py-4 font-black">{course.title}</td><td className="px-6 py-4">{course.category}</td><td className="px-6 py-4">{money(course.priceAud)}</td><td className="px-6 py-4">{course.duration}</td><td className="px-6 py-4"><div className="flex gap-2">{course.isActive ? <><button type="button" onClick={() => setEditingCourse(course)} className="flex size-9 items-center justify-center rounded-lg border border-slate-200 text-[#1f7ac1]" aria-label={`Edit ${course.title}`}><Pencil size={16} /></button><button type="button" onClick={() => archiveCourse(course.slug)} className="flex size-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600" aria-label={`Archive ${course.title}`}><Trash2 size={16} /></button></> : <button type="button" onClick={() => restoreCourse(course.slug)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 px-3 text-xs font-black text-emerald-700"><RotateCcw size={15} /> Restore</button>}</div></td></tr>)}{!filteredCourses.length ? <tr><td colSpan={6} className="px-6 py-10 text-center text-sm font-bold text-slate-500">No {courseView} courses found.</td></tr> : null}</tbody></table></div>
+              </section>
+              <FormSection title={editingCourse ? "Edit Course" : "Add Course"} description={editingCourse ? "The slug is fixed to preserve public URLs and historical relationships." : "Create a new course for the public and student catalogues."}>
+                <form key={editingCourse?.slug ?? "new-course"} action={handleCourseSubmit} className="grid gap-5 md:grid-cols-2">
+                  <TextField name="title" label="Course title" required defaultValue={editingCourse?.title ?? ""} />
+                  <TextField name="slug" label="Slug" defaultValue={editingCourse?.slug ?? ""} readOnly={Boolean(editingCourse)} />
+                  <TextField name="code" label="Code" defaultValue={editingCourse?.code ?? "SSTA"} />
+                  <TextField name="category" label="Category" defaultValue={editingCourse?.category ?? "Security"} />
+                  <TextField name="label" label="Label" defaultValue={editingCourse?.label ?? "Course"} />
+                  <TextField name="priceAud" label="Price AUD" type="number" defaultValue={String(editingCourse?.priceAud ?? 100)} />
+                  <TextField name="enrolmentFee" label="Enrolment fee" type="number" defaultValue={editingCourse?.enrolmentFee ? String(editingCourse.enrolmentFee) : ""} />
+                  <TextField name="duration" label="Duration" defaultValue={editingCourse?.duration ?? "1 day"} />
+                  <TextField name="image" label="Image URL" defaultValue={editingCourse?.image ?? ""} />
                   <label className="grid gap-2 text-sm font-black text-slate-700">
                     Availability
-                    <select name="availability" className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
+                    <select name="availability" defaultValue={editingCourse?.availability ?? "open"} className="h-12 rounded-xl border border-slate-200 px-4 font-bold">
                       <option value="open">Open</option>
                       <option value="coming-soon">Coming soon</option>
                       <option value="details-to-follow">Details to follow</option>
                     </select>
                   </label>
-                  <TextArea name="description" label="Description" required />
-                  <TextArea name="overview" label="Overview" />
-                  <TextArea name="deliveryModes" label="Delivery modes" placeholder="One per line or comma separated" />
-                  <TextArea name="entryRequirements" label="Entry requirements" />
-                  <TextArea name="careerOutcomes" label="Career outcomes" />
-                  <TextArea name="unitSummary" label="Unit summary" />
-                  <SubmitButton label="Save Course" />
+                  <TextArea name="description" label="Description" required defaultValue={editingCourse?.description ?? ""} />
+                  <TextArea name="overview" label="Overview" defaultValue={editingCourse?.overview ?? ""} />
+                  <TextArea name="deliveryModes" label="Delivery modes" placeholder="One per line or comma separated" defaultValue={editingCourse?.deliveryModes.join("\n") ?? ""} />
+                  <TextArea name="entryRequirements" label="Entry requirements" defaultValue={editingCourse?.entryRequirements.join("\n") ?? ""} />
+                  <TextArea name="careerOutcomes" label="Career outcomes" defaultValue={editingCourse?.careerOutcomes.join("\n") ?? ""} />
+                  <TextArea name="unitSummary" label="Unit summary" defaultValue={editingCourse?.unitSummary ?? ""} />
+                  <div className="flex gap-3"><SubmitButton label={editingCourse ? "Save Changes" : "Add Course"} />{editingCourse ? <button type="button" onClick={() => setEditingCourse(null)} className="h-12 rounded-xl border border-slate-200 px-5 text-sm font-black text-slate-600">Cancel</button> : null}</div>
                 </form>
               </FormSection>
             </div>
@@ -684,7 +825,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                     onChange={(event) => setSelectedCourseSlug(event.target.value)}
                     className="h-12 rounded-xl border border-slate-200 px-4 font-bold"
                   >
-                    {snapshot.courses.map((course) => (
+                    {activeCourses.map((course) => (
                       <option key={course.slug} value={course.slug}>
                         {course.title}
                       </option>
@@ -726,20 +867,38 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           {active === "leads" ? (
             <TableSection
               title="Enrollment & Interest Leads"
-              columns={["Type", "Name", "Email", "Phone", "Course", "Support Needs", "Support Details", "Created"]}
+              columns={["Type", "Name", "Email", "Phone", "Course", "Origin", "Referrer", "Support Needs", "Support Details", "Payment", "Created"]}
               rows={snapshot.leads.map((lead) => [
                 lead.type,
                 `${lead.first_name} ${lead.last_name}`,
                 lead.email,
                 lead.phone,
                 courseBySlug.get(lead.course_slug)?.title ?? lead.course_slug,
+                lead.origin.replace("_", " "),
+                lead.referred_by ?? "—",
                 lead.disability_status === "yes"
                   ? "Yes"
                   : lead.disability_status === "prefer_not_to_say"
                     ? "Prefer not to say"
                     : "No",
-                lead.disability_details ?? "",
+                lead.disability_details ?? "—",
+                lead.payment_status ?? "—",
                 new Date(lead.created_at).toLocaleDateString("en-AU"),
+              ])}
+            />
+          ) : null}
+
+          {active === "payments" ? (
+            <TableSection
+              title="Stripe Payments"
+              columns={["Learner", "Course / Purpose", "Amount", "Status", "Provider status", "Date"]}
+              rows={snapshot.payments.map((payment) => [
+                payment.email ?? snapshot.students.find((student) => student.user_key === payment.user_key)?.email ?? "Learner",
+                `${courseBySlug.get(payment.course_slug)?.title ?? payment.course_slug} · ${payment.purpose.replace("_", " ")}`,
+                new Intl.NumberFormat("en-AU", { style: "currency", currency: payment.currency.toUpperCase() }).format(payment.amount_cents / 100),
+                payment.status,
+                payment.provider_status ?? "—",
+                new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-AU"),
               ])}
             />
           ) : null}
@@ -1066,24 +1225,6 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             </FormSection>
           ) : null}
 
-          {active === "settings" ? (
-            <FormSection title="Settings" description="Seed Supabase with the bundled SSTA catalogue and refresh admin data.">
-              <div className="flex flex-wrap gap-4">
-                <button
-                  onClick={() => runAction("seed-defaults", {}, "Default courses seeded to Supabase.")}
-                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#111c2b] px-5 text-sm font-black text-white"
-                >
-                  <RefreshCw size={18} /> Seed Default Courses
-                </button>
-                <Link href="/" className="inline-flex h-12 items-center rounded-xl border border-slate-200 px-5 text-sm font-black text-[#1f7ac1]">
-                  View Public Site
-                </Link>
-              </div>
-              <p className="mt-5 text-sm font-bold text-slate-500">
-                Google sign-in is controlled in Supabase Auth. Enable Google OAuth in the Supabase Auth dashboard for this app before launch.
-              </p>
-            </FormSection>
-          ) : null}
         </div>
       </section>
     </main>
@@ -1149,6 +1290,7 @@ function StudentTableSection({
                 "Email",
                 "Phone",
                 "Batch",
+                "Origin / Referrer",
                 view === "archived" ? "Archived" : "Created",
                 "Actions",
               ].map((column) => <th key={column} className="px-6 py-4">{column}</th>)}
@@ -1161,6 +1303,7 @@ function StudentTableSection({
                 <td className="px-6 py-4">{student.email || "—"}</td>
                 <td className="px-6 py-4">{student.phone || "—"}</td>
                 <td className="px-6 py-4">Batch {student.batch_number ?? 2}</td>
+                <td className="px-6 py-4"><span className="rounded-full bg-[#eef5fb] px-3 py-1 text-xs font-black capitalize text-[#1f7ac1]">{student.origin.replace("_", " ")}</span>{student.referred_by ? <span className="ml-2 text-xs font-bold text-slate-500">{student.referred_by}</span> : null}</td>
                 <td className="px-6 py-4">
                   {new Date(view === "archived" ? student.archived_at! : student.created_at).toLocaleDateString("en-AU")}
                 </td>
@@ -1201,7 +1344,7 @@ function StudentTableSection({
               </tr>
             )) : (
               <tr>
-                <td className="px-6 py-10 text-center text-sm font-bold text-slate-500" colSpan={6}>
+                <td className="px-6 py-10 text-center text-sm font-bold text-slate-500" colSpan={7}>
                   No {view} students found.
                 </td>
               </tr>
@@ -1278,12 +1421,14 @@ function TextField({
   type = "text",
   required,
   defaultValue,
+  readOnly,
 }: {
   name: string;
   label: string;
   type?: string;
   required?: boolean;
   defaultValue?: string;
+  readOnly?: boolean;
 }) {
   return (
     <label className="grid gap-2 text-sm font-black text-slate-700">
@@ -1293,6 +1438,7 @@ function TextField({
         type={type}
         required={required}
         defaultValue={defaultValue}
+        readOnly={readOnly}
         className="h-12 rounded-xl border border-slate-200 px-4 font-bold outline-none focus:border-[#1f7ac1]"
       />
     </label>
@@ -1304,11 +1450,13 @@ function TextArea({
   label,
   required,
   placeholder,
+  defaultValue,
 }: {
   name: string;
   label: string;
   required?: boolean;
   placeholder?: string;
+  defaultValue?: string;
 }) {
   return (
     <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-2">
@@ -1317,6 +1465,7 @@ function TextArea({
         name={name}
         required={required}
         placeholder={placeholder}
+        defaultValue={defaultValue}
         rows={4}
         className="rounded-xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-[#1f7ac1]"
       />

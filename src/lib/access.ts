@@ -62,6 +62,17 @@ export async function grantCourseAccess(input: {
   amountPaid?: number | null;
   currency?: string | null;
   email?: string | null;
+  profile?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    phone?: string | null;
+    dob?: string | null;
+    usi?: string | null;
+    address?: string | null;
+    disabilityStatus?: string | null;
+    disabilityDetails?: string | null;
+    referredBy?: string | null;
+  } | null;
 }) {
   const supabase = getSupabaseAdmin();
   const course = getCourse(input.courseSlug);
@@ -79,6 +90,16 @@ export async function grantCourseAccess(input: {
       user_key: input.userKey,
       email: input.email,
       stripe_customer_id: input.stripeCustomerId,
+      first_name: input.profile?.firstName ?? undefined,
+      last_name: input.profile?.lastName ?? undefined,
+      phone: input.profile?.phone ?? undefined,
+      date_of_birth: input.profile?.dob ?? undefined,
+      usi: input.profile?.usi?.toUpperCase() || undefined,
+      residential_address: input.profile?.address ?? undefined,
+      disability_status: input.profile?.disabilityStatus ?? undefined,
+      disability_details: input.profile?.disabilityDetails ?? undefined,
+      origin: "self_enrolled",
+      referred_by: input.profile?.referredBy ?? undefined,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_key" },

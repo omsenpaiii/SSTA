@@ -83,7 +83,8 @@ export function Cpp20218LlnTest({
     : "Prerequisite cleared. You can buy CPP20218 now.";
   const passedCopy = isUnlockMode
     ? "Your LLN result is saved. Continue to secure Stripe checkout to unlock all remaining CPP20218 clusters."
-    : "Your LLN result is saved. Continue to secure Stripe checkout to purchase Certificate II Security Operations.";
+    : "Your LLN result is saved. Continue to the enrolment form, confirm your details, then proceed to secure Stripe checkout.";
+  const enrollmentHref = "/enroll?course=certificate-ii-security-operations&lln=passed";
 
   async function submitTest() {
     if (!canSubmit) {
@@ -302,7 +303,15 @@ export function Cpp20218LlnTest({
             <div className="mt-5 rounded-[20px] border border-emerald-200 bg-emerald-50/70 p-5">
               <p className="text-base font-black leading-6 text-[#081221]">{passedHeading}</p>
               <p className="mt-2 text-sm font-semibold leading-6 text-[#5d7389]">{passedCopy}</p>
-              {isPurchaseMode || isUnlockMode ? (
+              {isPurchaseMode ? (
+                <Link
+                  href={enrollmentHref}
+                  className="portal-button-primary mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm"
+                >
+                  Continue to enrolment
+                  <ArrowRight size={16} />
+                </Link>
+              ) : isUnlockMode ? (
                 <button
                   type="button"
                   onClick={startCheckout}
@@ -354,7 +363,7 @@ export function Cpp20218LlnTest({
         <section className="portal-card rounded-[28px] p-6">
           <h2 className="text-xl font-black tracking-tight text-[#081221]">What happens next?</h2>
           <div className="mt-4 space-y-3 text-sm font-semibold leading-6 text-[#5d7389]">
-            <p>Pass with 60% or higher to continue to secure Stripe checkout.</p>
+            <p>Pass with 60% or higher to continue to enrolment and secure Stripe checkout.</p>
             <p>If you do not pass, you can retake the test. SSTA can also support you if any learning needs come up.</p>
             <p>Reference students keep current Cluster 1 access; this check is only required before buying further access.</p>
           </div>
