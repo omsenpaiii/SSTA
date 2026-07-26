@@ -44,7 +44,7 @@ const statusStyles: Record<AssignmentStatus, string> = {
 const sectionCopy: Record<SectionKey, { title: string; description: string; icon: typeof MonitorPlay }> = {
   introduction: {
     title: "Introduction",
-    description: "Preview the cluster slide deck. This presentation is view-only.",
+    description: "Watch the course lesson, then preview the cluster slide deck.",
     icon: MonitorPlay,
   },
   learning: {
@@ -65,7 +65,9 @@ function clusterLabel(assignment: StudentCppAssignment) {
 
 function resourcesFor(assignment: StudentCppAssignment, key: SectionKey) {
   if (key === "introduction") {
-    return assignment.resources.filter((resource) => resource.kind === "slides");
+    return assignment.resources.filter(
+      (resource) => resource.kind === "video" || resource.kind === "slides",
+    );
   }
 
   if (key === "learning") {
@@ -76,6 +78,44 @@ function resourcesFor(assignment: StudentCppAssignment, key: SectionKey) {
 }
 
 function PreviewFrame({ resource }: { resource: CppAssignmentResource }) {
+  if (resource.kind === "video") {
+    if (!resource.original_path) {
+      return (
+        <div className="rounded-xl border border-dashed border-[#9dc4e6] bg-[#eef7ff] p-5">
+          <p className="text-sm font-black text-[#0f6eb8]">Video processing</p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-[#53677d]">
+            The 10-minute Joseph SSTA lesson has been created and will appear here as soon as its final media file is released.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-hidden rounded-xl border border-[#183b5b] bg-[#061321] shadow-[0_18px_45px_rgba(8,18,33,0.18)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3 text-white">
+          <div>
+            <h5 className="text-sm font-black">{resource.title}</h5>
+            <p className="mt-1 text-xs font-bold text-[#9fc9ea]">10:14 · Supporting lesson</p>
+          </div>
+          <span className="rounded-full bg-[#0f6eb8] px-3 py-1.5 text-xs font-black">Joseph SSTA</span>
+        </div>
+        <video
+          controls
+          controlsList="nodownload"
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full bg-black"
+        >
+          <source
+            src={`/api/student/resources/${resource.id}?mode=preview`}
+            type={resource.original_mime_type ?? "video/mp4"}
+          />
+          Your browser does not support embedded video playback.
+        </video>
+      </div>
+    );
+  }
+
   if (!resource.preview_path) {
     return (
       <div className="rounded-xl border border-dashed border-[#cbd8e6] bg-[#fbfdff] p-5 text-sm font-semibold text-[#5d7389]">
@@ -516,7 +556,7 @@ export function Cpp20218AssignmentsView({
                 </div>
               </div>
               <ol className="mt-4 space-y-3 text-sm font-semibold leading-6 text-[#53677d]">
-                <li>1. Watch the introduction preview.</li>
+                <li>1. Watch the lesson video and review the introduction slides.</li>
                 <li>2. Read the learner resource and keep a copy.</li>
                 <li>3. Download, complete, and upload the assessment.</li>
               </ol>

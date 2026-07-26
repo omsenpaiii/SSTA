@@ -37,6 +37,24 @@ export async function GET(request: Request, { params }: ResourceRouteProps) {
   }
 
   const supabase = getSupabaseAdmin();
+
+  if (file.mimeType?.startsWith("video/")) {
+    const { data, error } = await supabase!.storage
+      .from(file.bucket)
+      .createSignedUrl(file.path, 60 * 60);
+
+    if (error || !data?.signedUrl) {
+      return NextResponse.json(
+        { error: error?.message ?? "Unable to load video." },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.redirect(data.signedUrl, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
   const { data, error } = await supabase!.storage.from(file.bucket).download(file.path);
 
   if (error || !data) {

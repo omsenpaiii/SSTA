@@ -11,6 +11,7 @@ export type AssignmentStatus =
   | "not_satisfactory";
 
 export type AssignmentResourceKind =
+  | "video"
   | "slides"
   | "learning_resource"
   | "assessment"
@@ -298,10 +299,10 @@ export async function getAssignmentResourceForStudent(input: {
   if (!access) return null;
 
   const wantsPdfDownload = input.mode === "download" && input.format === "pdf";
-  const bucket = input.mode === "preview" || wantsPdfDownload ? row.preview_bucket : row.original_bucket;
-  const path = input.mode === "preview" || wantsPdfDownload ? row.preview_path : row.original_path;
-  const mimeType =
-    input.mode === "preview" || wantsPdfDownload ? row.preview_mime_type : row.original_mime_type;
+  const usesOriginal = row.kind === "video" || (input.mode === "download" && !wantsPdfDownload);
+  const bucket = usesOriginal ? row.original_bucket : row.preview_bucket;
+  const path = usesOriginal ? row.original_path : row.preview_path;
+  const mimeType = usesOriginal ? row.original_mime_type : row.preview_mime_type;
 
   if (!path) return null;
 
