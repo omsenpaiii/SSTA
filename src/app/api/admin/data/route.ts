@@ -1,21 +1,32 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/admin";
 import {
   archiveAdminStudent,
+  completeAdminEnrollment,
   archiveAdminCourse,
   getAdminSnapshot,
   markAdminNotificationRead,
   markAllAdminNotificationsRead,
   restoreAdminCourse,
   restoreAdminStudent,
+  updateAdminCertificateStatus,
   reviewAdminAssignment,
   updateAdminAssignmentAccess,
   upsertAdminCourse,
   upsertAdminLesson,
+  upsertAdminLead,
   upsertAdminStudent,
 } from "@/lib/admin-data";
 
 export const runtime = "nodejs";
+
+function adminErrorMessage(error: unknown) {
+  if (error instanceof ZodError) {
+    return error.issues[0]?.message ?? "Please check the form fields and try again.";
+  }
+  return error instanceof Error ? error.message : "Admin action failed.";
+}
 
 export async function GET() {
   try {
@@ -23,7 +34,7 @@ export async function GET() {
     return NextResponse.json(await getAdminSnapshot(admin.email));
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unauthorized." },
+      { error: adminErrorMessage(error) },
       { status: 401 },
     );
   }
@@ -42,6 +53,12 @@ export async function POST(request: Request) {
       await upsertAdminLesson(payload);
     } else if (action === "upsert-student") {
       await upsertAdminStudent(payload);
+    } else if (action === "upsert-lead") {
+      await upsertAdminLead(payload);
+    } else if (action === "complete-enrollment") {
+      await completeAdminEnrollment(payload, admin.email);
+    } else if (action === "update-certificate-status") {
+      await updateAdminCertificateStatus(payload);
     } else if (action === "archive-student") {
       await archiveAdminStudent(payload, admin.email);
     } else if (action === "restore-student") {
@@ -68,7 +85,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, snapshot: await getAdminSnapshot(admin.email) });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Admin action failed." },
+      { error: adminErrorMessage(error) },
       { status: error instanceof Error && error.message.includes("Unauthorized") ? 401 : 400 },
     );
   }

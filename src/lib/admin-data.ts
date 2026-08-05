@@ -37,13 +37,16 @@ export type AdminEnrollment = {
   id: string;
   user_key: string;
   course_slug: string;
-  status: "active" | "refunded" | "revoked" | "archived";
+  status: "active" | "completed" | "refunded" | "revoked" | "archived";
   stripe_customer_id: string | null;
   stripe_session_id: string | null;
   amount_paid: number | null;
   currency: string | null;
   created_at: string;
   updated_at: string | null;
+  completed_at: string | null;
+  completed_by_email: string | null;
+  certificate_status: "not_ready" | "ready_for_collection" | "collected";
 };
 
 export type AdminLead = {
@@ -281,7 +284,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           .order("email", { ascending: true, nullsFirst: false }),
         supabase
           .from("course_enrollments")
-          .select("id,user_key,course_slug,status,stripe_customer_id,stripe_session_id,amount_paid,currency,created_at,updated_at")
+          .select("id,user_key,course_slug,status,stripe_customer_id,stripe_session_id,amount_paid,currency,created_at,updated_at,completed_at,completed_by_email,certificate_status")
           .order("created_at", { ascending: false }),
         supabase
           .from("enrollment_leads")
@@ -541,6 +544,41 @@ export async function upsertAdminStudent(input: unknown) {
   }
 
   return { ...student, userKey };
+}
+
+const completionSchema = z.object({
+  enrollmentId: z.string().uuid(),
+  certificateStatus: z.enum(["not_ready", "ready_for_collection", "collected"]).optional(),
+});
+
+export async function completeAdminEnrollment(input: unknown, adminEmail: string) {
+  const { enrollmentId } = completionSchema.parse(input);
+  const completedAt = new Date().toISOString();
+  const { error } = await requireSupabase()
+    .from("course_enrollments")
+    .update({
+      status: "completed",
+      completed_at: completedAt,
+      completed_by_email: adminEmail,
+      certificate_status: "not_ready",
+      updated_at: completedAt,
+    })
+    .eq("id", enrollmentId)
+    .eq("status", "active");
+
+  if (error) throw new Error(error.message);
+}
+
+export async function updateAdminCertificateStatus(input: unknown) {
+  const { enrollmentId, certificateStatus } = completionSchema.parse(input);
+  if (!certificateStatus) throw new Error("Certificate status is required.");
+  const { error } = await requireSupabase()
+    .from("course_enrollments")
+    .update({ certificate_status: certificateStatus, updated_at: new Date().toISOString() })
+    .eq("id", enrollmentId)
+    .eq("status", "completed");
+
+  if (error) throw new Error(error.message);
 }
 
 const studentLifecycleSchema = z.object({

@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   Bell,
+  Award,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -12,6 +15,7 @@ import {
   Download,
   FileSpreadsheet,
   GraduationCap,
+  House,
   LayoutDashboard,
   LogOut,
   Plus,
@@ -36,7 +40,7 @@ type AdminPortalProps = {
   snapshot: AdminSnapshot;
 };
 
-type Section = "dashboard" | "students" | "add-student" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel";
+type Section = "dashboard" | "students" | "add-student" | "completed" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel";
 type AssessmentStatusFilter =
   | "all"
   | "submitted"
@@ -49,6 +53,7 @@ const navItems: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "students", label: "Students", icon: Users },
   { id: "add-student", label: "Add Student", icon: UserPlus },
+  { id: "completed", label: "Completed", icon: Award },
   { id: "courses", label: "Courses", icon: GraduationCap },
   { id: "lessons", label: "Lessons", icon: BookOpen },
   { id: "assessments", label: "Assessments", icon: ClipboardCheck },
@@ -98,6 +103,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [leadSource, setLeadSource] = useState<"all" | "Abu" | "JB">("all");
+  const [showLeadForm, setShowLeadForm] = useState(false);
   const [assessmentQuery, setAssessmentQuery] = useState("");
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatusFilter>("all");
   const [assessmentCluster, setAssessmentCluster] = useState("all");
@@ -130,14 +137,20 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     .filter((payment) => payment.status === "paid")
     .reduce((sum, payment) => sum + payment.amount_cents, 0) / 100;
   const activeEnrollments = snapshot.enrollments.filter((item) => item.status === "active").length;
-  const completedCount = snapshot.enrollments.filter((item) => item.status === "refunded").length;
+  const completedCount = snapshot.enrollments.filter((item) => item.status === "completed").length;
   const filteredCourses = snapshot.courses.filter((course) => {
     if (courseView === "active" ? !course.isActive : course.isActive) return false;
     const value = `${course.title} ${course.code} ${course.category}`.toLowerCase();
     return value.includes(query.toLowerCase());
   });
+  const completedStudentKeys = new Set(
+    snapshot.enrollments
+      .filter((enrollment) => enrollment.status === "completed")
+      .filter((enrollment) => !snapshot.enrollments.some((candidate) => candidate.user_key === enrollment.user_key && candidate.status === "active"))
+      .map((enrollment) => enrollment.user_key),
+  );
   const filteredStudents = snapshot.students
-    .filter((student) => (studentView === "archived" ? Boolean(student.archived_at) : !student.archived_at))
+    .filter((student) => (studentView === "archived" ? Boolean(student.archived_at) : !student.archived_at && !completedStudentKeys.has(student.user_key)))
     .filter((student) => {
       const value = `${student.first_name ?? ""} ${student.last_name ?? ""} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase();
       return value.includes(query.trim().toLowerCase());
@@ -283,6 +296,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   }
 
   async function handleStudentSubmit(formData: FormData) {
+    const disabilityStatus = String(formData.get("disabilityStatus") || "");
     const saved = await runAction(
       "upsert-student",
       {
@@ -295,7 +309,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         dob: String(formData.get("dob") || ""),
         usi: String(formData.get("usi") || "").toUpperCase(),
         address: String(formData.get("address") || ""),
-        disabilityStatus: String(formData.get("disabilityStatus") || ""),
+        disabilityStatus: disabilityStatus || null,
         disabilityDetails: String(formData.get("disabilityDetails") || ""),
         origin: String(formData.get("origin") || "admin"),
         referredBy: String(formData.get("referredBy") || ""),
@@ -311,6 +325,37 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       setStudentView("active");
       setActive("students");
     }
+  }
+
+  async function handleLeadSubmit(formData: FormData) {
+    const source = String(formData.get("source") || "Abu");
+    const saved = await runAction(
+      "upsert-lead",
+      {
+        type: "interest",
+        firstName: String(formData.get("firstName") || ""),
+        lastName: String(formData.get("lastName") || ""),
+        email: String(formData.get("email") || ""),
+        phone: String(formData.get("phone") || ""),
+        courseSlug: String(formData.get("courseSlug") || ""),
+        origin: "admin",
+        referredBy: source,
+      },
+      `Lead added to ${source}.`,
+    );
+    if (saved) {
+      setLeadSource(source === "JB" ? "JB" : "Abu");
+      setShowLeadForm(false);
+    }
+  }
+
+  async function completeEnrollment(enrollmentId: string) {
+    if (!window.confirm("Move this enrolment to Completed? The student details and course history will be retained.")) return;
+    await runAction("complete-enrollment", { enrollmentId }, "Student moved to Completed.");
+  }
+
+  async function updateCertificateStatus(enrollmentId: string, certificateStatus: string) {
+    await runAction("update-certificate-status", { enrollmentId, certificateStatus }, "Certificate status updated.");
   }
 
   async function archiveCourse(slug: string) {
@@ -464,6 +509,15 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         </div>
 
         <nav className="flex-1 space-y-2 px-4 py-4">
+          <Link
+            href="/"
+            title={sidebarCollapsed ? "Website Home" : undefined}
+            aria-label="Website Home"
+            className={`flex h-14 w-full items-center rounded-xl text-left text-base font-black text-white/58 transition hover:bg-white/8 hover:text-white ${sidebarCollapsed ? "justify-center px-0" : "gap-4 px-5"}`}
+          >
+            <House size={22} />
+            <span className={sidebarCollapsed ? "sr-only" : "block"}>Website Home</span>
+          </Link>
           {navItems.map((item) => {
             const Icon = item.icon;
             const selected = active === item.id;
@@ -698,13 +752,38 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             <StudentTableSection
               students={filteredStudents}
               view={studentView}
-              activeCount={snapshot.students.filter((student) => !student.archived_at).length}
+              activeCount={snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key)).length}
               archivedCount={snapshot.students.filter((student) => Boolean(student.archived_at)).length}
               onViewChange={setStudentView}
               onAdd={startAddingStudent}
               onEdit={startEditingStudent}
               onArchive={archiveStudent}
               onRestore={restoreStudent}
+              enrollments={snapshot.enrollments}
+              courses={courseBySlug}
+              onComplete={completeEnrollment}
+            />
+          ) : null}
+
+          {active === "completed" ? (
+            <TableSection
+              title="Completed Students & Certificates"
+              columns={["Student", "Email", "Course", "Batch", "Completed", "Certificate"]}
+              rows={snapshot.enrollments.filter((item) => item.status === "completed").map((enrollment) => {
+                const student = snapshot.students.find((item) => item.user_key === enrollment.user_key);
+                return [
+                  student ? studentDisplayName(student) : enrollment.user_key,
+                  student?.email ?? "—",
+                  courseBySlug.get(enrollment.course_slug)?.title ?? enrollment.course_slug,
+                  `Batch ${student?.batch_number ?? 2}`,
+                  enrollment.completed_at ? new Date(enrollment.completed_at).toLocaleDateString("en-AU") : "—",
+                  <select key={enrollment.id} aria-label={`Certificate status for ${student ? studentDisplayName(student) : enrollment.user_key}`} value={enrollment.certificate_status} onChange={(event) => updateCertificateStatus(enrollment.id, event.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black">
+                    <option value="not_ready">Needs certificate</option>
+                    <option value="ready_for_collection">Ready for collection</option>
+                    <option value="collected">Collected</option>
+                  </select>,
+                ];
+              })}
             />
           ) : null}
 
@@ -865,10 +944,29 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           ) : null}
 
           {active === "leads" ? (
-            <TableSection
-              title="Enrollment & Interest Leads"
+            <div className="space-y-5">
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div><h1 className="text-3xl font-black">Lead Sources</h1><p className="mt-1 text-sm font-bold text-slate-500">Track where every lead came from.</p></div>
+                  <button type="button" onClick={() => setShowLeadForm((current) => !current)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1f7ac1] px-4 text-sm font-black text-white"><Plus size={18} /> Add Lead</button>
+                </div>
+                <div className="mt-5 flex gap-2" role="tablist" aria-label="Lead source">
+                  {(["all", "Abu", "JB"] as const).map((source) => <button key={source} type="button" role="tab" aria-selected={leadSource === source} onClick={() => setLeadSource(source)} className={`rounded-lg px-4 py-2 text-xs font-black ${leadSource === source ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{source === "all" ? `All ${snapshot.leads.length}` : `${source} ${snapshot.leads.filter((lead) => lead.referred_by === source).length}`}</button>)}
+                </div>
+                {showLeadForm ? <form action={handleLeadSubmit} className="mt-6 grid gap-4 border-t border-slate-100 pt-6 md:grid-cols-3">
+                  <TextField name="firstName" label="First name" required />
+                  <TextField name="lastName" label="Last name" required />
+                  <TextField name="email" label="Email" type="email" required />
+                  <TextField name="phone" label="Phone" required />
+                  <label className="grid gap-2 text-sm font-black text-slate-700">Course<select name="courseSlug" required className="h-12 rounded-xl border border-slate-200 px-4 font-bold"><option value="">Select course</option>{activeCourses.map((course) => <option key={course.slug} value={course.slug}>{course.title}</option>)}</select></label>
+                  <label className="grid gap-2 text-sm font-black text-slate-700">Lead source<select name="source" defaultValue={leadSource === "all" ? "Abu" : leadSource} className="h-12 rounded-xl border border-slate-200 px-4 font-bold"><option value="Abu">Abu</option><option value="JB">JB (Jash & Bella)</option></select></label>
+                  <div className="flex gap-3 md:col-span-3"><SubmitButton label="Save Lead" /><button type="button" onClick={() => setShowLeadForm(false)} className="h-12 rounded-xl border border-slate-200 px-5 text-sm font-black text-slate-600">Cancel</button></div>
+                </form> : null}
+              </section>
+              <TableSection
+              title={leadSource === "all" ? "Enrollment & Interest Leads" : `${leadSource} Leads`}
               columns={["Type", "Name", "Email", "Phone", "Course", "Origin", "Referrer", "Support Needs", "Support Details", "Payment", "Created"]}
-              rows={snapshot.leads.map((lead) => [
+              rows={snapshot.leads.filter((lead) => leadSource === "all" || lead.referred_by === leadSource).map((lead) => [
                 lead.type,
                 `${lead.first_name} ${lead.last_name}`,
                 lead.email,
@@ -886,6 +984,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 new Date(lead.created_at).toLocaleDateString("en-AU"),
               ])}
             />
+            </div>
           ) : null}
 
           {active === "payments" ? (
@@ -1241,6 +1340,9 @@ function StudentTableSection({
   onEdit,
   onArchive,
   onRestore,
+  enrollments,
+  courses,
+  onComplete,
 }: {
   students: AdminStudent[];
   view: "active" | "archived";
@@ -1251,6 +1353,9 @@ function StudentTableSection({
   onEdit: (student: AdminStudent) => void;
   onArchive: (student: AdminStudent) => void;
   onRestore: (student: AdminStudent) => void;
+  enrollments: AdminSnapshot["enrollments"];
+  courses: Map<string, AdminSnapshot["courses"][number]>;
+  onComplete: (enrollmentId: string) => void;
 }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -1329,6 +1434,17 @@ function StudentTableSection({
                         >
                           <Trash2 size={16} />
                         </button>
+                        {enrollments.filter((enrollment) => enrollment.user_key === student.user_key && enrollment.status === "active").map((enrollment) => (
+                          <button
+                            key={enrollment.id}
+                            type="button"
+                            onClick={() => onComplete(enrollment.id)}
+                            title={`Complete ${courses.get(enrollment.course_slug)?.title ?? enrollment.course_slug}`}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 px-3 text-xs font-black text-emerald-700 hover:bg-emerald-50"
+                          >
+                            <Award size={15} /> Complete
+                          </button>
+                        ))}
                       </>
                     ) : (
                       <button
@@ -1367,7 +1483,7 @@ function TableSection({
   actionLabel?: string;
   onAction?: () => void;
   columns: string[];
-  rows: string[][];
+  rows: ReactNode[][];
 }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
