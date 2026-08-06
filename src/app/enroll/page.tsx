@@ -1,4 +1,5 @@
 import { ShieldCheck } from "lucide-react";
+import { redirect } from "next/navigation";
 import { EnrollmentForm } from "@/components/EnrollmentForm";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -17,8 +18,13 @@ export default async function EnrollPage({ searchParams }: EnrollPageProps) {
   const courseParam = Array.isArray(params.course)
     ? params.course[0]
     : params.course;
-  const courses = await getCourses();
-  const user = await getCurrentUser();
+  const [courses, user] = await Promise.all([getCourses(), getCurrentUser()]);
+  const returnPath = courseParam ? `/enroll?course=${encodeURIComponent(courseParam)}` : "/enroll";
+
+  if (!user) {
+    redirect(`/sign-in?redirect_url=${encodeURIComponent(returnPath)}`);
+  }
+
   const supabase = getSupabaseAdmin();
   const { data: profile } = user && supabase
     ? await supabase

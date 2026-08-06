@@ -12,6 +12,19 @@ export function manualStudentKey(email: string) {
   return `manual:${normalizeEmail(email)}`;
 }
 
+export function getSafeRedirectPath(value: string | null | undefined, fallback = "/dashboard") {
+  if (!value?.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
+    return fallback;
+  }
+
+  try {
+    const url = new URL(value, "https://ssta.local");
+    return url.origin === "https://ssta.local" ? `${url.pathname}${url.search}${url.hash}` : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function getAdminEmails() {
   return (process.env["SSTA_ADMIN_EMAILS"] ?? "")
     .split(",")

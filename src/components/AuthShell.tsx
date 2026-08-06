@@ -11,27 +11,18 @@ type AuthShellProps = {
 export function AuthShell({ title, subtitle, mode, children }: AuthShellProps) {
   const featureRows: { heading: string; copy: string; icon: LucideIcon }[] = [
     {
-      heading: mode === "sign-in" ? "Student Database" : "Student access",
-      copy:
-        mode === "sign-in"
-          ? "Full enrolment and contact records"
-          : "Course access and lesson records",
+      heading: "Student portal",
+      copy: "Your courses, lessons, progress, and learning records",
       icon: Users,
     },
     {
-      heading: mode === "sign-in" ? "Course Management" : "Training programs",
-      copy:
-        mode === "sign-in"
-          ? "Track training programs and modules"
-          : "Structured lessons and admin-ready content",
+      heading: "Course enrolment",
+      copy: "Browse available training and enrol without admin setup",
       icon: GraduationCap,
     },
     {
-      heading: mode === "sign-in" ? "Revenue Insights" : "Secure payments",
-      copy:
-        mode === "sign-in"
-          ? "Payment tracking and reporting"
-          : "Enrollment and reporting visibility",
+      heading: "Secure payments",
+      copy: "Purchase eligible courses through secure checkout",
       icon: LineChart,
     },
   ];
@@ -49,7 +40,7 @@ export function AuthShell({ title, subtitle, mode, children }: AuthShellProps) {
             <span>
               <span className="block text-[1.85rem] font-extrabold leading-none tracking-tight">SSTA</span>
               <span className="mt-1 block text-xs font-bold uppercase tracking-[0.1em] text-white/50">
-                {mode === "sign-in" ? "Admin Portal" : "Student Access"}
+                Student & Admin Access
               </span>
             </span>
           </Link>
@@ -57,17 +48,15 @@ export function AuthShell({ title, subtitle, mode, children }: AuthShellProps) {
           <div className="max-w-xl">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4.5 py-1.5 text-xs font-bold text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
               <span className="size-1.5 rounded-full bg-[#f5b800]" />
-              {mode === "sign-in" ? "SECURE ADMIN ACCESS" : "SECURE STUDENT ACCESS"}
+              SECURE PORTAL ACCESS
             </div>
             <h1 className="max-w-[12ch] text-4xl font-extrabold leading-[1.1] tracking-tight xl:text-[3.6rem]">
               {mode === "sign-in"
-                ? "Manage your academy with confidence."
+                ? "Continue to your SSTA portal."
                 : "Start your learning access with confidence."}
             </h1>
             <p className="mt-5 max-w-[26rem] text-base font-medium leading-relaxed text-white/70">
-              {mode === "sign-in"
-                ? "Complete control over student enrolments, course management, and training operations in one secure dashboard."
-                : "Use Google or email to access enrolments, lessons, and your SSTA learning tools in one place."}
+              Use Google or email to access enrolments, lessons, payments, and your SSTA tools in one place. Admin accounts continue to the management portal automatically.
             </p>
           </div>
 

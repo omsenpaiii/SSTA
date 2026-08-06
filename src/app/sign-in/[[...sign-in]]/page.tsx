@@ -33,7 +33,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     <AuthShell
       mode="sign-in"
       title="Welcome back"
-      subtitle="Sign in to access the SSTA admin portal."
+      subtitle="Sign in to access your student portal, courses, and secure enrolment."
     >
       <SignInForm
         redirectUrl={params.redirect_url}

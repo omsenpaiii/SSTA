@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getSafeRedirectPath } from "@/lib/auth-shared";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const nextPath = getSafeRedirectPath(url.searchParams.get("redirect_url"));
 
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${url.origin}/auth/callback`,
+        redirectTo: `${url.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
     });
 

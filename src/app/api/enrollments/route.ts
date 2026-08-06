@@ -6,10 +6,20 @@ import {
 } from "@/lib/enrollment";
 import { sendEnrollmentEmail } from "@/lib/email";
 import { isRecaptchaConfigured, verifyRecaptchaToken } from "@/lib/recaptcha";
+import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "Please sign in or create an account before enrolling." },
+      { status: 401 },
+    );
+  }
+
   let payload: unknown;
 
   try {
@@ -26,6 +36,13 @@ export async function POST(request: Request) {
         error: "Invalid enrollment details.",
         issues: parsed.error.flatten().fieldErrors,
       },
+      { status: 400 },
+    );
+  }
+
+  if (parsed.data.email.toLowerCase() !== user.email.toLowerCase()) {
+    return NextResponse.json(
+      { error: "Use the email address connected to your signed-in student account." },
       { status: 400 },
     );
   }
@@ -80,7 +97,6 @@ export async function POST(request: Request) {
             ? emailError.message
             : "Unable to send enrollment notification.",
       });
-      throw emailError;
     }
 
     return NextResponse.json({

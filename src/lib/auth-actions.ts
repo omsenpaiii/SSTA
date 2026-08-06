@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getAppUrl } from "@/lib/app-url";
 import { getCurrentUser, isAdminEmail, syncStudentProfileFromUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getSafeRedirectPath } from "@/lib/auth-shared";
 
 export type AuthFormState = {
   error?: string;
@@ -51,8 +52,8 @@ const resetSchema = z
     message: "Passwords do not match.",
   });
 
-function getPostAuthDestination(email: string) {
-  return isAdminEmail(email) ? "/admin" : "/dashboard";
+function getPostAuthDestination(email: string, redirectUrl?: string) {
+  return isAdminEmail(email) ? "/admin" : getSafeRedirectPath(redirectUrl);
 }
 
 function isSignupCooldownError(message: string) {
@@ -91,7 +92,7 @@ export async function signInWithPassword(
   }
 
   await syncStudentProfileFromUser(data.user);
-  redirect(getPostAuthDestination(parsed.data.email));
+  redirect(getPostAuthDestination(parsed.data.email, parsed.data.redirectUrl));
 }
 
 export async function signUpWithPassword(
@@ -111,7 +112,7 @@ export async function signUpWithPassword(
     return { error: parsed.error.issues[0]?.message ?? "Unable to create account." };
   }
 
-  const nextPath = "/dashboard";
+  const nextPath = getSafeRedirectPath(parsed.data.redirectUrl);
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
@@ -139,7 +140,7 @@ export async function signUpWithPassword(
   }
 
   if (data.session?.user?.email) {
-    redirect(getPostAuthDestination(data.session.user.email));
+    redirect(getPostAuthDestination(data.session.user.email, nextPath));
   }
 
   return {

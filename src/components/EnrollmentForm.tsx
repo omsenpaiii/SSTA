@@ -144,6 +144,11 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
       }>(enrollmentResponse);
 
       if (!enrollmentResponse.ok || !enrollmentResult.enrollmentId) {
+        if (enrollmentResponse.status === 401) {
+          const returnPath = `/enroll?course=${encodeURIComponent(data.courseId)}`;
+          window.location.assign(`/sign-in?redirect_url=${encodeURIComponent(returnPath)}`);
+          return;
+        }
         throw new Error(
           enrollmentResult.error ?? "Unable to submit enrollment details.",
         );
@@ -164,9 +169,14 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
         signInUrl?: string;
         llnRequired?: boolean;
         llnUrl?: string;
+        courseUrl?: string;
       }>(checkoutResponse);
 
       if (!checkoutResponse.ok || !checkoutResult.url) {
+        if (checkoutResponse.status === 409 && checkoutResult.courseUrl) {
+          window.location.assign(checkoutResult.courseUrl);
+          return;
+        }
         if (checkoutResponse.status === 401 && checkoutResult.signInUrl) {
           window.location.assign(checkoutResult.signInUrl);
           return;

@@ -75,9 +75,7 @@ export async function createEnrollmentLead(input: EnrollmentLeadInput) {
     throw new Error("Supabase is not configured yet.");
   }
 
-  const { data, error } = await supabase
-    .from("enrollment_leads")
-    .insert({
+  const values = {
       first_name: input.firstName,
       last_name: input.lastName,
       email: input.email,
@@ -95,7 +93,26 @@ export async function createEnrollmentLead(input: EnrollmentLeadInput) {
       course_slug: course.slug,
       payment_status: "pending",
       email_status: "pending",
-    })
+      updated_at: new Date().toISOString(),
+  };
+  const { data: existing, error: existingError } = await supabase
+    .from("enrollment_leads")
+    .select("id,payment_status")
+    .ilike("email", input.email)
+    .eq("course_slug", course.slug)
+    .in("payment_status", ["pending", "failed", "cancelled"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  const query = existing?.id
+    ? supabase.from("enrollment_leads").update(values).eq("id", existing.id)
+    : supabase.from("enrollment_leads").insert(values);
+  const { data, error } = await query
     .select(leadSelect)
     .single();
 

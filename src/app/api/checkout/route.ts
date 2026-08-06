@@ -15,6 +15,7 @@ import {
 import { createPaymentIntent } from "@/lib/payments";
 import { createStripeCheckoutSession, getStripeUserMessage, isStripeConfigured } from "@/lib/stripe";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
+import { userHasCourseAccess } from "@/lib/access";
 
 const checkoutSchema = z.object({
   courseSlug: z.string().min(1),
@@ -81,6 +82,16 @@ export async function POST(request: Request) {
       );
     }
 
+    if (await userHasCourseAccess(user.id, course.slug)) {
+      return NextResponse.json(
+        {
+          error: "This course is already active in your student portal.",
+          courseUrl: `/dashboard/course/${course.slug}`,
+        },
+        { status: 409 },
+      );
+    }
+
     const enrollment = body.data.enrollmentId
       ? await getEnrollmentLead(body.data.enrollmentId)
       : null;
@@ -93,6 +104,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Enrollment does not match selected course." },
         { status: 400 },
+      );
+    }
+
+    if (enrollment && enrollment.email.toLowerCase() !== user.email.toLowerCase()) {
+      return NextResponse.json(
+        { error: "This enrollment belongs to a different student account." },
+        { status: 403 },
       );
     }
 
