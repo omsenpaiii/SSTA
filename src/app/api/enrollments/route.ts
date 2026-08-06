@@ -40,13 +40,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (parsed.data.email.toLowerCase() !== user.email.toLowerCase()) {
-    return NextResponse.json(
-      { error: "Use the email address connected to your signed-in student account." },
-      { status: 400 },
-    );
-  }
-
   if (!isRecaptchaConfigured()) {
     return NextResponse.json(
       { error: "reCAPTCHA is not configured yet." },
@@ -80,7 +73,10 @@ export async function POST(request: Request) {
   try {
     const { captchaToken, ...leadInput } = parsed.data;
     void captchaToken;
-    const lead = await createEnrollmentLead(leadInput);
+    const lead = await createEnrollmentLead({
+      ...leadInput,
+      email: user.email,
+    });
 
     try {
       await sendEnrollmentEmail(lead);

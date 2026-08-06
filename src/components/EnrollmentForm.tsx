@@ -305,10 +305,14 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
                       <Input
                         id="email"
                         type="email"
-                        placeholder="john@example.com"
+                        readOnly
+                        aria-describedby="email-account-note"
                         {...register("email")}
-                        className={`h-12 bg-slate-50 focus-visible:ring-[#18aee5] ${errors.email ? 'border-red-500' : 'border-slate-200'}`}
+                        className={`h-12 cursor-not-allowed bg-slate-100 text-slate-600 focus-visible:ring-[#18aee5] ${errors.email ? 'border-red-500' : 'border-slate-200'}`}
                       />
+                      <p id="email-account-note" className="text-xs font-semibold text-slate-500">
+                        This is the email connected to your signed-in student account.
+                      </p>
                       {errors.email && <p className="text-xs text-red-500 font-bold">{errors.email.message}</p>}
                     </div>
 

@@ -36,7 +36,7 @@ export default async function EnrollPage({ searchParams }: EnrollPageProps) {
   const initialValues = profile ? {
     firstName: profile.first_name ?? user?.firstName ?? "",
     lastName: profile.last_name ?? user?.lastName ?? "",
-    email: profile.email ?? user?.email ?? "",
+    email: user.email,
     phone: profile.phone ?? "",
     dob: profile.date_of_birth ?? "",
     usi: profile.usi ?? "",
