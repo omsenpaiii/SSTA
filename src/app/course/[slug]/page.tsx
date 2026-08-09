@@ -38,6 +38,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
   }
 
   const previewLesson = course.lessons.find((lesson) => lesson.isPreview) ?? course.lessons[0];
+  const previewVideoUrl = previewLesson
+    ? getVideoEmbedUrl(previewLesson.videoUrl, previewLesson.videoProvider)
+    : "";
+  const preferPreviewVideo =
+    course.slug === "certificate-ii-security-operations" && Boolean(previewVideoUrl);
   const isOpenForEnrollment = isCourseAvailableForEnrollment(course);
   const isContactFirst = isContactFirstCourse(course);
 
@@ -212,7 +217,15 @@ export default async function CoursePage({ params }: CoursePageProps) {
                 <Play className="text-[#0067b1]" fill="currentColor" />
                 <h2 className="text-2xl font-black">Course Video</h2>
               </div>
-              {isPlayableVideo(course.externalVideoUrl) ? (
+              {preferPreviewVideo && previewLesson ? (
+                <iframe
+                  className="aspect-video w-full rounded-2xl bg-[#020d24]"
+                  src={previewVideoUrl}
+                  title={`${course.title} preview lesson`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : isPlayableVideo(course.externalVideoUrl) ? (
                 <video
                   className="aspect-video w-full rounded-2xl bg-[#020d24] object-cover"
                   src={course.externalVideoUrl}
@@ -223,7 +236,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
               ) : previewLesson ? (
                 <iframe
                   className="aspect-video w-full rounded-2xl bg-[#020d24]"
-                  src={getVideoEmbedUrl(previewLesson.videoUrl, previewLesson.videoProvider)}
+                  src={previewVideoUrl}
                   title={`${course.title} preview lesson`}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
