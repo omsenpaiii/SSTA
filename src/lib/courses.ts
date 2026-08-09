@@ -1,4 +1,5 @@
 import { bakerCourseOverrides } from "./baker-course-overrides";
+import { aiProductivityCourse } from "./ai-productivity-course";
 import type { VideoProvider } from "./video-embeds";
 
 export type CourseLesson = {
@@ -204,6 +205,7 @@ export const courseCategories: CourseCategory[] = [
 ];
 
 const baseCourses: Course[] = [
+  aiProductivityCourse,
   {
     slug: "certificate-ii-security-operations",
     code: "CPP20218",
