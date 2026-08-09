@@ -17,34 +17,25 @@ import { CheckoutButton } from "@/components/CheckoutButton";
 import { InterestModal } from "@/components/InterestModal";
 import { benefits, faqs, josephProfile, testimonials } from "@/lib/site-content";
 import { courseCategories, courses, isCourseAvailableForEnrollment, type Course, type CourseLesson } from "@/lib/courses";
+import { getVideoEmbedUrl } from "@/lib/video-embeds";
 
 const reveal = {
   hidden: { opacity: 0, y: 34 },
   visible: { opacity: 1, y: 0 },
 };
 
-function getEmbedUrl(url: string, provider: "youtube" | "google-drive"): string {
-  if (!url) return "";
-  if (provider === "youtube") {
-    if (url.includes("/embed/")) return url;
-    const ytMatch = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\\s]{11})/i);
-    return ytMatch && ytMatch[1] ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0` : url;
-  }
-  if (url.includes("/preview")) return url;
-  const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  return driveMatch && driveMatch[1] ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : url;
-}
-
 export default function Home() {
   const [activeCourses, setActiveCourses] = useState<Course[]>(courses);
   const featuredCourse =
-    activeCourses.find((course) => isCourseAvailableForEnrollment(course)) ?? activeCourses[0];
+    activeCourses.find((course) => course.slug === "certificate-ii-security-operations") ??
+    activeCourses.find((course) => isCourseAvailableForEnrollment(course)) ??
+    activeCourses[0];
   const lessons: CourseLesson[] = featuredCourse.lessons;
   const firstPreview = lessons.find((lesson) => lesson.isPreview) ?? lessons[0];
   const [activeLessonId, setActiveLessonId] = useState(firstPreview?.id ?? "");
   const activeLesson = lessons.find((lesson) => lesson.id === activeLessonId) ?? firstPreview;
   const activeVideoUrl = activeLesson
-    ? getEmbedUrl(activeLesson.videoUrl, activeLesson.videoProvider)
+    ? getVideoEmbedUrl(activeLesson.videoUrl, activeLesson.videoProvider)
     : "";
 
   useEffect(() => {

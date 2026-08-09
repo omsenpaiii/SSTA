@@ -24,6 +24,7 @@ import {
 } from "@/lib/cpp20218";
 import { AssignmentUnlockPaymentButton } from "@/components/student/AssignmentUnlockPaymentButton";
 import { AssignmentUploadForm } from "@/components/student/AssignmentUploadForm";
+import { getVideoEmbedUrl } from "@/lib/video-embeds";
 
 type Cpp20218AssignmentsViewProps = {
   assignments: StudentCppAssignment[];
@@ -79,16 +80,10 @@ function resourcesFor(assignment: StudentCppAssignment, key: SectionKey) {
 
 function PreviewFrame({ resource }: { resource: CppAssignmentResource }) {
   if (resource.kind === "video") {
-    if (!resource.original_path) {
-      return (
-        <div className="rounded-xl border border-dashed border-[#9dc4e6] bg-[#eef7ff] p-5">
-          <p className="text-sm font-black text-[#0f6eb8]">Video processing</p>
-          <p className="mt-2 text-sm font-semibold leading-6 text-[#53677d]">
-            The 10-minute Joseph SSTA lesson has been created and will appear here as soon as its final media file is released.
-          </p>
-        </div>
-      );
-    }
+    const externalVideoUrl =
+      resource.external_video_provider && resource.external_video_url
+        ? getVideoEmbedUrl(resource.external_video_url, resource.external_video_provider)
+        : "";
 
     return (
       <div className="overflow-hidden rounded-xl border border-[#183b5b] bg-[#061321] shadow-[0_18px_45px_rgba(8,18,33,0.18)]">
@@ -99,19 +94,36 @@ function PreviewFrame({ resource }: { resource: CppAssignmentResource }) {
           </div>
           <span className="rounded-full bg-[#0f6eb8] px-3 py-1.5 text-xs font-black">Joseph SSTA</span>
         </div>
-        <video
-          controls
-          controlsList="nodownload"
-          playsInline
-          preload="metadata"
-          className="aspect-video w-full bg-black"
-        >
-          <source
-            src={`/api/student/resources/${resource.id}?mode=preview`}
-            type={resource.original_mime_type ?? "video/mp4"}
+        {resource.original_path ? (
+          <video
+            controls
+            controlsList="nodownload"
+            playsInline
+            preload="metadata"
+            className="aspect-video w-full bg-black"
+          >
+            <source
+              src={`/api/student/resources/${resource.id}?mode=preview`}
+              type={resource.original_mime_type ?? "video/mp4"}
+            />
+            Your browser does not support embedded video playback.
+          </video>
+        ) : externalVideoUrl ? (
+          <iframe
+            className="aspect-video w-full bg-black"
+            src={externalVideoUrl}
+            title={`${resource.title} video`}
+            allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+            allowFullScreen
           />
-          Your browser does not support embedded video playback.
-        </video>
+        ) : (
+          <div className="bg-[#eef7ff] p-5">
+            <p className="text-sm font-black text-[#0f6eb8]">Video processing</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#53677d]">
+              The 10-minute Joseph SSTA lesson will appear here when its media source is available.
+            </p>
+          </div>
+        )}
       </div>
     );
   }

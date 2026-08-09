@@ -13,6 +13,7 @@ import {
 } from "@/lib/courses";
 import { getCourse } from "@/lib/course-repository";
 import { siteInfo } from "@/lib/site-content";
+import { getVideoEmbedUrl } from "@/lib/video-embeds";
 
 type CoursePageProps = {
   params: Promise<{
@@ -22,18 +23,6 @@ type CoursePageProps = {
 
 export function generateStaticParams() {
   return courses.map((course) => ({ slug: course.slug }));
-}
-
-function getEmbedUrl(url: string, provider: "youtube" | "google-drive"): string {
-  if (!url) return "";
-  if (provider === "youtube") {
-    if (url.includes("/embed/")) return url;
-    const ytMatch = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\\s]{11})/i);
-    return ytMatch && ytMatch[1] ? `https://www.youtube.com/embed/${ytMatch[1]}?rel=0` : url;
-  }
-  if (url.includes("/preview")) return url;
-  const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  return driveMatch && driveMatch[1] ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : url;
 }
 
 function isPlayableVideo(url: string): boolean {
@@ -234,7 +223,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
               ) : previewLesson ? (
                 <iframe
                   className="aspect-video w-full rounded-2xl bg-[#020d24]"
-                  src={getEmbedUrl(previewLesson.videoUrl, previewLesson.videoProvider)}
+                  src={getVideoEmbedUrl(previewLesson.videoUrl, previewLesson.videoProvider)}
                   title={`${course.title} preview lesson`}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen

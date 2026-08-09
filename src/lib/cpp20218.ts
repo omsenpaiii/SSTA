@@ -1,5 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import type { VideoProvider } from "@/lib/video-embeds";
 
 export const CPP20218_COURSE_SLUG = "certificate-ii-security-operations";
 
@@ -32,6 +33,8 @@ export type CppAssignmentResource = {
   preview_bucket: string;
   preview_path: string | null;
   preview_mime_type: string | null;
+  external_video_provider: VideoProvider | null;
+  external_video_url: string | null;
   downloadable: boolean;
   position: number;
 };

@@ -1,11 +1,12 @@
 import { bakerCourseOverrides } from "./baker-course-overrides";
+import type { VideoProvider } from "./video-embeds";
 
 export type CourseLesson = {
   id: string;
   title: string;
   duration: string;
   isPreview: boolean;
-  videoProvider: "youtube" | "google-drive";
+  videoProvider: VideoProvider;
   videoUrl: string;
 };
 
@@ -247,11 +248,12 @@ const baseCourses: Course[] = [
     lessons: [
       {
         id: "security-preview",
-        title: "Security operations orientation",
-        duration: "04:28",
+        title: "HLTAID011 Provide First Aid — Module 1: Emergency Response Essentials",
+        duration: "10:14",
         isPreview: true,
-        videoProvider: "youtube",
-        videoUrl: previewVideo,
+        videoProvider: "google-vids",
+        videoUrl:
+          "https://docs.google.com/videos/d/1BV_XtyPmiiT9TKKMJjqpJghpOL-WenNIDvLIP509cbo/play",
       },
       {
         id: "legal-procedures",
