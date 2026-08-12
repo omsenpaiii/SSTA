@@ -150,7 +150,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
           return;
         }
         throw new Error(
-          enrollmentResult.error ?? "Unable to submit enrollment details.",
+          enrollmentResult.error ?? "Unable to submit enrolment details.",
         );
       }
 
@@ -195,7 +195,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Unable to submit enrollment details.",
+          : "Unable to submit enrolment details.",
       );
       setCaptchaResetKey((current) => current + 1);
       setIsSubmitting(false);
@@ -260,7 +260,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
             <CardDescription className="text-base font-semibold text-[#53647c]">
               {currentStep === 0 && "Let's start with your basic contact information."}
               {currentStep === 1 && "We use these details to prepare your enrolment and student record."}
-              {currentStep === 2 && "Select the program you wish to enroll in."}
+              {currentStep === 2 && "Select the program you wish to enrol in."}
               {currentStep === 3 && "Review your details before proceeding to payment."}
             </CardDescription>
           </CardHeader>
@@ -305,13 +305,13 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
                       <Input
                         id="email"
                         type="email"
-                        readOnly
+                        readOnly={Boolean(initialValues.email)}
                         aria-describedby="email-account-note"
                         {...register("email")}
-                        className={`h-12 cursor-not-allowed bg-slate-100 text-slate-600 focus-visible:ring-[#18aee5] ${errors.email ? 'border-red-500' : 'border-slate-200'}`}
+                        className={`h-12 focus-visible:ring-[#18aee5] ${initialValues.email ? "cursor-not-allowed bg-slate-100 text-slate-600" : "bg-white"} ${errors.email ? 'border-red-500' : 'border-slate-200'}`}
                       />
                       <p id="email-account-note" className="text-xs font-semibold text-slate-500">
-                        This is the email connected to your signed-in student account.
+                        {initialValues.email ? "This is the email connected to your signed-in student account." : "Enter an email address for enrolment updates and your payment receipt."}
                       </p>
                       {errors.email && <p className="text-xs text-red-500 font-bold">{errors.email.message}</p>}
                     </div>

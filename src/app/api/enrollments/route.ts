@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       {
-        error: "Invalid enrollment details.",
+        error: "Invalid enrolment details.",
         issues: parsed.error.flatten().fieldErrors,
       },
       { status: 400 },
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     void captchaToken;
     const lead = await createEnrollmentLead({
       ...leadInput,
-      email: user.email,
+      email: user.email || leadInput.email,
     });
 
     try {
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
         emailError:
           emailError instanceof Error
             ? emailError.message
-            : "Unable to send enrollment notification.",
+            : "Unable to send enrolment notification.",
       });
     }
 
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Unable to submit enrollment.";
+      error instanceof Error ? error.message : "Unable to submit enrolment.";
     const status =
       message.includes("configured") || message.includes("Supabase") ? 503 : 500;
 

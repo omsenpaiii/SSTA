@@ -107,16 +107,16 @@ export async function POST(request: Request) {
       );
     }
 
-    if (enrollment && enrollment.email.toLowerCase() !== user.email.toLowerCase()) {
+    if (enrollment && user.email && enrollment.email.toLowerCase() !== user.email.toLowerCase()) {
       return NextResponse.json(
-        { error: "This enrollment belongs to a different student account." },
+        { error: "This enrolment belongs to a different student account." },
         { status: 403 },
       );
     }
 
     if (enrollment?.payment_status === "paid") {
       return NextResponse.json(
-        { error: "This enrollment has already been paid." },
+        { error: "This enrolment has already been paid." },
         { status: 409 },
       );
     }
