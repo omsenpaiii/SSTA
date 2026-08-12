@@ -10,6 +10,7 @@ import {
 } from "@/lib/cpp20218";
 import { type Course } from "@/lib/courses";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
+import { manualPhoneStudentKey, normalizeAustralianPhone } from "@/lib/phone";
 
 export type AdminStudent = {
   id: string;
@@ -150,7 +151,7 @@ const studentSchema = z.object({
   id: z.string().uuid().optional().nullable(),
   firstName: z.string().trim().min(1),
   lastName: z.string().trim().optional().nullable(),
-  email: z.string().trim().email(),
+  email: z.string().trim().email().optional().nullable().or(z.literal("")),
   phone: z.string().trim().optional().nullable(),
   dob: z.string().trim().optional().nullable(),
   usi: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{10}$/, "USI must be 10 letters or numbers").optional().nullable().or(z.literal("")),
@@ -163,11 +164,15 @@ const studentSchema = z.object({
   userKey: z.string().trim().optional().nullable(),
   courseSlug: z.string().trim().optional().nullable(),
   status: z.enum(["active", "refunded", "revoked"]).default("active"),
+}).refine((student) => Boolean(student.email || normalizeAustralianPhone(student.phone)), {
+  message: "Enter a valid email address or Australian phone number.",
+  path: ["email"],
 });
 
 const enrollmentSchema = z.object({
   userKey: z.string().trim().optional().nullable(),
   email: z.string().trim().email().optional().nullable(),
+  phone: z.string().trim().optional().nullable(),
   courseSlug: z.string().trim().min(1),
   status: z.enum(["active", "refunded", "revoked"]).default("active"),
   amountPaid: z.coerce.number().optional().nullable(),
@@ -463,33 +468,33 @@ export async function replaceAdminCourseUnits(
 export async function upsertAdminStudent(input: unknown) {
   const student = studentSchema.parse(input);
   const supabase = requireSupabase();
-  const email = student.email.toLowerCase();
-  const duplicateQuery = supabase
-    .from("student_profiles")
-    .select("id")
-    .ilike("email", email)
-    .limit(1);
-  const { data: duplicateRows, error: duplicateError } = student.id
-    ? await duplicateQuery.neq("id", student.id)
-    : await duplicateQuery;
+  const email = student.email?.toLowerCase() || null;
+  const phone = normalizeAustralianPhone(student.phone);
+  const filters = [email ? `email.ilike.${email}` : "", phone ? `phone.eq.${phone}` : ""].filter(Boolean).join(",");
+  let duplicateQuery = supabase.from("student_profiles").select("id,user_key,email,phone").or(filters).limit(2);
+  if (student.id) duplicateQuery = duplicateQuery.neq("id", student.id);
+  const { data: duplicateRows, error: duplicateError } = await duplicateQuery;
 
   if (duplicateError) {
     throw new Error(duplicateError.message);
   }
 
   if (duplicateRows?.length && student.id) {
-    throw new Error("A student profile already exists with this email address.");
+    throw new Error("A student profile already exists with this email address or phone number.");
+  }
+  if ((duplicateRows?.length ?? 0) > 1) {
+    throw new Error("The email address and phone number belong to different student profiles. Resolve the duplicate records before retrying.");
   }
 
   const profileId = student.id ?? duplicateRows?.[0]?.id ?? null;
 
-  let userKey = student.userKey || manualStudentKey(email);
+  let userKey = student.userKey || (email ? manualStudentKey(email) : manualPhoneStudentKey(phone));
   let profileError: { message: string } | null = null;
   const profileValues = {
     first_name: student.firstName,
     last_name: student.lastName || null,
     email,
-    phone: student.phone || null,
+    phone: phone || null,
     batch_number: student.batchNumber,
     date_of_birth: student.dob || null,
     usi: student.usi ? student.usi.toUpperCase() : null,
@@ -652,20 +657,24 @@ export async function restoreAdminStudent(input: unknown) {
 export async function upsertAdminEnrollment(input: unknown) {
   const enrollment = enrollmentSchema.parse(input);
   const supabase = requireSupabase();
+  const phone = normalizeAustralianPhone(enrollment.phone);
   const { data: existingProfile } = enrollment.email
     ? await supabase.from("student_profiles").select("user_key").ilike("email", enrollment.email).limit(1).maybeSingle()
-    : { data: null };
-  const userKey = enrollment.userKey || existingProfile?.user_key || (enrollment.email ? manualStudentKey(enrollment.email) : null);
+    : phone
+      ? await supabase.from("student_profiles").select("user_key").eq("phone", phone).limit(1).maybeSingle()
+      : { data: null };
+  const userKey = enrollment.userKey || existingProfile?.user_key || (enrollment.email ? manualStudentKey(enrollment.email) : phone ? manualPhoneStudentKey(phone) : null);
 
   if (!userKey) {
-    throw new Error("Enrollment import needs userKey or email.");
+    throw new Error("Enrolment import needs an email address or valid Australian phone number.");
   }
 
-  if (enrollment.email) {
+  if (enrollment.email || phone) {
     const { error: profileError } = await supabase.from("student_profiles").upsert(
       {
         user_key: userKey,
-        email: enrollment.email,
+        email: enrollment.email || null,
+        phone: phone || null,
         origin: "import",
         updated_at: new Date().toISOString(),
       },

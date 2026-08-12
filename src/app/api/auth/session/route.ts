@@ -12,6 +12,7 @@ export async function GET() {
     user: {
       name: user.name,
       email: user.email,
+      phone: user.phone,
       initials: user.initials,
       dashboardHref: isAdminEmail(user.email) ? "/admin" : "/dashboard",
     },

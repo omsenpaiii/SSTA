@@ -1,6 +1,7 @@
 import { getSupabaseAdmin, isSupabaseAuthConfigured } from "@/lib/supabase";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getAdminEmails, getInitials, isAdminEmail, manualStudentKey, normalizeEmail } from "@/lib/auth-shared";
+import { manualPhoneStudentKey, normalizeAustralianPhone } from "@/lib/phone";
 
 export type AppUser = {
   id: string;
@@ -56,14 +57,14 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user?.email) {
+  if (!user?.email && !user?.phone) {
     return null;
   }
 
   const { firstName, lastName, fullName } = deriveNames(user);
   const email = normalizeEmail(user.email);
-  const name = fullName ?? ([firstName, lastName].filter(Boolean).join(" ") || email.split("@")[0]);
-  const phone = typeof user.phone === "string" && user.phone.trim() ? user.phone : null;
+  const phone = normalizeAustralianPhone(user.phone) || null;
+  const name = fullName ?? ([firstName, lastName].filter(Boolean).join(" ") || email.split("@")[0] || phone || "Student");
   const avatarUrl =
     typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : null;
 
@@ -75,42 +76,57 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     lastName,
     phone,
     avatarUrl,
-    initials: getInitials(name, email),
+    initials: getInitials(name, email || phone || "Student"),
   };
 }
 
 export async function syncStudentProfileFromUser(user: AuthUser | null | undefined) {
   const supabase = getSupabaseAdmin();
 
-  if (!supabase || !user?.email) {
+  if (!supabase || (!user?.email && !user?.phone)) {
     return;
   }
 
-  const email = normalizeEmail(user.email);
+  const email = normalizeEmail(user.email) || null;
+  const phone = normalizeAustralianPhone(user.phone) || null;
   const userKey = user.id;
-  const manualKey = manualStudentKey(email);
+  const emailManualKey = email ? manualStudentKey(email) : null;
+  const phoneManualKey = phone ? manualPhoneStudentKey(phone) : null;
   const { firstName, lastName } = deriveNames(user);
-  const phone = typeof user.phone === "string" && user.phone.trim() ? user.phone : null;
   const now = new Date().toISOString();
 
-  const [{ data: realProfile }, { data: manualProfile }] = await Promise.all([
+  const [{ data: realProfile }, { data: emailManualProfile }, { data: phoneManualProfile }, { data: phoneProfile }] = await Promise.all([
     supabase
       .from("student_profiles")
       .select("id,user_key,first_name,last_name,phone,email,origin")
       .eq("user_key", userKey)
       .maybeSingle(),
-    supabase
+    emailManualKey ? supabase
       .from("student_profiles")
       .select("id,user_key,first_name,last_name,phone,email,origin")
-      .eq("user_key", manualKey)
-      .maybeSingle(),
+      .eq("user_key", emailManualKey)
+      .maybeSingle() : Promise.resolve({ data: null }),
+    phoneManualKey ? supabase
+      .from("student_profiles")
+      .select("id,user_key,first_name,last_name,phone,email,origin")
+      .eq("user_key", phoneManualKey)
+      .maybeSingle() : Promise.resolve({ data: null }),
+    phone ? supabase
+      .from("student_profiles")
+      .select("id,user_key,first_name,last_name,phone,email,origin")
+      .eq("phone", phone)
+      .limit(1)
+      .maybeSingle() : Promise.resolve({ data: null }),
   ]);
+  const manualProfile = [emailManualProfile, phoneManualProfile, phoneProfile]
+    .find((profile) => profile && profile.user_key !== userKey) ?? null;
+  const manualKey = manualProfile?.user_key ?? null;
 
   const mergedFirstName = realProfile?.first_name ?? manualProfile?.first_name ?? firstName ?? null;
   const mergedLastName = realProfile?.last_name ?? manualProfile?.last_name ?? lastName ?? null;
   const mergedPhone = realProfile?.phone ?? manualProfile?.phone ?? phone ?? null;
 
-  if (manualProfile && manualProfile.user_key !== userKey) {
+  if (manualProfile && manualKey) {
     if (realProfile) {
       await supabase
         .from("course_enrollments")

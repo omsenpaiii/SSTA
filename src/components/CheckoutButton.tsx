@@ -14,13 +14,13 @@ type CheckoutButtonProps = {
 export function CheckoutButton({
   courseSlug,
   className,
-  children = "Enroll Now",
+  children = "Enrol Now",
 }: CheckoutButtonProps) {
   const isCpp20218 = courseSlug === CPP20218_COURSE_SLUG;
   const href = isCpp20218
     ? `/dashboard/lln/cpp20218?mode=buy&returnTo=${encodeURIComponent(`/course/${CPP20218_COURSE_SLUG}`)}`
     : `/enroll?course=${courseSlug}`;
-  const label = children === "Enroll Now" && isCpp20218 ? "Buy Now" : children;
+  const label = children === "Enrol Now" && isCpp20218 ? "Buy Now" : children;
 
   return (
     <Link

@@ -9,6 +9,7 @@ import {
   getAdminSnapshot,
 } from "@/lib/admin-data";
 import { type AdminSnapshot } from "@/lib/admin-data";
+import { normalizeAustralianPhone } from "@/lib/phone";
 
 export type ExcelEntity = "courses" | "students" | "enrollments" | "leads";
 
@@ -90,7 +91,7 @@ function addInstructions(workbook: ExcelJS.Workbook, entity: ExcelEntity) {
   sheet.columns = [{ width: 28 }, { width: 90 }];
   [
     ["SSTA Excel workflow", `${entity[0].toUpperCase()}${entity.slice(1)} operational import/export`],
-    ["Matching key", entity === "courses" ? "Course Slug" : entity === "students" ? "Email" : entity === "enrollments" ? "Email + Course Slug" : "Type + Email + Course Slug"],
+    ["Matching key", entity === "courses" ? "Course Slug" : entity === "students" ? "Email or Phone" : entity === "enrollments" ? "Email or Phone + Course Slug" : "Type + Email + Course Slug"],
     ["Import rule", "Do not rename sheet names or column headers. Blank optional cells are accepted."],
     ["Safety", "All rows are validated before writes begin. Missing rows are never deleted."],
     ["Internal data", "UUIDs, access keys, Stripe session IDs, storage IDs, and timestamps are intentionally excluded."],
@@ -169,12 +170,14 @@ export async function buildExportWorkbook(entity: ExcelEntity, snapshot: AdminSn
       "Residential Address": student.residential_address ?? "", "Disability Status": student.disability_status ?? "",
       "Support Details": student.disability_details ?? "", "Batch Number": student.batch_number,
       Origin: student.origin, "Referred By": student.referred_by ?? "", Archived: student.archived_at ? "Yes" : "No",
+      "Course Slug": snapshot.enrollments.find((item) => item.user_key === student.user_key && item.status === "active")?.course_slug ?? "",
+      "Enrolment Status": snapshot.enrollments.find((item) => item.user_key === student.user_key)?.status ?? "active",
     })));
     addSheet(
       workbook,
       "StudentCourseAccess",
       snapshot.enrollments.map((enrollment) => ({
-        Email: studentsByKey.get(enrollment.user_key)?.email ?? "", "Course Slug": enrollment.course_slug,
+        Email: studentsByKey.get(enrollment.user_key)?.email ?? "", Phone: studentsByKey.get(enrollment.user_key)?.phone ?? "", "Course Slug": enrollment.course_slug,
         Status: enrollment.status, "Amount Paid": enrollment.amount_paid ?? "", Currency: enrollment.currency ?? "",
       })),
     );
@@ -183,7 +186,7 @@ export async function buildExportWorkbook(entity: ExcelEntity, snapshot: AdminSn
   if (entity === "enrollments") {
     const studentsByKey = new Map(snapshot.students.map((student) => [student.user_key, student]));
     addSheet(workbook, "Enrollments", snapshot.enrollments.map((enrollment) => ({
-      Email: studentsByKey.get(enrollment.user_key)?.email ?? "", "Course Slug": enrollment.course_slug,
+      Email: studentsByKey.get(enrollment.user_key)?.email ?? "", Phone: studentsByKey.get(enrollment.user_key)?.phone ?? "", "Course Slug": enrollment.course_slug,
       "Course Title": snapshot.courses.find((course) => course.slug === enrollment.course_slug)?.title ?? "",
       Status: enrollment.status, "Amount Paid": enrollment.amount_paid ?? "", Currency: enrollment.currency ?? "AUD",
       Source: studentsByKey.get(enrollment.user_key)?.origin ?? "", "Referred By": studentsByKey.get(enrollment.user_key)?.referred_by ?? "",
@@ -330,18 +333,21 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
   if (entity === "students") {
     const studentRows = rowsFromSheet(workbook, "Students");
     const accessRows = rowsFromSheet(workbook, "StudentCourseAccess");
-    const seenEmails = new Set<string>();
+    const seenIdentifiers = new Set<string>();
     const seenUsis = new Set<string>();
     const prepared = studentRows.map((row, index) => {
       const email = String(valueOf(row, "Email", "email")).trim().toLowerCase();
+      const phoneInput = String(valueOf(row, "Phone", "phone")).trim();
+      const phone = normalizeAustralianPhone(phoneInput);
       const usi = String(valueOf(row, "USI", "usi")).trim().toUpperCase();
 
-      if (!email.includes("@")) {
-        result.errors.push(`Students row ${index + 2}: valid email is required.`);
-      }
+      if (email && !email.includes("@")) result.errors.push(`Students row ${index + 2}: email is invalid.`);
+      if (phoneInput && !phone) result.errors.push(`Students row ${index + 2}: Australian phone number is invalid.`);
+      if (!email && !phone) result.errors.push(`Students row ${index + 2}: enter an email address or phone number.`);
       if (!String(valueOf(row, "First Name", "first_name", "firstName")).trim()) result.errors.push(`Students row ${index + 2}: first name is required.`);
-      if (seenEmails.has(email)) result.errors.push(`Students row ${index + 2}: duplicate email ${email}.`);
-      seenEmails.add(email);
+      const identifier = email ? `email:${email}` : `phone:${phone}`;
+      if (seenIdentifiers.has(identifier)) result.errors.push(`Students row ${index + 2}: duplicate identifier ${email || phone}.`);
+      seenIdentifiers.add(identifier);
       if (usi && !/^[A-Z0-9]{10}$/.test(usi)) result.errors.push(`Students row ${index + 2}: USI must be 10 letters or numbers.`);
       if (usi && seenUsis.has(usi)) result.errors.push(`Students row ${index + 2}: duplicate USI ${usi}.`);
       if (usi) seenUsis.add(usi);
@@ -349,36 +355,45 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
       if (!Number.isInteger(batchNumber) || batchNumber < 1) result.errors.push(`Students row ${index + 2}: batch number must be a positive whole number.`);
       const disabilityStatus = String(valueOf(row, "Disability Status", "disability_status"));
       if (disabilityStatus && !["no", "yes", "prefer_not_to_say"].includes(disabilityStatus)) result.errors.push(`Students row ${index + 2}: invalid disability status.`);
+      const courseSlug = String(valueOf(row, "Course Slug", "courseSlug", "course_slug")).trim();
+      if (courseSlug && !current.courses.some((course) => course.slug === courseSlug)) result.errors.push(`Students row ${index + 2}: unknown course slug ${courseSlug}.`);
+      const status = String(valueOf(row, "Enrolment Status", "Enrollment Status", "status") || "active");
+      if (!["active", "refunded", "revoked"].includes(status)) result.errors.push(`Students row ${index + 2}: invalid enrolment status.`);
 
       return {
         firstName: String(valueOf(row, "First Name", "first_name", "firstName")),
         lastName: String(valueOf(row, "Last Name", "last_name", "lastName")),
         email,
-        phone: String(valueOf(row, "Phone", "phone")), dob: String(valueOf(row, "DOB", "date_of_birth")), usi,
+        phone, dob: String(valueOf(row, "DOB", "date_of_birth")), usi,
         address: String(valueOf(row, "Residential Address", "residential_address")),
         disabilityStatus: disabilityStatus || null,
         disabilityDetails: String(valueOf(row, "Support Details", "disability_details")),
         batchNumber,
         origin: "import" as const, referredBy: String(valueOf(row, "Referred By", "referred_by")),
+        courseSlug,
+        status: status as "active" | "refunded" | "revoked",
       };
     });
     const preparedAccess = accessRows.map((row, index) => {
       const courseSlug = String(valueOf(row, "Course Slug", "courseSlug", "course_slug")).trim();
-      const email = String(valueOf(row, "Email", "email")).trim();
+      const email = String(valueOf(row, "Email", "email")).trim().toLowerCase();
+      const phoneInput = String(valueOf(row, "Phone", "phone")).trim();
+      const phone = normalizeAustralianPhone(phoneInput);
 
       if (!courseSlug) {
         result.errors.push(`StudentCourseAccess row ${index + 2}: course slug is required.`);
       }
 
-      if (!email) {
-        result.errors.push(`StudentCourseAccess row ${index + 2}: email is required.`);
-      }
+      if (email && !email.includes("@")) result.errors.push(`StudentCourseAccess row ${index + 2}: email is invalid.`);
+      if (phoneInput && !phone) result.errors.push(`StudentCourseAccess row ${index + 2}: Australian phone number is invalid.`);
+      if (!email && !phone) result.errors.push(`StudentCourseAccess row ${index + 2}: enter an email address or phone number.`);
       const status = String(valueOf(row, "Status", "status") || "active");
       if (!["active", "refunded", "revoked", "archived"].includes(status)) result.errors.push(`StudentCourseAccess row ${index + 2}: invalid status.`);
       if (!current.courses.some((course) => course.slug === courseSlug)) result.errors.push(`StudentCourseAccess row ${index + 2}: unknown course slug ${courseSlug}.`);
 
       return {
-        email,
+        email: email || null,
+        phone: phone || null,
         courseSlug,
         status,
         amountPaid: valueOf(row, "Amount Paid", "amountPaid", "amount_paid") ? Number(valueOf(row, "Amount Paid", "amountPaid", "amount_paid")) : null,
@@ -392,7 +407,7 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
 
     for (const student of prepared) {
       await upsertAdminStudent(student);
-      if (current.students.some((item) => item.email?.toLowerCase() === student.email.toLowerCase())) result.updated += 1;
+      if (current.students.some((item) => (student.email && item.email?.toLowerCase() === student.email) || (student.phone && item.phone === student.phone))) result.updated += 1;
       else result.created += 1;
     }
 
@@ -408,20 +423,24 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
     const enrollmentRows = rowsFromSheet(workbook, "Enrollments");
     const prepared = enrollmentRows.map((row, index) => {
       const email = String(valueOf(row, "Email", "email")).trim().toLowerCase();
+      const phoneInput = String(valueOf(row, "Phone", "phone")).trim();
+      const phone = normalizeAustralianPhone(phoneInput);
       const courseSlug = String(valueOf(row, "Course Slug", "course_slug", "courseSlug")).trim();
       const status = String(valueOf(row, "Status", "status") || "active");
       const amountPaidValue = valueOf(row, "Amount Paid", "amount_paid", "amountPaid");
       const amountPaid = amountPaidValue ? Number(amountPaidValue) : null;
       if (!courseSlug) {
-        result.errors.push(`Enrollments row ${index + 2}: course slug is required.`);
+        result.errors.push(`Enrolments row ${index + 2}: course slug is required.`);
       }
-      if (!email.includes("@")) result.errors.push(`Enrollments row ${index + 2}: valid email is required.`);
-      if (!current.courses.some((course) => course.slug === courseSlug)) result.errors.push(`Enrollments row ${index + 2}: unknown course slug ${courseSlug}.`);
-      if (!["active", "refunded", "revoked", "archived"].includes(status)) result.errors.push(`Enrollments row ${index + 2}: invalid status.`);
-      if (amountPaid !== null && (!Number.isFinite(amountPaid) || amountPaid < 0)) result.errors.push(`Enrollments row ${index + 2}: amount paid must be a positive number.`);
+      if (email && !email.includes("@")) result.errors.push(`Enrolments row ${index + 2}: email is invalid.`);
+      if (phoneInput && !phone) result.errors.push(`Enrolments row ${index + 2}: Australian phone number is invalid.`);
+      if (!email && !phone) result.errors.push(`Enrolments row ${index + 2}: enter an email address or phone number.`);
+      if (!current.courses.some((course) => course.slug === courseSlug)) result.errors.push(`Enrolments row ${index + 2}: unknown course slug ${courseSlug}.`);
+      if (!["active", "refunded", "revoked", "archived"].includes(status)) result.errors.push(`Enrolments row ${index + 2}: invalid status.`);
+      if (amountPaid !== null && (!Number.isFinite(amountPaid) || amountPaid < 0)) result.errors.push(`Enrolments row ${index + 2}: amount paid must be a positive number.`);
 
       return {
-        email, courseSlug, status, amountPaid,
+        email: email || null, phone: phone || null, courseSlug, status, amountPaid,
         currency: String(valueOf(row, "Currency", "currency") || "aud"),
       };
     });
@@ -432,7 +451,7 @@ export async function importWorkbook(entity: ExcelEntity, buffer: ArrayBuffer): 
 
     for (const enrollment of prepared) {
       await upsertAdminEnrollment(enrollment);
-      const profile = current.students.find((student) => student.email?.toLowerCase() === enrollment.email.toLowerCase());
+      const profile = current.students.find((student) => (enrollment.email && student.email?.toLowerCase() === enrollment.email) || (enrollment.phone && student.phone === enrollment.phone));
       if (profile && current.enrollments.some((item) => item.user_key === profile.user_key && item.course_slug === enrollment.courseSlug)) result.updated += 1;
       else result.created += 1;
     }

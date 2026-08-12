@@ -6,6 +6,7 @@ import { SiteHeaderClient } from "@/components/SiteHeaderClient";
 type HeaderUser = {
   name: string;
   email: string;
+  phone: string | null;
   initials: string;
   dashboardHref: string;
 };

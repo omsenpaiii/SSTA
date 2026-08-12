@@ -33,7 +33,7 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
     <AuthShell
       mode="sign-up"
       title="Create your account"
-      subtitle="Use Google or email to access your courses, lessons, and student dashboard."
+      subtitle="Use Google, email, or phone to access your courses, lessons, and student dashboard."
     >
       <SignUpForm
         redirectUrl={params.redirect_url}

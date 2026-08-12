@@ -147,7 +147,7 @@ export function StudentPortalShell({ user, stats, children }: StudentPortalShell
               </span>
               <span className="hidden min-w-0 max-w-[210px] text-left lg:block">
                 <span className="block truncate text-sm font-bold text-[#081221]">{user.name}</span>
-                <span className="block truncate text-xs font-medium text-[#64748b]">{user.email}</span>
+                <span className="block truncate text-xs font-medium text-[#64748b]">{user.email || user.phone || "Student"}</span>
               </span>
             </div>
             <SignOutButton className="inline-flex h-14 items-center gap-2 rounded-[8px] border border-[#dbe3ec] bg-white px-4 text-sm font-semibold text-[#081221] transition hover:border-[#0f6eb8] hover:text-[#0f6eb8] disabled:cursor-wait disabled:opacity-70">

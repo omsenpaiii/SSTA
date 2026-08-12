@@ -97,12 +97,12 @@ export async function POST(request: Request) {
       : null;
 
     if (body.data.enrollmentId && !enrollment) {
-      return NextResponse.json({ error: "Enrollment not found." }, { status: 404 });
+      return NextResponse.json({ error: "Enrolment not found." }, { status: 404 });
     }
 
     if (enrollment && enrollment.course_slug !== course.slug) {
       return NextResponse.json(
-        { error: "Enrollment does not match selected course." },
+        { error: "Enrolment does not match selected course." },
         { status: 400 },
       );
     }

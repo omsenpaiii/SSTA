@@ -68,7 +68,7 @@ export async function sendEnrollmentEmail(lead: EnrollmentLead) {
     ["Address", lead.address],
     ["Course", course?.title ?? lead.course_slug],
     ["Payment status", lead.payment_status],
-    ["Enrollment ID", lead.id],
+    ["Enrolment ID", lead.id],
   ];
 
   const text = rows.map(([label, value]) => `${label}: ${value}`).join("\n");

@@ -11,6 +11,7 @@ import { announcementBarMessage, courseMenu, primaryLinks, siteInfo } from "@/li
 type HeaderUser = {
   name: string;
   email: string;
+  phone: string | null;
   initials: string;
   dashboardHref: string;
 };
@@ -124,7 +125,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
                 </span>
                 <span>
                   <span className="block text-sm font-black text-[#020d24]">{user.name}</span>
-                  <span className="block text-xs font-bold text-[#53647c]">{user.email}</span>
+                  <span className="block text-xs font-bold text-[#53647c]">{user.email || user.phone || "Student"}</span>
                 </span>
               </Link>
               <SignOutButton className="rounded-full px-4 py-3 text-sm font-black text-[#0067b1] transition hover:bg-[#eef8ff] disabled:cursor-wait disabled:opacity-70">
@@ -211,7 +212,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
                     </span>
                     <span>
                       <span className="block font-black text-[#020d24]">{user.name}</span>
-                      <span className="block text-sm font-bold text-[#53647c]">{user.email}</span>
+                      <span className="block text-sm font-bold text-[#53647c]">{user.email || user.phone || "Student"}</span>
                     </span>
                   </div>
                   <div className="mt-4 grid gap-2">

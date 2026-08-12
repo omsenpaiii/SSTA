@@ -59,7 +59,7 @@ export default async function EnrollPage({ searchParams }: EnrollPageProps) {
 
         <div className="mx-auto mb-12 max-w-3xl text-center">
           <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#f5b800]/45 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[#d96f00] shadow-sm">
-            <ShieldCheck size={14} /> Official SSTA Enrollment
+            <ShieldCheck size={14} /> Official SSTA Enrolment
           </p>
           <h1 className="text-4xl font-black leading-tight tracking-normal text-[#020d24] sm:text-5xl lg:text-6xl">
             Enrol for your preferred course now.

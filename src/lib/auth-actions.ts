@@ -6,6 +6,7 @@ import { getAppUrl } from "@/lib/app-url";
 import { getCurrentUser, isAdminEmail, syncStudentProfileFromUser } from "@/lib/auth";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getSafeRedirectPath } from "@/lib/auth-shared";
+import { normalizeAustralianPhone } from "@/lib/phone";
 
 export type AuthFormState = {
   error?: string;
@@ -93,6 +94,39 @@ export async function signInWithPassword(
 
   await syncStudentProfileFromUser(data.user);
   redirect(getPostAuthDestination(parsed.data.email, parsed.data.redirectUrl));
+}
+
+export async function requestPhoneOtp(
+  _state: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const phone = normalizeAustralianPhone(String(formData.get("phone") ?? ""));
+  if (!phone) return { error: "Enter a valid Australian phone number." };
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.auth.signInWithOtp({ phone, options: { shouldCreateUser: true } });
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("rate") || message.includes("60")) return { error: "Please wait before requesting another code." };
+    if (message.includes("provider") || message.includes("sms")) return { error: "SMS login is temporarily unavailable. Please use email or Google." };
+    return { error: error.message };
+  }
+  return { success: "Verification code sent. Enter the six-digit code below." };
+}
+
+export async function verifyPhoneOtp(
+  _state: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const phone = normalizeAustralianPhone(String(formData.get("phone") ?? ""));
+  const token = String(formData.get("token") ?? "").replace(/\D/g, "");
+  const redirectUrl = String(formData.get("redirectUrl") ?? "");
+  if (!phone) return { error: "Enter a valid Australian phone number." };
+  if (token.length !== 6) return { error: "Enter the six-digit verification code." };
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase.auth.verifyOtp({ phone, token, type: "sms" });
+  if (error || !data.user) return { error: "That code is invalid or has expired. Request a new code and try again." };
+  await syncStudentProfileFromUser(data.user);
+  redirect(getSafeRedirectPath(redirectUrl));
 }
 
 export async function signUpWithPassword(

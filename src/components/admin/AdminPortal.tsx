@@ -40,7 +40,9 @@ type AdminPortalProps = {
   snapshot: AdminSnapshot;
 };
 
-type Section = "dashboard" | "students" | "add-student" | "completed" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel";
+type Section = "dashboard" | "students" | "enrollments" | "add-student" | "completed" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel";
+type StudentView = "all" | "batch-1" | "batch-2" | "batch-3" | "completed" | "archived";
+type EnrollmentView = "all" | "paid" | "part-paid" | "unpaid" | "completed";
 type AssessmentStatusFilter =
   | "all"
   | "submitted"
@@ -52,6 +54,7 @@ type AssessmentStatusFilter =
 const navItems: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "students", label: "Students", icon: Users },
+  { id: "enrollments", label: "Enrolments", icon: GraduationCap },
   { id: "add-student", label: "Add Student", icon: UserPlus },
   { id: "completed", label: "Completed", icon: Award },
   { id: "courses", label: "Courses", icon: GraduationCap },
@@ -96,7 +99,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [active, setActive] = useState<Section>("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [studentView, setStudentView] = useState<"active" | "archived">("active");
+  const [studentView, setStudentView] = useState<StudentView>("all");
+  const [enrollmentView, setEnrollmentView] = useState<EnrollmentView>("all");
   const [editingStudent, setEditingStudent] = useState<AdminStudent | null>(null);
   const [editingCourse, setEditingCourse] = useState<AdminSnapshot["courses"][number] | null>(null);
   const [courseView, setCourseView] = useState<"active" | "archived">("active");
@@ -150,7 +154,13 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       .map((enrollment) => enrollment.user_key),
   );
   const filteredStudents = snapshot.students
-    .filter((student) => (studentView === "archived" ? Boolean(student.archived_at) : !student.archived_at && !completedStudentKeys.has(student.user_key)))
+    .filter((student) => {
+      if (studentView === "archived") return Boolean(student.archived_at);
+      if (student.archived_at) return false;
+      if (studentView === "completed") return completedStudentKeys.has(student.user_key);
+      if (studentView.startsWith("batch-")) return student.batch_number === Number(studentView.replace("batch-", "")) && !completedStudentKeys.has(student.user_key);
+      return !completedStudentKeys.has(student.user_key);
+    })
     .filter((student) => {
       const value = `${student.first_name ?? ""} ${student.last_name ?? ""} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase();
       return value.includes(query.trim().toLowerCase());
@@ -211,12 +221,25 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
         (enrollment) => enrollment.user_key === editingStudent.user_key && enrollment.status === "active",
       )?.course_slug ?? ""
     : "";
-  const metricCards: { label: string; value: string; icon: LucideIcon }[] = [
-    { label: "Total Students", value: String(snapshot.students.filter((student) => !student.archived_at).length), icon: Users },
-    { label: "Active Enrolments", value: String(activeEnrollments), icon: GraduationCap },
-    { label: "Completed", value: String(completedCount), icon: BookOpen },
-    { label: "Revenue", value: money(totalRevenue), icon: Database },
+  const metricCards: { label: string; value: string; icon: LucideIcon; target: Section }[] = [
+    { label: "Total Students", value: String(snapshot.students.filter((student) => !student.archived_at).length), icon: Users, target: "students" },
+    { label: "Active Enrolments", value: String(activeEnrollments), icon: GraduationCap, target: "enrollments" },
+    { label: "Completed", value: String(completedCount), icon: BookOpen, target: "completed" },
+    { label: "Revenue", value: money(totalRevenue), icon: Database, target: "payments" },
   ];
+  const enrollmentRows = snapshot.enrollments.map((enrollment) => {
+    const student = snapshot.students.find((item) => item.user_key === enrollment.user_key);
+    const course = courseBySlug.get(enrollment.course_slug);
+    const relatedPayments = snapshot.payments.filter((payment) => payment.purpose === "course_enrollment" && (payment.enrollment_id === enrollment.id || (!payment.enrollment_id && payment.user_key === enrollment.user_key && payment.course_slug === enrollment.course_slug)));
+    const paidFromPayments = relatedPayments.filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + payment.amount_cents / 100, 0);
+    const paid = Math.max(enrollment.amount_paid ?? 0, paidFromPayments);
+    const expected = course?.priceAud ?? 0;
+    const balance = Math.max(0, expected - paid);
+    const latestAttempt = [...relatedPayments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+    const paymentStatus = paid >= expected && expected > 0 ? "paid" : paid > 0 ? "part-paid" : latestAttempt?.status === "failed" ? "failed" : latestAttempt?.status === "pending" ? "pending" : "unpaid";
+    return { enrollment, student, course, paid, expected, balance, paymentStatus };
+  }).filter(({ enrollment, student, course }) => `${student ? studentDisplayName(student) : ""} ${student?.email ?? ""} ${student?.phone ?? ""} ${course?.title ?? ""} ${enrollment.course_slug}`.toLowerCase().includes(query.trim().toLowerCase()))
+    .filter((row) => enrollmentView === "all" || (enrollmentView === "completed" ? row.enrollment.status === "completed" : enrollmentView === "unpaid" ? row.enrollment.status !== "completed" && ["unpaid", "pending", "failed"].includes(row.paymentStatus) : row.enrollment.status !== "completed" && row.paymentStatus === enrollmentView));
   const originCounts = snapshot.students.filter((student) => !student.archived_at).reduce(
     (counts, student) => ({ ...counts, [student.origin]: counts[student.origin] + 1 }),
     { admin: 0, import: 0, self_enrolled: 0 },
@@ -322,7 +345,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 
     if (saved) {
       setEditingStudent(null);
-      setStudentView("active");
+      setStudentView("all");
       setActive("students");
     }
   }
@@ -441,7 +464,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 
     const dataResponse = await fetch("/api/admin/data");
     setSnapshot(await dataResponse.json());
-    setNotice({ type: "success", text: `Imported ${json.updated} ${entity} rows.` });
+    setNotice({ type: "success", text: `Import complete: ${json.created ?? 0} created, ${json.updated ?? 0} updated, ${json.skipped ?? 0} skipped.` });
   }
 
   async function handleAssignmentReview(formData: FormData) {
@@ -602,6 +625,14 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             ) : null}
           </div>
           <div className="ml-4 flex items-center gap-4">
+            <details className="relative hidden sm:block">
+              <summary className="flex h-11 cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-[#1f7ac1]">Switch portal</summary>
+              <div className="absolute right-0 top-14 z-50 grid w-48 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                <span className="rounded-lg bg-slate-50 px-3 py-2 text-sm font-black text-slate-500">Admin Portal</span>
+                <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-black hover:bg-slate-50">Student Portal</Link>
+                <Link href="/" className="rounded-lg px-3 py-2 text-sm font-black hover:bg-slate-50">Website Home</Link>
+              </div>
+            </details>
             <div className="relative">
             <button type="button" onClick={() => setNotificationOpen((current) => !current)} className="relative flex size-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500" aria-label="Open operational notifications">
               <Bell size={22} />
@@ -654,8 +685,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 </p>
               </div>
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                {metricCards.map(({ label, value, icon: Icon }) => (
-                  <div key={label} className="rounded-xl border border-slate-200 bg-white p-7 shadow-sm">
+                {metricCards.map(({ label, value, icon: Icon, target }) => (
+                  <button type="button" onClick={() => setActive(target)} key={label} className="rounded-xl border border-slate-200 bg-white p-7 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#2392ee] hover:shadow-md">
                     <div className="flex items-start justify-between">
                       <span className="text-lg font-black text-slate-500">{label}</span>
                       <span className="flex size-12 items-center justify-center rounded-xl bg-[#eef4fb] text-[#1f7ac1]">
@@ -667,7 +698,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                       <span className="mr-3 rounded-full bg-emerald-50 px-3 py-1 text-emerald-600">+ live</span>
                       from Supabase
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
               <div className="grid gap-4 md:grid-cols-3">
@@ -686,7 +717,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 <section className="rounded-xl border border-slate-200 bg-white p-7 shadow-sm">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h2 className="text-2xl font-black">Enrollment Trends</h2>
+                      <h2 className="text-2xl font-black">Enrolment Trends</h2>
                       <p className="mt-1 text-sm font-bold text-slate-500">Monthly active enrollment volume</p>
                     </div>
                     <span className="rounded-full bg-[#eef4fb] px-3 py-1 text-xs font-black text-[#1f7ac1]">
@@ -713,7 +744,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                           <div
                             className="w-full max-w-9 rounded-t-lg bg-[#1f7ac1]/80 transition"
                             style={{ height: `${height}px` }}
-                            title={`${monthCount} enrollments`}
+                            title={`${monthCount} enrolments`}
                           />
                           <span className="text-[11px] font-bold text-slate-500">
                             {new Date(2026, index, 1).toLocaleDateString("en-AU", { month: "short" })}
@@ -752,8 +783,14 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             <StudentTableSection
               students={filteredStudents}
               view={studentView}
-              activeCount={snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key)).length}
-              archivedCount={snapshot.students.filter((student) => Boolean(student.archived_at)).length}
+              counts={{
+                all: snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key)).length,
+                "batch-1": snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === 1).length,
+                "batch-2": snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === 2).length,
+                "batch-3": snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === 3).length,
+                completed: snapshot.students.filter((student) => !student.archived_at && completedStudentKeys.has(student.user_key)).length,
+                archived: snapshot.students.filter((student) => Boolean(student.archived_at)).length,
+              }}
               onViewChange={setStudentView}
               onAdd={startAddingStudent}
               onEdit={startEditingStudent}
@@ -763,6 +800,24 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               courses={courseBySlug}
               onComplete={completeEnrollment}
             />
+          ) : null}
+
+          {active === "enrollments" ? (
+            <div className="space-y-6">
+              <div><h1 className="text-4xl font-black">Enrolment Management</h1><p className="mt-2 text-lg font-bold text-slate-500">Track access, fees, payments, balances, and completion independently.</p></div>
+              <div className="flex flex-wrap gap-2" role="tablist" aria-label="Enrolment payment status">
+                {(["all", "paid", "part-paid", "unpaid", "completed"] as EnrollmentView[]).map((view) => <button key={view} type="button" role="tab" aria-selected={enrollmentView === view} onClick={() => setEnrollmentView(view)} className={`rounded-xl px-4 py-2 text-xs font-black capitalize ${enrollmentView === view ? "bg-[#1f7ac1] text-white" : "border border-slate-200 bg-white text-slate-600"}`}>{view.replace("-", " ")}</button>)}
+              </div>
+              <TableSection title={`${enrollmentRows.length} enrolments`} columns={["Student", "Course", "Batch", "Course fee", "Paid", "Balance", "Payment", "Enrolment", "Actions"]} rows={enrollmentRows.map(({ enrollment, student, course, expected, paid, balance, paymentStatus }) => [
+                student ? studentDisplayName(student) : enrollment.user_key,
+                course?.title ?? enrollment.course_slug,
+                `Batch ${student?.batch_number ?? 2}`,
+                money(expected), money(paid), money(balance),
+                <span key={`${enrollment.id}-payment`} className={`rounded-full px-3 py-1 text-xs font-black ${paymentStatus === "paid" ? "bg-emerald-50 text-emerald-700" : paymentStatus === "part-paid" || paymentStatus === "pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"}`}>{paymentStatus.replace("-", " ")}</span>,
+                enrollment.status,
+                enrollment.status === "active" ? <button key={enrollment.id} type="button" onClick={() => completeEnrollment(enrollment.id)} className="rounded-lg border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700"><Award size={14} className="mr-1 inline"/>Complete</button> : "—",
+              ])} />
+            </div>
           ) : null}
 
           {active === "completed" ? (
@@ -795,8 +850,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               <form key={editingStudent?.id ?? "new-student"} action={handleStudentSubmit} className="grid gap-5 md:grid-cols-2">
                 <TextField name="firstName" label="First name" required defaultValue={editingStudent?.first_name ?? ""} />
                 <TextField name="lastName" label="Last name (optional)" defaultValue={editingStudent?.last_name ?? ""} />
-                <TextField name="email" label="Email address" type="email" required defaultValue={editingStudent?.email ?? ""} />
-                <TextField name="phone" label="Phone number" defaultValue={editingStudent?.phone ?? ""} />
+                <TextField name="email" label="Email address (email or phone required)" type="email" defaultValue={editingStudent?.email ?? ""} />
+                <TextField name="phone" label="Phone number (email or phone required)" defaultValue={editingStudent?.phone ?? ""} />
                 <TextField name="dob" label="Date of birth (optional)" type="date" defaultValue={editingStudent?.date_of_birth ?? ""} />
                 <TextField name="usi" label="USI (optional, 10 characters)" defaultValue={editingStudent?.usi ?? ""} />
                 <TextField name="address" label="Residential address (optional)" defaultValue={editingStudent?.residential_address ?? ""} />
@@ -964,7 +1019,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 </form> : null}
               </section>
               <TableSection
-              title={leadSource === "all" ? "Enrollment & Interest Leads" : `${leadSource} Leads`}
+              title={leadSource === "all" ? "Enrolment & Interest Leads" : `${leadSource} Leads`}
               columns={["Type", "Name", "Email", "Phone", "Course", "Origin", "Referrer", "Support Needs", "Support Details", "Payment", "Created"]}
               rows={snapshot.leads.filter((lead) => leadSource === "all" || lead.referred_by === leadSource).map((lead) => [
                 lead.type,
@@ -1333,8 +1388,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 function StudentTableSection({
   students,
   view,
-  activeCount,
-  archivedCount,
+  counts,
   onViewChange,
   onAdd,
   onEdit,
@@ -1345,10 +1399,9 @@ function StudentTableSection({
   onComplete,
 }: {
   students: AdminStudent[];
-  view: "active" | "archived";
-  activeCount: number;
-  archivedCount: number;
-  onViewChange: (view: "active" | "archived") => void;
+  view: StudentView;
+  counts: Record<StudentView, number>;
+  onViewChange: (view: StudentView) => void;
   onAdd: () => void;
   onEdit: (student: AdminStudent) => void;
   onArchive: (student: AdminStudent) => void;
@@ -1364,8 +1417,12 @@ function StudentTableSection({
           <h1 className="text-3xl font-black tracking-normal">Students</h1>
           <div className="mt-4 flex gap-2" role="tablist" aria-label="Student status">
             {([
-              ["active", `Active ${activeCount}`],
-              ["archived", `Archived ${archivedCount}`],
+              ["all", "All"],
+              ["batch-1", "Batch 1"],
+              ["batch-2", "Batch 2"],
+              ["batch-3", "Batch 3"],
+              ["completed", "Completed"],
+              ["archived", "Recycle Bin"],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -1377,7 +1434,7 @@ function StudentTableSection({
                   view === value ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500 hover:text-slate-800"
                 }`}
               >
-                {label}
+                {label} {counts[value]}
               </button>
             ))}
           </div>
@@ -1414,7 +1471,7 @@ function StudentTableSection({
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
-                    {view === "active" ? (
+                    {view !== "archived" ? (
                       <>
                         <button
                           type="button"
@@ -1428,8 +1485,8 @@ function StudentTableSection({
                         <button
                           type="button"
                           onClick={() => onArchive(student)}
-                          title="Delete student"
-                          aria-label={`Delete ${studentDisplayName(student)}`}
+                          title="Move student to Recycle Bin"
+                          aria-label={`Archive ${studentDisplayName(student)}`}
                           className="flex size-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"
                         >
                           <Trash2 size={16} />

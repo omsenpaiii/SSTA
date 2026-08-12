@@ -16,9 +16,11 @@ import {
 } from "lucide-react";
 import {
   requestPasswordReset,
+  requestPhoneOtp,
   signInWithPassword,
   signUpWithPassword,
   updatePassword,
+  verifyPhoneOtp,
   type AuthFormState,
 } from "@/lib/auth-actions";
 
@@ -229,11 +231,35 @@ function Message({
 
 export function SignInForm({ redirectUrl, errorMessage, successMessage }: SharedProps) {
   const [state, action, isPending] = useActionState(signInWithPassword, initialState);
+  const [mode, setMode] = useState<"email" | "phone">("email");
+  const [phone, setPhone] = useState("");
+  const [otpState, otpAction, otpPending] = useActionState(requestPhoneOtp, initialState);
+  const [verifyState, verifyAction, verifyPending] = useActionState(verifyPhoneOtp, initialState);
 
   return (
     <div className="space-y-6">
       <GoogleButton redirectUrl={redirectUrl} disabled={isPending} />
-      <Divider text="or sign in with email" />
+      <div className="grid grid-cols-2 rounded-2xl bg-slate-100 p-1" role="tablist" aria-label="Sign-in method">
+        {(["email", "phone"] as const).map((item) => (
+          <button key={item} type="button" role="tab" aria-selected={mode === item} onClick={() => setMode(item)} className={`h-11 rounded-xl text-sm font-bold capitalize ${mode === item ? "bg-white text-[#1f7ac1] shadow-sm" : "text-slate-500"}`}>{item}</button>
+        ))}
+      </div>
+      <Divider text={mode === "email" ? "sign in with email" : "sign in with phone OTP"} />
+      {mode === "phone" ? (
+        <div className="space-y-5">
+          <form action={otpAction} className="space-y-4">
+            <Message error={otpState.error} success={otpState.success} />
+            <label className="grid gap-1.5 text-sm font-bold text-slate-700"><span>Phone Number</span><span className="flex h-14 items-center rounded-2xl border border-slate-200 bg-white px-5"><Phone size={20} className="mr-4 text-slate-400"/><input name="phone" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="0400 000 000" autoComplete="tel" required className="h-full w-full bg-transparent font-semibold outline-none"/></span></label>
+            <SubmitButton label="Send verification code" loading={otpPending} />
+          </form>
+          {otpState.success ? <form action={verifyAction} className="space-y-4">
+            <input type="hidden" name="phone" value={phone} /><input type="hidden" name="redirectUrl" value={redirectUrl ?? ""} />
+            <Message error={verifyState.error} success={verifyState.success} />
+            <AuthTextField label="Verification Code" name="token" type="text" placeholder="123456" icon={ShieldCheck} autoComplete="one-time-code" required />
+            <SubmitButton label="Verify and sign in" loading={verifyPending} />
+          </form> : null}
+        </div>
+      ) : (
       <form action={action} className="flex flex-col space-y-6">
         <input type="hidden" name="redirectUrl" value={redirectUrl ?? ""} />
         <Message
@@ -265,6 +291,7 @@ export function SignInForm({ redirectUrl, errorMessage, successMessage }: Shared
         />
         <SubmitButton label="Sign in" loading={isPending} />
       </form>
+      )}
       <div className="border-t border-slate-100 pt-6 text-center text-sm font-semibold text-slate-500">
         Don&apos;t have an account?{" "}
         <Link
