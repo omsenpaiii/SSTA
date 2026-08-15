@@ -3,8 +3,6 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-const CPP20218_COURSE_SLUG = "certificate-ii-security-operations";
-
 type CheckoutButtonProps = {
   courseSlug: string;
   className?: string;
@@ -16,11 +14,7 @@ export function CheckoutButton({
   className,
   children = "Enrol Now",
 }: CheckoutButtonProps) {
-  const isCpp20218 = courseSlug === CPP20218_COURSE_SLUG;
-  const href = isCpp20218
-    ? `/dashboard/lln/cpp20218?mode=buy&returnTo=${encodeURIComponent(`/course/${CPP20218_COURSE_SLUG}`)}`
-    : `/enroll?course=${courseSlug}`;
-  const label = children === "Enrol Now" && isCpp20218 ? "Buy Now" : children;
+  const href = `/enroll?course=${courseSlug}`;
 
   return (
     <Link
@@ -31,7 +25,7 @@ export function CheckoutButton({
       }
     >
       <ArrowRight size={18} />
-      {label}
+      {children}
     </Link>
   );
 }

@@ -17,19 +17,10 @@ import {
   type Course,
 } from "@/lib/courses";
 
-const CPP20218_COURSE_SLUG = "certificate-ii-security-operations";
-
 function getCourseEnrollmentCta(course: Course) {
-  if (course.slug === CPP20218_COURSE_SLUG) {
-    return {
-      href: `/dashboard/lln/cpp20218?mode=buy&returnTo=${encodeURIComponent(`/course/${CPP20218_COURSE_SLUG}`)}`,
-      label: "Buy Now",
-    };
-  }
-
   return {
     href: `/enroll?course=${course.slug}`,
-    label: "Enrol",
+    label: "Enrol Now",
   };
 }
 

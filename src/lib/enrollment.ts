@@ -21,11 +21,10 @@ export const enrollmentSchema = z.object({
   disabilityDetails: z.string().trim().max(1000, "Support details must be under 1000 characters").optional(),
   referredBy: z.string().trim().max(120, "Reference must be under 120 characters").optional(),
   courseId: z.string().trim().min(1, "Please select a course"),
-  captchaToken: z.string().trim().min(1, "Please confirm you are not a robot"),
 });
 
 export type EnrollmentInput = z.infer<typeof enrollmentSchema>;
-export type EnrollmentLeadInput = Omit<EnrollmentInput, "captchaToken">;
+export type EnrollmentLeadInput = EnrollmentInput;
 
 export type EnrollmentLead = {
   id: string;

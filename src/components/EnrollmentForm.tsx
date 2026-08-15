@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, ArrowLeft, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
-import { ReCaptchaField } from "@/components/ReCaptchaField";
 
 const formSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
@@ -30,15 +29,14 @@ const formSchema = z.object({
   disabilityDetails: z.string().max(1000, "Support details must be under 1000 characters").optional(),
   referredBy: z.string().max(120, "Reference must be under 120 characters").optional(),
   courseId: z.string().min(1, "Please select a course"),
-  captchaToken: z.string().min(1, "Please confirm you are not a robot"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const steps = [
+  { id: "course", title: "Course Select" },
   { id: "personal", title: "Personal Info" },
   { id: "student", title: "Student Details" },
-  { id: "course", title: "Course Select" },
   { id: "review", title: "Review" },
 ];
 
@@ -58,23 +56,20 @@ async function readJson<T>(response: Response): Promise<T> {
 
 export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues = {} }: EnrollmentFormProps) {
   const enrollableCourses = courses.filter((course) => isCourseAvailableForEnrollment(course));
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const validInitialCourse = enrollableCourses.some(
     (course) => course.slug === initialCourseSlug,
   )
     ? initialCourseSlug
     : "";
+  const [currentStep, setCurrentStep] = useState(validInitialCourse ? 1 : 0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
     trigger,
-    setValue,
-    clearErrors,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -90,7 +85,6 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
       disabilityDetails: initialValues.disabilityDetails ?? "",
       referredBy: initialValues.referredBy ?? "",
       courseId: validInitialCourse,
-      captchaToken: "",
     },
     mode: "onTouched",
   });
@@ -110,21 +104,6 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
   const prevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
-
-  const handleCaptchaChange = useCallback(
-    (token: string) => {
-      setValue("captchaToken", token, {
-        shouldDirty: true,
-        shouldTouch: true,
-        shouldValidate: true,
-      });
-
-      if (token) {
-        clearErrors("captchaToken");
-      }
-    },
-    [clearErrors, setValue],
-  );
 
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
@@ -167,8 +146,6 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
         url?: string;
         error?: string;
         signInUrl?: string;
-        llnRequired?: boolean;
-        llnUrl?: string;
         courseUrl?: string;
       }>(checkoutResponse);
 
@@ -182,11 +159,6 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
           return;
         }
 
-        if (checkoutResponse.status === 403 && checkoutResult.llnRequired && checkoutResult.llnUrl) {
-          window.location.assign(checkoutResult.llnUrl);
-          return;
-        }
-
         throw new Error(checkoutResult.error ?? "Unable to start checkout.");
       }
 
@@ -197,16 +169,15 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
           ? error.message
           : "Unable to submit enrolment details.",
       );
-      setCaptchaResetKey((current) => current + 1);
       setIsSubmitting(false);
     }
   };
 
   const getFieldsForStep = (stepIndex: number): (keyof FormValues)[] => {
     switch (stepIndex) {
-      case 0: return ["firstName", "lastName", "email", "phone", "dob"];
-      case 1: return ["usi", "address", "disabilityStatus", "disabilityDetails", "referredBy"];
-      case 2: return ["courseId"];
+      case 0: return ["courseId"];
+      case 1: return ["firstName", "lastName", "email", "phone", "dob"];
+      case 2: return ["usi", "address", "disabilityStatus", "disabilityDetails", "referredBy"];
       default: return [];
     }
   };
@@ -258,9 +229,9 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
               {steps[currentStep].title}
             </CardTitle>
             <CardDescription className="text-base font-semibold text-[#53647c]">
-              {currentStep === 0 && "Let's start with your basic contact information."}
-              {currentStep === 1 && "We use these details to prepare your enrolment and student record."}
-              {currentStep === 2 && "Select the program you wish to enrol in."}
+              {currentStep === 0 && "Choose the course you want to start."}
+              {currentStep === 1 && "Add your basic contact information."}
+              {currentStep === 2 && "We use these details to prepare your enrolment and student record."}
               {currentStep === 3 && "Review your details before proceeding to payment."}
             </CardDescription>
           </CardHeader>
@@ -275,7 +246,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
                 transition={{ duration: 0.2 }}
                 className="space-y-4"
               >
-                {currentStep === 0 && (
+                {currentStep === 1 && (
                   <div className="grid gap-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -342,7 +313,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
                   </div>
                 )}
 
-                {currentStep === 1 && (
+                {currentStep === 2 && (
                   <div className="grid gap-5">
                     <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 flex gap-3 items-start text-sm font-semibold text-blue-900">
                       <ShieldCheck className="shrink-0 text-[#0067b1]" size={20} />
@@ -432,7 +403,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
                   </div>
                 )}
 
-                {currentStep === 2 && (
+                {currentStep === 0 && (
                   <div className="grid gap-5">
                     <div className="space-y-2">
                       <Label className="font-bold text-[#020d24]">Available Programs</Label>
@@ -515,15 +486,8 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
                       <ShieldCheck size={40} className="text-[#f5b800]/30" />
                     </div>
 
-                    <div className="grid gap-2">
-                      <p className="text-sm font-bold text-[#020d24]">
-                        Security verification
-                      </p>
-                      <ReCaptchaField
-                        error={errors.captchaToken?.message}
-                        onChange={handleCaptchaChange}
-                        resetKey={captchaResetKey}
-                      />
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-900">
+                      Next: secure payment. Once Stripe confirms payment, your course opens automatically in the student portal.
                     </div>
                   </div>
                 )}
@@ -553,7 +517,7 @@ export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues 
             ) : (
               <Button
                 type="submit"
-                disabled={isSubmitting || !formValues.captchaToken}
+                disabled={isSubmitting}
                 className="font-black h-12 px-8 rounded-full bg-[#020d24] hover:bg-black shadow-lg hover:shadow-xl transition-all"
               >
                 {isSubmitting ? (

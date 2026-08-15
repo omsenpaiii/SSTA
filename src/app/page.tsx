@@ -90,16 +90,16 @@ export default function Home() {
             </p>
             <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row lg:justify-center">
               <a
-                href="#courses"
+                href="/enroll"
                 className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[#020d24] px-8 text-base font-black text-white shadow-[0_22px_45px_rgba(2,13,36,0.16)] transition hover:-translate-y-0.5 hover:bg-[#0067b1]"
               >
-                Explore courses <ArrowRight size={20} />
+                Enrol Now <ArrowRight size={20} />
               </a>
               <a
-                href="#video"
+                href="#courses"
                 className="inline-flex h-14 items-center justify-center gap-3 rounded-full border border-[#18aee5]/45 bg-white px-8 text-base font-black text-[#0067b1] shadow-[0_16px_36px_rgba(0,103,177,0.08)] transition hover:-translate-y-0.5 hover:border-[#0067b1]"
               >
-                <Play size={18} fill="currentColor" /> Watch preview
+                <Play size={18} fill="currentColor" /> Browse Courses
               </a>
             </div>
             <div className="mt-10 max-w-2xl rounded-[1.5rem] border border-white/15 bg-white/10 p-5 backdrop-blur-md lg:mx-auto">
