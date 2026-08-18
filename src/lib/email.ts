@@ -63,9 +63,9 @@ export async function sendEnrollmentEmail(lead: EnrollmentLead) {
     ["Student", fullName],
     ["Email", lead.email],
     ["Phone", lead.phone],
-    ["Date of birth", lead.date_of_birth],
-    ["USI", lead.usi],
-    ["Address", lead.address],
+    ["Date of birth", lead.date_of_birth ?? "Completed after payment"],
+    ["USI", lead.usi ?? "Completed after payment"],
+    ["Address", lead.address ?? "Completed after payment"],
     ["Course", course?.title ?? lead.course_slug],
     ["Payment status", lead.payment_status],
     ["Enrolment ID", lead.id],
@@ -176,5 +176,26 @@ export async function sendStudentFeedbackEmail(feedback: StudentFeedbackEmail) {
         </div>
       </div>
     `,
+  });
+}
+
+export async function sendBalancePaymentEmail(input: {
+  studentName: string;
+  studentEmail: string;
+  courseTitle: string;
+  courseFee: number;
+  paidAmount: number;
+  balance: number;
+}) {
+  const transporter = getTransporter();
+  if (!transporter || !process.env.SMTP_FROM) throw new Error("SMTP is not configured yet.");
+  const amount = (value: number) => new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(value);
+  const text = `Hello ${input.studentName},\n\nYour SSTA initial payment has been received.\nCourse: ${input.courseTitle}\nCourse fee: ${amount(input.courseFee)}\nPaid: ${amount(input.paidAmount)}\nRemaining balance: ${amount(input.balance)}\n\nOur team will contact you about the next payment or you can call Joseph/SSTA on +61 431 696 558.\n\nSSTA`;
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: input.studentEmail,
+    subject: `SSTA payment summary — ${input.courseTitle}`,
+    text,
+    html: `<div style="font-family:Arial,sans-serif;color:#020d24;max-width:680px"><h1>Payment summary</h1><p>Hello ${escapeHtml(input.studentName)},</p><p>Your initial payment has been received. The SSTA team will contact you about the next payment.</p><table style="border-collapse:collapse;width:100%"><tr><td style="padding:10px;border-bottom:1px solid #ddd;font-weight:700">Course</td><td style="padding:10px;border-bottom:1px solid #ddd">${escapeHtml(input.courseTitle)}</td></tr><tr><td style="padding:10px;border-bottom:1px solid #ddd;font-weight:700">Course fee</td><td style="padding:10px;border-bottom:1px solid #ddd">${amount(input.courseFee)}</td></tr><tr><td style="padding:10px;border-bottom:1px solid #ddd;font-weight:700">Paid</td><td style="padding:10px;border-bottom:1px solid #ddd">${amount(input.paidAmount)}</td></tr><tr><td style="padding:10px;font-weight:700">Remaining balance</td><td style="padding:10px;font-weight:700">${amount(input.balance)}</td></tr></table><p>Questions? Call Joseph/SSTA on <a href="tel:+61431696558">+61 431 696 558</a>.</p></div>`,
   });
 }

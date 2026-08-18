@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { isCourseAvailableForEnrollment } from "@/lib/courses";
+import { getStartTodayAmount, isCourseAvailableForEnrollment } from "@/lib/courses";
 import { getCourse } from "@/lib/course-repository";
 import {
   getEnrollmentLead,
@@ -115,18 +115,19 @@ export async function POST(request: Request) {
     }
 
     const email = enrollment?.email ?? user.email;
-    const amountCents = Math.round(course.priceAud * 100);
+    const amountCents = Math.round(getStartTodayAmount(course) * 100);
     const metadata = {
       userKey: user?.id ?? "",
       courseSlug: course.slug,
       enrollmentId: enrollment?.id ?? "",
       purpose: "course_enrollment",
+      initialPayment: "true",
     };
 
     const session = await createStripeCheckoutSession({
       amountCents,
-      name: course.title,
-      description: course.overview,
+      name: `Start today — ${course.title}`,
+      description: "Compulsory initial payment. The SSTA team will contact you about enrolment and the remaining course balance.",
       customerEmail: email,
       successPath: `/success?course=${course.slug}`,
       cancelPath: `/enroll?course=${course.slug}`,

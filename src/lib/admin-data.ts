@@ -11,6 +11,7 @@ import {
 import { type Course } from "@/lib/courses";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 import { manualPhoneStudentKey, normalizeAustralianPhone } from "@/lib/phone";
+import { sendBalancePaymentEmail } from "@/lib/email";
 
 export type AdminStudent = {
   id: string;
@@ -82,6 +83,22 @@ export type AdminPayment = {
   created_at: string;
 };
 
+export type AdminEnrollmentApplication = {
+  id: string;
+  user_key: string;
+  enrollment_id: string | null;
+  course_slug: string;
+  status: "draft" | "submitted" | "changes_requested" | "approved";
+  application_data: Record<string, unknown>;
+  student_declaration: boolean;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  reviewed_by_email: string | null;
+  reviewer_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminNotification = {
   eventKey: string;
   kind: "lead" | "assessment" | "payment";
@@ -99,6 +116,7 @@ export type AdminSnapshot = {
   enrollments: AdminEnrollment[];
   leads: AdminLead[];
   payments: AdminPayment[];
+  applications: AdminEnrollmentApplication[];
   notifications: AdminNotification[];
   cpp20218: {
     students: AdminCppStudent[];
@@ -257,6 +275,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
       enrollments: [],
       leads: [],
       payments: [],
+      applications: [],
       notifications: [],
       cpp20218: { students: [], adminResources: [] },
     };
@@ -272,13 +291,14 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
       enrollments: [],
       leads: [],
       payments: [],
+      applications: [],
       notifications: [],
       cpp20218: { students: [], adminResources: [] },
     };
   }
 
   try {
-    const [courses, studentsResult, enrollmentsResult, enrollmentLeadsResult, interestLeadsResult, paymentsResult, readsResult] =
+    const [courses, studentsResult, enrollmentsResult, enrollmentLeadsResult, interestLeadsResult, paymentsResult, applicationsResult, readsResult] =
       await Promise.all([
         getAdminCourses(),
         supabase
@@ -304,6 +324,10 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           .select("id,purpose,status,user_key,email,course_slug,enrollment_id,amount_cents,currency,provider_status,paid_at,created_at")
           .eq("provider", "stripe")
           .order("created_at", { ascending: false }),
+        supabase
+          .from("enrollment_applications")
+          .select("*")
+          .order("submitted_at", { ascending: false, nullsFirst: false }),
         adminEmail
           ? supabase.from("admin_notification_reads").select("event_key").eq("admin_email", adminEmail.toLowerCase())
           : Promise.resolve({ data: [], error: null }),
@@ -365,6 +389,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
         b.created_at.localeCompare(a.created_at),
       ),
       payments,
+      applications: (applicationsResult.data ?? []) as AdminEnrollmentApplication[],
       notifications,
       cpp20218,
     };
@@ -376,10 +401,44 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
       enrollments: [],
       leads: [],
       payments: [],
+      applications: [],
       notifications: [],
       cpp20218: { students: [], adminResources: [] },
     };
   }
+}
+
+export async function reviewEnrollmentApplication(input: unknown, adminEmail: string) {
+  const parsed = z.object({
+    applicationId: z.string().uuid(),
+    status: z.enum(["approved", "changes_requested"]),
+    reviewerNotes: z.string().trim().max(2000).optional().default(""),
+  }).parse(input);
+  const supabase = requireSupabase();
+  const { error } = await supabase.from("enrollment_applications").update({
+    status: parsed.status,
+    reviewer_notes: parsed.reviewerNotes || null,
+    reviewed_at: new Date().toISOString(),
+    reviewed_by_email: adminEmail.toLowerCase(),
+    updated_at: new Date().toISOString(),
+  }).eq("id", parsed.applicationId);
+  if (error) throw new Error(error.message);
+}
+
+export async function emailEnrollmentBalance(input: unknown) {
+  const { enrollmentId } = z.object({ enrollmentId: z.string().uuid() }).parse(input);
+  const supabase = requireSupabase();
+  const { data: enrollment, error } = await supabase.from("course_enrollments").select("user_key,course_slug,amount_paid").eq("id", enrollmentId).single();
+  if (error || !enrollment) throw new Error(error?.message ?? "Enrolment not found.");
+  const [{ data: student }, course] = await Promise.all([
+    supabase.from("student_profiles").select("first_name,last_name,email").eq("user_key", enrollment.user_key).single(),
+    getCourses().then((items) => items.find((item) => item.slug === enrollment.course_slug)),
+  ]);
+  if (!student?.email) throw new Error("This student does not have an email address.");
+  if (!course) throw new Error("Course not found.");
+  const { data: paidRows } = await supabase.from("payment_intents").select("amount_cents").eq("user_key", enrollment.user_key).eq("course_slug", enrollment.course_slug).eq("status", "paid");
+  const paidAmount = Math.max(enrollment.amount_paid ?? 0, (paidRows ?? []).reduce((sum, row) => sum + Number(row.amount_cents ?? 0) / 100, 0));
+  await sendBalancePaymentEmail({ studentName: `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || "Student", studentEmail: student.email, courseTitle: course.title, courseFee: course.priceAud, paidAmount, balance: Math.max(0, course.priceAud - paidAmount) });
 }
 
 export async function upsertAdminCourse(input: unknown) {

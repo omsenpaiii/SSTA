@@ -10,6 +10,8 @@ import {
   markAllAdminNotificationsRead,
   restoreAdminCourse,
   restoreAdminStudent,
+  reviewEnrollmentApplication,
+  emailEnrollmentBalance,
   updateAdminCertificateStatus,
   reviewAdminAssignment,
   updateAdminAssignmentAccess,
@@ -78,6 +80,10 @@ export async function POST(request: Request) {
       await reviewAdminAssignment(payload, admin.email);
     } else if (action === "update-assignment-access") {
       await updateAdminAssignmentAccess(payload, admin.email);
+    } else if (action === "review-enrollment-application") {
+      await reviewEnrollmentApplication(payload, admin.email);
+    } else if (action === "email-enrollment-balance") {
+      await emailEnrollmentBalance(payload);
     } else {
       return NextResponse.json({ error: "Unknown admin action." }, { status: 400 });
     }

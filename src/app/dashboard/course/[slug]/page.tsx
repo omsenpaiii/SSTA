@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Award, CheckCircle2, FileText, GraduationCap, Mail } from "lucide-react";
 import { ActivityCompletionButton } from "@/components/student/ActivityCompletionButton";
 import { CourseUnlockCelebration } from "@/components/student/CourseUnlockCelebration";
 import { Cpp20218AssignmentsView } from "@/components/student/Cpp20218AssignmentsView";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentCppAssignments, isCpp20218Slug } from "@/lib/cpp20218";
+import { getEnrollmentApplication, hasPaidInitialFee } from "@/lib/enrollment-application";
 import {
   formatActivityStatus,
   formatRelativeUpdate,
@@ -50,6 +51,14 @@ export default async function CourseWorkspacePage({
 
   if (!user) {
     return null;
+  }
+
+  const requiresApplication = await hasPaidInitialFee(user.id, slug);
+  if (requiresApplication) {
+    const application = await getEnrollmentApplication(user.id, slug);
+    if (application?.status !== "approved") {
+      redirect(`/enrolment-application?course=${slug}`);
+    }
   }
 
   const portalData = await getStudentPortalData(user);

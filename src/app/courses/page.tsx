@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   courseCategories,
   courses,
-  getCoursePriceDisplay,
+  getStartTodayDisplay,
   isContactFirstCourse,
   isCourseAvailableForEnrollment,
   type Course,
@@ -141,7 +141,7 @@ export default function CoursesPage() {
                             <Clock size={16} />
                             {course.duration.length > 30 ? `${course.duration.slice(0, 30)}...` : course.duration}
                           </span>
-                          <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getCoursePriceDisplay(course)}</span>
+                          <span className="rounded-full bg-[#f5b800]/18 px-3 py-1 text-[#d96f00]">{getStartTodayDisplay(course)}</span>
                         </div>
                       )}
                       <p className="flex-1 text-sm font-bold leading-7 text-[#53647c]">{course.description}</p>

@@ -1572,6 +1572,17 @@ export function getCoursePriceDisplay(course: Course) {
   return course.priceLabel ?? `$${course.priceAud}`;
 }
 
+export const START_TODAY_AMOUNT_AUD = 150;
+
+export function getStartTodayAmount(course: Course) {
+  void course;
+  return START_TODAY_AMOUNT_AUD;
+}
+
+export function getStartTodayDisplay(course: Course) {
+  return `$${getStartTodayAmount(course)} to start`;
+}
+
 export function isContactFirstCourse(course: Course) {
   return (course.detailVariant ?? "standard") === "contact-first";
 }

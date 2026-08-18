@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, PhoneCall } from "lucide-react";
 import { PaymentSuccessRedirect } from "@/components/payment/PaymentSuccessRedirect";
 import { CPP20218_COURSE_SLUG } from "@/lib/cpp20218";
 import { fulfillStripeCheckoutSessionId } from "@/lib/payment-fulfillment";
@@ -49,12 +49,12 @@ function getSuccessDetails(input: {
 
   if ((purpose === "course_enrollment" || !purpose) && courseSlug) {
     return {
-      destinationHref: `/dashboard/course/${courseSlug}?unlocked=1`,
-      ctaLabel: "Start course",
-      heading: input.fulfilled ? "Course unlocked" : "Payment received",
+      destinationHref: `/enrolment-application?course=${courseSlug}`,
+      ctaLabel: "Complete enrolment application",
+      heading: input.fulfilled ? "$150 payment confirmed" : "Payment received",
       message: input.fulfilled
-        ? "Your payment has been confirmed and your course workspace is ready."
-        : "Stripe received your payment. Your course access will update as soon as confirmation finishes.",
+        ? "Your place has been started. Complete the enrolment application now; the SSTA team will then review it and contact you by phone or email."
+        : "Stripe received your payment. You can complete the enrolment application as soon as confirmation finishes.",
     };
   }
 
@@ -113,6 +113,9 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           {details.ctaLabel}
           <ArrowRight size={16} />
         </Link>
+        <a href="tel:+61431696558" className="mx-auto mt-5 flex w-fit items-center gap-2 text-sm font-black text-[#0067b1]">
+          <PhoneCall size={16} /> Need help? Call Joseph on +61 431 696 558
+        </a>
         {fulfilled ? (
           <p className="mt-4 text-xs font-black uppercase tracking-[0.16em] text-[#71869c]">
             Redirecting to your course workspace

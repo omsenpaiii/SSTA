@@ -81,11 +81,25 @@ async function unlockCpp20218Assignments(intent: PaymentIntentRecord) {
     throw new Error(error.message);
   }
 
+  const lockedKeys = new Set((lockedAssignments ?? []).map((assignment) => assignment.assignment_key));
+  let targetKeys = intent.assignment_key === "clusters_4_5"
+    ? []
+    : intent.assignment_key ? [intent.assignment_key] : [];
+  if (intent.assignment_key === "clusters_4_5") {
+    const { data: stageAssignments, error: stageError } = await supabase
+      .from("course_assignments")
+      .select("assignment_key")
+      .eq("course_slug", CPP20218_COURSE_SLUG)
+      .in("position", [4, 5]);
+    if (stageError) throw new Error(stageError.message);
+    targetKeys = (stageAssignments ?? []).map((assignment) => assignment.assignment_key);
+  }
+
   await Promise.all(
-    (lockedAssignments ?? []).map((assignment) =>
+    targetKeys.filter((assignmentKey) => lockedKeys.has(assignmentKey)).map((assignmentKey) =>
       setStudentAssignmentAccess({
         userKey: intent.user_key,
-        assignmentKey: assignment.assignment_key,
+        assignmentKey,
         unlocked: true,
         adminEmail: "stripe-payment",
       }),

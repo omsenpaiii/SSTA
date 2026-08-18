@@ -381,6 +381,22 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     await runAction("update-certificate-status", { enrollmentId, certificateStatus }, "Certificate status updated.");
   }
 
+  async function reviewApplication(applicationId: string, status: "approved" | "changes_requested") {
+    const reviewerNotes = status === "changes_requested"
+      ? window.prompt("Tell the student what needs to be changed:", "") ?? ""
+      : "";
+    if (status === "changes_requested" && !reviewerNotes.trim()) return;
+    await runAction(
+      "review-enrollment-application",
+      { applicationId, status, reviewerNotes },
+      status === "approved" ? "Enrolment application approved." : "Changes requested from the student.",
+    );
+  }
+
+  async function emailBalance(enrollmentId: string) {
+    await runAction("email-enrollment-balance", { enrollmentId }, "Payment summary emailed to the student.");
+  }
+
   async function archiveCourse(slug: string) {
     if (!window.confirm("Archive this course? Existing enrolments, payments, lessons, and URLs will be preserved.")) return;
     await runAction("archive-course", { slug }, "Course archived.");
@@ -808,15 +824,18 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               <div className="flex flex-wrap gap-2" role="tablist" aria-label="Enrolment payment status">
                 {(["all", "paid", "part-paid", "unpaid", "completed"] as EnrollmentView[]).map((view) => <button key={view} type="button" role="tab" aria-selected={enrollmentView === view} onClick={() => setEnrollmentView(view)} className={`rounded-xl px-4 py-2 text-xs font-black capitalize ${enrollmentView === view ? "bg-[#1f7ac1] text-white" : "border border-slate-200 bg-white text-slate-600"}`}>{view.replace("-", " ")}</button>)}
               </div>
-              <TableSection title={`${enrollmentRows.length} enrolments`} columns={["Student", "Course", "Batch", "Course fee", "Paid", "Balance", "Payment", "Enrolment", "Actions"]} rows={enrollmentRows.map(({ enrollment, student, course, expected, paid, balance, paymentStatus }) => [
+              <TableSection title={`${enrollmentRows.length} enrolments`} columns={["Student", "Course", "Batch", "Course fee", "Paid", "Balance", "Payment", "Application", "Enrolment", "Actions"]} rows={enrollmentRows.map(({ enrollment, student, course, expected, paid, balance, paymentStatus }) => {
+                const application = snapshot.applications.find((item) => item.user_key === enrollment.user_key && item.course_slug === enrollment.course_slug);
+                return [
                 student ? studentDisplayName(student) : enrollment.user_key,
                 course?.title ?? enrollment.course_slug,
                 `Batch ${student?.batch_number ?? 2}`,
                 money(expected), money(paid), money(balance),
                 <span key={`${enrollment.id}-payment`} className={`rounded-full px-3 py-1 text-xs font-black ${paymentStatus === "paid" ? "bg-emerald-50 text-emerald-700" : paymentStatus === "part-paid" || paymentStatus === "pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"}`}>{paymentStatus.replace("-", " ")}</span>,
+                application ? <span key={application.id} title={application.reviewer_notes ?? ""} className={`rounded-full px-3 py-1 text-xs font-black ${application.status === "approved" ? "bg-emerald-50 text-emerald-700" : application.status === "changes_requested" ? "bg-rose-50 text-rose-700" : "bg-blue-50 text-blue-700"}`}>{application.status.replaceAll("_", " ")}</span> : "Not submitted",
                 enrollment.status,
-                enrollment.status === "active" ? <button key={enrollment.id} type="button" onClick={() => completeEnrollment(enrollment.id)} className="rounded-lg border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700"><Award size={14} className="mr-1 inline"/>Complete</button> : "—",
-              ])} />
+                <div key={`${enrollment.id}-actions`} className="flex flex-wrap gap-2">{application?.status === "submitted" ? <><button type="button" onClick={() => reviewApplication(application.id, "approved")} className="rounded-lg border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700">Approve</button><button type="button" onClick={() => reviewApplication(application.id, "changes_requested")} className="rounded-lg border border-amber-200 px-3 py-2 text-xs font-black text-amber-700">Request changes</button></> : null}{balance > 0 && student?.email ? <button type="button" onClick={() => emailBalance(enrollment.id)} className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-black text-blue-700">Email balance</button> : null}{enrollment.status === "active" ? <button type="button" onClick={() => completeEnrollment(enrollment.id)} className="rounded-lg border border-emerald-200 px-3 py-2 text-xs font-black text-emerald-700"><Award size={14} className="mr-1 inline"/>Complete</button> : null}</div>,
+              ];})} />
             </div>
           ) : null}
 

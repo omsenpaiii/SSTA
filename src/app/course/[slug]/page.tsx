@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import {
   courses,
   getCoursePriceDisplay,
+  getStartTodayDisplay,
   isContactFirstCourse,
   isCourseAvailableForEnrollment,
 } from "@/lib/courses";
@@ -110,7 +111,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                     <Clock size={16} /> {course.duration}
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-full bg-[#f5b800] px-4 py-2 text-sm font-black text-[#020d24]">
-                    <DollarSign size={16} /> {getCoursePriceDisplay(course)}
+                    <DollarSign size={16} /> {getStartTodayDisplay(course)}
                   </span>
                 </div>
               )}
@@ -180,8 +181,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
               <div className="rounded-2xl bg-white p-5">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0067b1]">Fee</p>
                 <p className="mt-2 text-xl font-black">{getCoursePriceDisplay(course)}</p>
-                {course.enrolmentFee && isOpenForEnrollment ? (
-                  <p className="text-sm font-bold text-[#53647c]">${course.enrolmentFee} enrolment fee</p>
+                {isOpenForEnrollment ? (
+                  <p className="text-sm font-bold text-[#53647c]">{getStartTodayDisplay(course)} today, then SSTA will contact you about the remaining balance.</p>
                 ) : null}
                 {!isOpenForEnrollment && course.statusNote ? (
                   <p className="text-sm font-bold text-[#53647c]">{course.statusNote}</p>

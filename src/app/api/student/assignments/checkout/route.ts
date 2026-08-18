@@ -7,16 +7,13 @@ import { createStripeCheckoutSession, getStripeUserMessage, isStripeConfigured }
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const checkoutSchema = z.object({
-  assignmentKey: z.string().min(1).optional(),
+  assignmentKey: z.string().min(1),
 });
 
 export const runtime = "nodejs";
 
 function getUnlockAmountCents() {
-  const raw = process.env.CPP20218_ASSIGNMENT_UNLOCK_AMOUNT_CENTS;
-  const amount = raw ? Number(raw) : 0;
-
-  return Number.isFinite(amount) && amount > 0 ? Math.round(amount) : null;
+  return 15_000;
 }
 
 export async function POST(request: Request) {
@@ -80,16 +77,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const selected = lockedAssignments.find((assignment) => assignment.assignmentKey === body.data.assignmentKey);
+    if (!selected) {
+      return NextResponse.json({ error: "This cluster is already available or could not be found." }, { status: 409 });
+    }
+    const paymentStage = selected.position === 4 || selected.position === 5
+      ? "clusters_4_5"
+      : selected.assignmentKey;
+
     const metadata = {
       userKey: user.id,
       courseSlug: CPP20218_COURSE_SLUG,
-      assignmentKey: body.data.assignmentKey ?? "all_locked",
+      assignmentKey: paymentStage,
       purpose: "assignment_unlock",
     };
     const session = await createStripeCheckoutSession({
       amountCents,
-      name: "CPP20218 remaining cluster unlock",
-      description: "Unlock all remaining Certificate II Security Operations clusters.",
+      name: selected.position === 4 || selected.position === 5 ? "CPP20218 Clusters 4 and 5" : `CPP20218 Cluster ${selected.position}`,
+      description: "Unlock the next Certificate II Security Operations learning stage.",
       customerEmail: user.email,
       successPath: `/success?course=${CPP20218_COURSE_SLUG}`,
       cancelPath: `/dashboard/course/${CPP20218_COURSE_SLUG}?tab=activities`,
@@ -102,7 +107,7 @@ export async function POST(request: Request) {
       userKey: user.id,
       email: user.email,
       courseSlug: CPP20218_COURSE_SLUG,
-      assignmentKey: body.data.assignmentKey ?? "all_locked",
+      assignmentKey: paymentStage,
       amountCents,
       currency: "AUD",
       providerPayerId: typeof session.customer === "string" ? session.customer : null,

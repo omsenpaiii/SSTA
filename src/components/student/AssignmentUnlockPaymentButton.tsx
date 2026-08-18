@@ -84,7 +84,7 @@ export function AssignmentUnlockPaymentButton({
   return (
     <div className="mt-4">
       <p className="mb-3 text-sm font-semibold leading-6 text-[#5d7389]">
-        One {amountLabel ?? "payment"} unlocks all remaining CPP20218 clusters for your learner account.
+        This {amountLabel ?? "$150"} payment unlocks this learning stage. Clusters 4 and 5 are included together.
       </p>
       <p className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-[#0f6eb8]">
         Secure checkout powered by Stripe
@@ -96,7 +96,7 @@ export function AssignmentUnlockPaymentButton({
         className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-[#0f6eb8] px-4 text-sm font-black text-white shadow-[0_8px_18px_rgba(15,110,184,0.18)] transition hover:bg-[#0b5f9f] disabled:cursor-not-allowed disabled:opacity-60"
       >
         <CreditCard size={16} />
-        {isLoading ? "Starting payment..." : `Unlock remaining clusters${amountLabel ? ` - ${amountLabel}` : ""}`}
+        {isLoading ? "Starting payment..." : `Unlock this stage${amountLabel ? ` - ${amountLabel}` : ""}`}
       </button>
       {message ? (
         <p className="mt-2 text-sm font-semibold text-rose-600">{message}</p>

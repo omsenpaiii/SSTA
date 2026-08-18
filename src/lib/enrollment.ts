@@ -8,17 +8,6 @@ export const enrollmentSchema = z.object({
   lastName: z.string().trim().min(2, "Last name is required"),
   email: z.string().trim().email("Invalid email address"),
   phone: z.string().trim().min(10, "Phone number is required"),
-  dob: z.string().trim().min(1, "Date of birth is required"),
-  usi: z
-    .string()
-    .trim()
-    .min(10, "USI must be exactly 10 characters")
-    .max(10, "USI must be exactly 10 characters"),
-  address: z.string().trim().min(10, "Please provide your full address"),
-  disabilityStatus: z
-    .enum(["no", "yes", "prefer_not_to_say"])
-    .default("no"),
-  disabilityDetails: z.string().trim().max(1000, "Support details must be under 1000 characters").optional(),
   referredBy: z.string().trim().max(120, "Reference must be under 120 characters").optional(),
   courseId: z.string().trim().min(1, "Please select a course"),
 });
@@ -32,9 +21,9 @@ export type EnrollmentLead = {
   last_name: string;
   email: string;
   phone: string;
-  date_of_birth: string;
-  usi: string;
-  address: string;
+  date_of_birth: string | null;
+  usi: string | null;
+  address: string | null;
   disability_status: "no" | "yes" | "prefer_not_to_say";
   disability_details: string | null;
   origin: "self_enrolled" | "admin" | "import";
@@ -79,14 +68,11 @@ export async function createEnrollmentLead(input: EnrollmentLeadInput) {
       last_name: input.lastName,
       email: input.email,
       phone: input.phone,
-      date_of_birth: input.dob,
-      usi: input.usi.toUpperCase(),
-      address: input.address,
-      disability_status: input.disabilityStatus ?? "no",
-      disability_details:
-        input.disabilityStatus === "yes" && input.disabilityDetails
-          ? input.disabilityDetails
-          : null,
+      date_of_birth: null,
+      usi: null,
+      address: null,
+      disability_status: "prefer_not_to_say",
+      disability_details: null,
       origin: "self_enrolled",
       referred_by: input.referredBy || null,
       course_slug: course.slug,
