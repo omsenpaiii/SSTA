@@ -29,6 +29,13 @@ type SubmitResult = {
   error?: string;
 };
 
+const sectionGuidance: Record<string, string> = {
+  Reading: "Read each question carefully. For the meeting questions, use this notice: A public-speaking meeting will be held at 9:30am on 31 August at the Ritz Hotel on Burke Street. Liz Mitchel will run the session.",
+  Numeracy: "You may use working notes or a calculator. Check units, times and money before choosing an answer.",
+  "Digital skills": "Choose the answer that best reflects common computer and internet use.",
+  "Workplace readiness": "Choose the safest and most appropriate action in a training or workplace setting.",
+};
+
 async function readJson<T>(response: Response): Promise<T> {
   try {
     return (await response.json()) as T;
@@ -76,14 +83,14 @@ export function Cpp20218LlnTest({
   const isUnlockMode = mode === "unlock";
   const actionAmount = isUnlockMode ? unlockAmountCents : buyAmountCents;
   const actionLabel = isUnlockMode
-    ? `Unlock remaining clusters - ${formatAud(actionAmount)}`
-    : `Buy Now - ${formatAud(actionAmount)}`;
+    ? `Unlock this learning stage - ${formatAud(actionAmount)}`
+    : `Start enrolment - ${formatAud(actionAmount)}`;
   const passedHeading = isUnlockMode
-    ? "Prerequisite cleared. You can unlock the remaining clusters now."
-    : "Prerequisite cleared. You can buy CPP20218 now.";
+    ? "Readiness check complete. You can continue to this learning stage."
+    : "Readiness check complete. You can continue your enrolment.";
   const passedCopy = isUnlockMode
-    ? "Your LLN result is saved. Continue to secure Stripe checkout to unlock all remaining CPP20218 clusters."
-    : "Your LLN result is saved. Continue to the enrolment form, confirm your details, then proceed to secure Stripe checkout.";
+    ? "Your result is saved for student-support planning. Continue to secure checkout when you are ready."
+    : "Your result is saved for student-support planning. Continue to the enrolment form when you are ready.";
   const enrollmentHref = "/enroll?course=certificate-ii-security-operations&lln=passed";
 
   async function submitTest() {
@@ -176,16 +183,16 @@ export function Cpp20218LlnTest({
         <div className="border-b border-[#d9e7f3] bg-[#f7fbff] p-7 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
-              <p className="portal-section-label">CPP20218 Prerequisite</p>
+              <p className="portal-section-label">CPP20218 LLN & digital readiness</p>
               <h1 className="mt-3 max-w-3xl text-3xl font-black tracking-tight text-[#081221] sm:text-4xl">
-                Language, literacy, numeracy, and digital readiness check.
+                Language, literacy, numeracy and digital readiness check.
               </h1>
               <p className="portal-page-copy mt-3 max-w-3xl">
-                Complete this short MCQ check before purchasing or unlocking Certificate II Security Operations access.
+                This support check is based on the supplied Certificate II and III LLN review. It helps SSTA identify where guidance may be useful and does not block enrolment or payment.
               </p>
             </div>
             <div className="rounded-[18px] border border-[#d9e7f3] bg-white px-5 py-4 shadow-sm">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#6b7d90]">Pass mark</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#6b7d90]">Support indicator</p>
               <p className="mt-1 text-3xl font-black text-[#081221]">60%</p>
             </div>
           </div>
@@ -195,6 +202,9 @@ export function Cpp20218LlnTest({
           {Object.entries(groupedQuestions).map(([section, sectionQuestions]) => (
             <div key={section} className="grid gap-4">
               <h2 className="text-xl font-black tracking-tight text-[#081221]">{section}</h2>
+              <p className="rounded-[16px] border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-semibold leading-6 text-[#47637d]">
+                {sectionGuidance[section]}
+              </p>
               {sectionQuestions.map((question) => (
                 <article
                   key={question.id}
@@ -283,7 +293,7 @@ export function Cpp20218LlnTest({
                   <XCircle className="text-rose-500" size={24} />
                 )}
                 <p className="text-lg font-black text-[#081221]">
-                  {attempt.passed ? "Passed" : "Not yet passed"}
+                  {attempt.passed ? "Ready to continue" : "Support recommended"}
                 </p>
               </div>
               <p className="mt-3 text-sm font-bold text-[#5d7389]">
@@ -295,7 +305,7 @@ export function Cpp20218LlnTest({
             </div>
           ) : (
             <p className="mt-4 text-sm font-semibold leading-6 text-[#5d7389]">
-              Answer all questions and submit when ready. Your result will be checked instantly.
+              Answer all questions when you are ready. Your result is checked instantly and helps SSTA plan appropriate support.
             </p>
           )}
 
@@ -342,10 +352,27 @@ export function Cpp20218LlnTest({
             </div>
           ) : attempt ? (
             <div className="mt-5 grid gap-3">
+              <p className="rounded-[16px] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">
+                You can continue now. SSTA may contact you to discuss optional learning support.
+              </p>
+              {isPurchaseMode ? (
+                <Link href={enrollmentHref} className="portal-button-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-sm">
+                  Continue to enrolment <ArrowRight size={16} />
+                </Link>
+              ) : isUnlockMode ? (
+                <button type="button" onClick={startCheckout} disabled={isStartingCheckout} className="portal-button-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-sm disabled:opacity-60">
+                  {isStartingCheckout ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
+                  {isStartingCheckout ? "Starting checkout..." : actionLabel}
+                </button>
+              ) : (
+                <Link href={returnTo} className="portal-button-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-sm">
+                  Continue <ArrowRight size={16} />
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={retake}
-                className="portal-button-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-sm"
+                className="portal-button-secondary inline-flex items-center justify-center gap-2 px-5 py-3 text-sm"
               >
                 <RotateCcw size={16} />
                 Retake test

@@ -25,7 +25,7 @@ export default function LlnPage() {
             href="/dashboard/lln/cpp20218"
             className="portal-button-primary inline-flex items-center gap-2 px-5 py-3 text-sm"
           >
-            Take CPP20218 prerequisite test
+            Take CPP20218 readiness check
             <ArrowRight size={16} />
           </Link>
         </div>

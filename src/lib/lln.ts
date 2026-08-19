@@ -168,7 +168,7 @@ const questions: LlnQuestion[] = [
   {
     id: "graph-most",
     section: "Numeracy",
-    prompt: "In the learner graph activity, which pet was bought the most?",
+    prompt: "A pet-store chart shows Dogs 80, Goldfish 55, Cats 40 and Birds 20. Which pet was bought the most?",
     options: [
       { id: "dogs", label: "Dogs" },
       { id: "birds", label: "Birds" },
@@ -180,7 +180,7 @@ const questions: LlnQuestion[] = [
   {
     id: "graph-least",
     section: "Numeracy",
-    prompt: "In the learner graph activity, which pet was bought the least?",
+    prompt: "A pet-store chart shows Dogs 80, Goldfish 55, Cats 40 and Birds 20. Which pet was bought the least?",
     options: [
       { id: "dogs", label: "Dogs" },
       { id: "birds", label: "Birds" },
@@ -192,7 +192,7 @@ const questions: LlnQuestion[] = [
   {
     id: "graph-middle",
     section: "Numeracy",
-    prompt: "In the learner graph activity, which pet was in the middle?",
+    prompt: "A pet-store chart shows Dogs 80, Goldfish 55 and Birds 20. Which pet is the middle value?",
     options: [
       { id: "dogs", label: "Dogs" },
       { id: "birds", label: "Birds" },

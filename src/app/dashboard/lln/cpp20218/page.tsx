@@ -1,12 +1,11 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getCourse } from "@/lib/course-repository";
+import { START_TODAY_AMOUNT_AUD } from "@/lib/courses";
 import {
   getLatestCpp20218LlnAttempt,
   getPublicCpp20218LlnQuestions,
   normalizeLlnReturnTo,
   normalizeCpp20218LlnMode,
-  CPP20218_LLN_COURSE_SLUG,
 } from "@/lib/lln";
 import { Cpp20218LlnTest } from "@/components/student/Cpp20218LlnTest";
 
@@ -40,12 +39,8 @@ export default async function Cpp20218LlnPage({ searchParams }: Cpp20218LlnPageP
   }
 
   const latestAttempt = await getLatestCpp20218LlnAttempt(user.id);
-  const course = await getCourse(CPP20218_LLN_COURSE_SLUG);
-  const buyAmountCents = Math.round((course?.priceAud ?? 1295) * 100);
-  const rawUnlockAmount = process.env.CPP20218_ASSIGNMENT_UNLOCK_AMOUNT_CENTS;
-  const unlockAmountCents = rawUnlockAmount && Number.isFinite(Number(rawUnlockAmount))
-    ? Number(rawUnlockAmount)
-    : 60000;
+  const buyAmountCents = START_TODAY_AMOUNT_AUD * 100;
+  const unlockAmountCents = 15000;
 
   return (
     <Cpp20218LlnTest
