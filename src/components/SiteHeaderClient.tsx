@@ -4,8 +4,9 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, Menu, UserRound, X } from "lucide-react";
+import { ChevronDown, LockKeyhole, LogOut, Menu, UnlockKeyhole, UserRound, X } from "lucide-react";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import type { EnrolmentFormAccess } from "@/components/SiteHeader";
 import { announcementBarMessage, courseMenu, primaryLinks, siteInfo } from "@/lib/site-content";
 
 type HeaderUser = {
@@ -18,9 +19,10 @@ type HeaderUser = {
 
 type SiteHeaderClientProps = {
   user: HeaderUser | null;
+  enrolmentForm: EnrolmentFormAccess;
 };
 
-export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
+export function SiteHeaderClient({ user, enrolmentForm }: SiteHeaderClientProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigationLinks = user
     ? [{ label: "Student Portal", href: user.dashboardHref }, ...primaryLinks]
@@ -111,6 +113,18 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
               </Link>
             ),
           )}
+          <Link
+            href={enrolmentForm.destinationHref}
+            aria-label={`Enrolment Form, ${enrolmentForm.unlocked ? "unlocked" : "locked until the $150 initial payment is confirmed"}`}
+            className={`inline-flex items-center gap-1.5 py-7 text-sm font-black transition ${
+              enrolmentForm.unlocked
+                ? "text-emerald-700 hover:text-emerald-800"
+                : "text-[#53647c] hover:text-[#0067b1]"
+            }`}
+          >
+            {enrolmentForm.unlocked ? <UnlockKeyhole size={15} /> : <LockKeyhole size={15} />}
+            Enrolment Form
+          </Link>
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
@@ -186,6 +200,24 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href={enrolmentForm.destinationHref}
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center justify-between rounded-2xl px-4 py-3 text-base font-black ${
+                  enrolmentForm.unlocked
+                    ? "bg-emerald-50 text-emerald-800"
+                    : "bg-slate-50 text-[#53647c]"
+                }`}
+              >
+                <span>Enrolment Form</span>
+                <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.12em]">
+                  {enrolmentForm.unlocked ? (
+                    <><UnlockKeyhole size={16} /> Open</>
+                  ) : (
+                    <><LockKeyhole size={16} /> Locked</>
+                  )}
+                </span>
+              </Link>
               <div className="rounded-2xl bg-[#eef8ff] p-4">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0067b1]">
                   Course areas

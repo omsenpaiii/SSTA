@@ -9,12 +9,16 @@ export const CPP20218_LLN_PASS_PERCENT = 60;
 type LlnOption = {
   id: string;
   label: string;
+  imageSrc?: string;
+  imageAlt?: string;
 };
 
 export type LlnQuestion = {
   id: string;
   section: "Reading" | "Numeracy" | "Digital skills" | "Workplace readiness";
   prompt: string;
+  imageSrc?: string;
+  imageAlt?: string;
   options: LlnOption[];
   correctOptionId: string;
 };
@@ -47,6 +51,8 @@ const questions: LlnQuestion[] = [
     id: "reading-flammable",
     section: "Reading",
     prompt: "What does highly flammable mean?",
+    imageSrc: "/images/lln/caution-sign.jpeg",
+    imageAlt: "Yellow caution sign used in the supplied LLN assessment",
     options: [
       { id: "careful", label: "Walk with care" },
       { id: "poison", label: "Poisonous" },
@@ -59,6 +65,8 @@ const questions: LlnQuestion[] = [
     id: "sign-no-smoking",
     section: "Reading",
     prompt: "Which description best matches a No Smoking sign?",
+    imageSrc: "/images/lln/no-smoking.jpeg",
+    imageAlt: "No Smoking sign showing a cigarette crossed out in a red circle",
     options: [
       { id: "parking", label: "The letter P inside a red circle with a slash" },
       { id: "smoking", label: "A cigarette inside a red circle with a slash" },
@@ -71,6 +79,8 @@ const questions: LlnQuestion[] = [
     id: "sign-no-parking",
     section: "Reading",
     prompt: "Which description best matches a No Parking sign?",
+    imageSrc: "/images/lln/no-parking.jpeg",
+    imageAlt: "No Parking sign showing the letter P crossed out in a red circle",
     options: [
       { id: "parking", label: "The letter P inside a red circle with a slash" },
       { id: "smoking", label: "A cigarette inside a red circle with a slash" },
@@ -83,8 +93,15 @@ const questions: LlnQuestion[] = [
     id: "sign-restroom",
     section: "Reading",
     prompt: "Which sign usually indicates male and female bathroom facilities?",
+    imageSrc: "/images/lln/restroom-sign.jpeg",
+    imageAlt: "Male and female restroom sign",
     options: [
-      { id: "restroom", label: "Male and female symbols" },
+      {
+        id: "restroom",
+        label: "Male and female symbols",
+        imageSrc: "/images/lln/restroom-sign-alternate.jpeg",
+        imageAlt: "Male and female restroom symbols",
+      },
       { id: "flammable", label: "A flame symbol" },
       { id: "wifi", label: "A wireless network symbol" },
       { id: "hazard", label: "A skull and crossbones" },
@@ -168,7 +185,9 @@ const questions: LlnQuestion[] = [
   {
     id: "graph-most",
     section: "Numeracy",
-    prompt: "A pet-store chart shows Dogs 80, Goldfish 55, Cats 40 and Birds 20. Which pet was bought the most?",
+    prompt: "According to the supplied pet-store graph, which pet was bought the most?",
+    imageSrc: "/images/lln/pet-store-graph.png",
+    imageAlt: "Pet-store bar graph comparing dogs, cats, goldfish, birds and hamsters",
     options: [
       { id: "dogs", label: "Dogs" },
       { id: "birds", label: "Birds" },
@@ -180,7 +199,9 @@ const questions: LlnQuestion[] = [
   {
     id: "graph-least",
     section: "Numeracy",
-    prompt: "A pet-store chart shows Dogs 80, Goldfish 55, Cats 40 and Birds 20. Which pet was bought the least?",
+    prompt: "According to the supplied pet-store graph, which pet was bought the least?",
+    imageSrc: "/images/lln/pet-store-graph.png",
+    imageAlt: "Pet-store bar graph comparing dogs, cats, goldfish, birds and hamsters",
     options: [
       { id: "dogs", label: "Dogs" },
       { id: "birds", label: "Birds" },
@@ -192,7 +213,9 @@ const questions: LlnQuestion[] = [
   {
     id: "graph-middle",
     section: "Numeracy",
-    prompt: "A pet-store chart shows Dogs 80, Goldfish 55 and Birds 20. Which pet is the middle value?",
+    prompt: "Among dogs, goldfish and birds in the supplied graph, which pet has the middle value?",
+    imageSrc: "/images/lln/pet-store-graph.png",
+    imageAlt: "Pet-store bar graph comparing dogs, cats, goldfish, birds and hamsters",
     options: [
       { id: "dogs", label: "Dogs" },
       { id: "birds", label: "Birds" },
@@ -205,6 +228,8 @@ const questions: LlnQuestion[] = [
     id: "bottle-half",
     section: "Numeracy",
     prompt: "A bottle is filled halfway. What fraction is full?",
+    imageSrc: "/images/lln/half-full-bottle.jpeg",
+    imageAlt: "Bottle illustration filled to approximately half its capacity",
     options: [
       { id: "quarter", label: "One quarter" },
       { id: "half", label: "One half" },
@@ -278,9 +303,24 @@ const questions: LlnQuestion[] = [
     section: "Digital skills",
     prompt: "Which symbol usually turns a computer or device on and off?",
     options: [
-      { id: "power", label: "A circle with a vertical line at the top" },
-      { id: "folder", label: "A folder icon" },
-      { id: "trash", label: "A bin icon" },
+      {
+        id: "power",
+        label: "Power button",
+        imageSrc: "/images/lln/power-button.jpeg",
+        imageAlt: "Power button symbol",
+      },
+      {
+        id: "folder",
+        label: "USB symbol",
+        imageSrc: "/images/lln/usb-symbol.jpeg",
+        imageAlt: "USB connection symbol",
+      },
+      {
+        id: "trash",
+        label: "Headphones",
+        imageSrc: "/images/lln/headphones.jpeg",
+        imageAlt: "Headphones symbol",
+      },
       { id: "bold", label: "The letter B" },
     ],
     correctOptionId: "power",
@@ -315,9 +355,24 @@ const questions: LlnQuestion[] = [
     prompt: "Where do deleted files commonly go before they are permanently removed?",
     options: [
       { id: "downloads", label: "Downloads folder" },
-      { id: "recycle", label: "Recycle bin or trash" },
-      { id: "desktop", label: "Desktop background" },
-      { id: "keyboard", label: "Keyboard" },
+      {
+        id: "recycle",
+        label: "Recycle bin or trash",
+        imageSrc: "/images/lln/recycle-bin.jpeg",
+        imageAlt: "Recycle Bin desktop icon",
+      },
+      {
+        id: "desktop",
+        label: "Web browser",
+        imageSrc: "/images/lln/web-browser.jpeg",
+        imageAlt: "Web browser desktop icon",
+      },
+      {
+        id: "calculator",
+        label: "Calculator",
+        imageSrc: "/images/lln/calculator.jpeg",
+        imageAlt: "Calculator desktop icon",
+      },
     ],
     correctOptionId: "recycle",
   },
@@ -325,6 +380,8 @@ const questions: LlnQuestion[] = [
     id: "word-use",
     section: "Digital skills",
     prompt: "What is Microsoft Word mainly used for?",
+    imageSrc: "/images/lln/word-open-bold.png",
+    imageAlt: "Microsoft Word Open folder and Bold formatting controls",
     options: [
       { id: "documents", label: "Writing and editing documents" },
       { id: "payments", label: "Taking card payments" },
@@ -351,7 +408,12 @@ const questions: LlnQuestion[] = [
     prompt: "In many programs, what does a floppy-disk style icon usually mean?",
     options: [
       { id: "open", label: "Open" },
-      { id: "save", label: "Save" },
+      {
+        id: "save",
+        label: "Save",
+        imageSrc: "/images/lln/save-icon.jpeg",
+        imageAlt: "Floppy-disk Save icon",
+      },
       { id: "delete", label: "Delete" },
       { id: "print", label: "Print" },
     ],

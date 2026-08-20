@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
+export const INITIAL_ENROLMENT_PAYMENT_CENTS = 15_000;
+
+export type EligibleEnrollmentApplicationCourse = {
+  slug: string;
+  title: string;
+  applicationStatus: EnrollmentApplicationRecord["status"] | null;
+};
+
 export const enrollmentApplicationSchema = z.object({
   courseSlug: z.string().trim().min(1),
   firstName: z.string().trim().min(2),
@@ -81,11 +89,60 @@ export async function hasPaidInitialFee(userKey: string, courseSlug: string) {
     .eq("course_slug", courseSlug)
     .eq("purpose", "course_enrollment")
     .eq("status", "paid")
+    .eq("amount_cents", INITIAL_ENROLMENT_PAYMENT_CENTS)
     .contains("metadata", { initialPayment: "true" })
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return Boolean(data);
+}
+
+export async function getEligibleEnrollmentApplicationCourses(
+  userKey: string,
+): Promise<EligibleEnrollmentApplicationCourse[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data: paymentRows, error: paymentError } = await supabase
+    .from("payment_intents")
+    .select("course_slug")
+    .eq("user_key", userKey)
+    .eq("purpose", "course_enrollment")
+    .eq("status", "paid")
+    .eq("amount_cents", INITIAL_ENROLMENT_PAYMENT_CENTS)
+    .contains("metadata", { initialPayment: "true" });
+
+  if (paymentError) throw new Error(paymentError.message);
+  const paidSlugs = [...new Set((paymentRows ?? []).map((row) => row.course_slug))];
+  if (paidSlugs.length === 0) return [];
+
+  const [{ data: applicationRows, error: applicationError }, { data: courses, error: courseError }] =
+    await Promise.all([
+      supabase
+        .from("enrollment_applications")
+        .select("course_slug,status")
+        .eq("user_key", userKey)
+        .in("course_slug", paidSlugs),
+      supabase.from("courses").select("slug,title").in("slug", paidSlugs),
+    ]);
+
+  if (applicationError) throw new Error(applicationError.message);
+  if (courseError) throw new Error(courseError.message);
+
+  const applicationStatus = new Map(
+    (applicationRows ?? []).map((row) => [
+      row.course_slug,
+      row.status as EnrollmentApplicationRecord["status"],
+    ]),
+  );
+
+  return (courses ?? [])
+    .map((course) => ({
+      slug: course.slug,
+      title: course.title,
+      applicationStatus: applicationStatus.get(course.slug) ?? null,
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export async function submitEnrollmentApplication(input: {

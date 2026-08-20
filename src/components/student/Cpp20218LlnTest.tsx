@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -216,7 +217,26 @@ export function Cpp20218LlnTest({
                   <h3 className="mt-2 text-lg font-black leading-7 text-[#081221]">
                     {question.prompt}
                   </h3>
-                  <div className="mt-4 grid gap-3">
+                  {question.imageSrc ? (
+                    <figure className="mt-4 flex min-h-44 items-center justify-center overflow-hidden rounded-[16px] border border-[#d9e7f3] bg-[#f8fbfe] p-4 sm:min-h-52">
+                      <Image
+                        src={question.imageSrc}
+                        alt={question.imageAlt ?? "LLN question illustration"}
+                        width={450}
+                        height={377}
+                        className="max-h-64 w-auto max-w-full object-contain"
+                      />
+                    </figure>
+                  ) : null}
+                  <div
+                    role="radiogroup"
+                    aria-label={question.prompt}
+                    className={`mt-4 grid gap-3 ${
+                      question.options.some((option) => option.imageSrc)
+                        ? "sm:grid-cols-2"
+                        : ""
+                    }`}
+                  >
                     {question.options.map((option) => {
                       const selected = answers[question.id] === option.id;
 
@@ -224,19 +244,34 @@ export function Cpp20218LlnTest({
                         <button
                           key={option.id}
                           type="button"
+                          role="radio"
+                          aria-checked={selected}
                           onClick={() =>
                             setAnswers((current) => ({
                               ...current,
                               [question.id]: option.id,
                             }))
                           }
-                          className={`flex min-h-12 items-center justify-between gap-4 rounded-[14px] border px-4 py-3 text-left text-sm font-bold transition ${
+                          className={`flex min-h-12 items-center justify-between gap-4 rounded-[14px] border px-4 py-3 text-left text-sm font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0f6eb8]/20 ${
                             selected
                               ? "border-[#0f6eb8] bg-[#eef7ff] text-[#081221] shadow-sm"
                               : "border-[#d9e7f3] bg-[#f9fcff] text-[#5d7389] hover:border-[#0f6eb8]/45"
                           }`}
                         >
-                          <span>{option.label}</span>
+                          <span className="flex min-w-0 items-center gap-3">
+                            {option.imageSrc ? (
+                              <span className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#d9e7f3] bg-white p-2 sm:size-28">
+                                <Image
+                                  src={option.imageSrc}
+                                  alt={option.imageAlt ?? option.label}
+                                  width={180}
+                                  height={180}
+                                  className="max-h-full w-auto max-w-full object-contain"
+                                />
+                              </span>
+                            ) : null}
+                            <span>{option.label}</span>
+                          </span>
                           <span
                             className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${
                               selected ? "border-[#0f6eb8] bg-[#0f6eb8]" : "border-[#b8cadc]"
@@ -390,8 +425,8 @@ export function Cpp20218LlnTest({
         <section className="portal-card rounded-[28px] p-6">
           <h2 className="text-xl font-black tracking-tight text-[#081221]">What happens next?</h2>
           <div className="mt-4 space-y-3 text-sm font-semibold leading-6 text-[#5d7389]">
-            <p>Pass with 60% or higher to continue to enrolment and secure Stripe checkout.</p>
-            <p>If you do not pass, you can retake the test. SSTA can also support you if any learning needs come up.</p>
+            <p>Your result is a support indicator only. You can continue regardless of your score.</p>
+            <p>You can retake the check at any time, and SSTA can help if any learning needs come up.</p>
             <p>Reference students keep current Cluster 1 access; this check is only required before buying further access.</p>
           </div>
         </section>
