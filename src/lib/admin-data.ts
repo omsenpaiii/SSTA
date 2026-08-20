@@ -81,6 +81,8 @@ export type AdminPayment = {
   provider_status: string | null;
   paid_at: string | null;
   created_at: string;
+  archived_at: string | null;
+  archived_by_email: string | null;
 };
 
 export type AdminEnrollmentApplication = {
@@ -321,7 +323,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           .order("created_at", { ascending: false }),
         supabase
           .from("payment_intents")
-          .select("id,purpose,status,user_key,email,course_slug,enrollment_id,amount_cents,currency,provider_status,paid_at,created_at")
+          .select("id,purpose,status,user_key,email,course_slug,enrollment_id,amount_cents,currency,provider_status,paid_at,created_at,archived_at,archived_by_email")
           .eq("provider", "stripe")
           .order("created_at", { ascending: false }),
         supabase
@@ -369,7 +371,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           section: "assessments" as const,
           read: readKeys.has(`assessment:${assignment.submission!.id}`),
         }))),
-      ...payments.filter((payment) => payment.status === "paid" || payment.status === "failed").map((payment) => ({
+      ...payments.filter((payment) => !payment.archived_at && (payment.status === "paid" || payment.status === "failed")).map((payment) => ({
         eventKey: `payment:${payment.id}:${payment.status}`,
         kind: "payment" as const,
         title: payment.status === "paid" ? "Stripe payment received" : "Stripe payment failed",
@@ -649,6 +651,28 @@ const studentLifecycleSchema = z.object({
   id: z.string().uuid(),
 });
 
+const paymentLifecycleSchema = z.object({ id: z.string().uuid() });
+
+export async function archiveAdminPayment(input: unknown, adminEmail: string) {
+  const { id } = paymentLifecycleSchema.parse(input);
+  const archivedAt = new Date().toISOString();
+  const { error } = await requireSupabase()
+    .from("payment_intents")
+    .update({ archived_at: archivedAt, archived_by_email: adminEmail })
+    .eq("id", id)
+    .is("archived_at", null);
+  if (error) throw new Error(error.message);
+}
+
+export async function restoreAdminPayment(input: unknown) {
+  const { id } = paymentLifecycleSchema.parse(input);
+  const { error } = await requireSupabase()
+    .from("payment_intents")
+    .update({ archived_at: null, archived_by_email: null })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 export async function archiveAdminStudent(input: unknown, adminEmail: string) {
   const { id } = studentLifecycleSchema.parse(input);
   const supabase = requireSupabase();
@@ -711,6 +735,43 @@ export async function restoreAdminStudent(input: unknown) {
     .eq("id", id);
 
   if (profileError) throw new Error(profileError.message);
+}
+
+export async function moveAdminStudentToLeads(input: unknown, adminEmail: string) {
+  const { id } = studentLifecycleSchema.parse(input);
+  const supabase = requireSupabase();
+  const { data: profile, error: profileError } = await supabase
+    .from("student_profiles")
+    .select("id,user_key,first_name,last_name,email,phone,origin,referred_by,archived_at")
+    .eq("id", id)
+    .single();
+  if (profileError || !profile) throw new Error(profileError?.message || "Student profile was not found.");
+  if (profile.archived_at) throw new Error("Restore this student before moving them to Leads.");
+  if (!profile.email || !profile.phone) throw new Error("Add both an email address and phone number before moving this student to Leads.");
+
+  const { data: enrollment, error: enrollmentError } = await supabase
+    .from("course_enrollments")
+    .select("course_slug")
+    .eq("user_key", profile.user_key)
+    .in("status", ["active", "completed"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (enrollmentError) throw new Error(enrollmentError.message);
+  if (!enrollment?.course_slug) throw new Error("Assign a course before moving this student to Leads.");
+
+  const { error: leadError } = await supabase.from("interest_leads").insert({
+    first_name: profile.first_name || "Student",
+    last_name: profile.last_name || "Lead",
+    email: profile.email,
+    phone: profile.phone,
+    course_slug: enrollment.course_slug,
+    origin: profile.origin,
+    referred_by: profile.referred_by || "Admin transfer",
+  });
+  if (leadError && leadError.code !== "23505") throw new Error(leadError.message);
+
+  await archiveAdminStudent({ id }, adminEmail);
 }
 
 export async function upsertAdminEnrollment(input: unknown) {

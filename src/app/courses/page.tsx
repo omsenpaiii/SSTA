@@ -14,6 +14,7 @@ import {
   getStartTodayDisplay,
   isContactFirstCourse,
   isCourseAvailableForEnrollment,
+  isAccreditedCourse,
   type Course,
 } from "@/lib/courses";
 
@@ -42,7 +43,7 @@ export default function CoursesPage() {
       });
   }, []);
 
-  const categories = ["All", ...courseCategories.map((category) => category.title)];
+  const categories = ["All", "Accredited", "Non-accredited", ...courseCategories.map((category) => category.title)];
   const filteredCourses = activeCourses.filter((course) => {
     const query = searchQuery.toLowerCase();
     const matchesSearch =
@@ -54,6 +55,8 @@ export default function CoursesPage() {
     if (selectedFilter === "Coming Soon") {
       return matchesSearch && course.availability === "coming-soon";
     }
+    if (selectedFilter === "Accredited") return matchesSearch && isAccreditedCourse(course);
+    if (selectedFilter === "Non-accredited") return matchesSearch && !isAccreditedCourse(course);
     return matchesSearch && course.category === selectedFilter;
   });
 
@@ -106,6 +109,14 @@ export default function CoursesPage() {
           </div>
 
           {filteredCourses.length > 0 ? (
+            <div>
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0067b1]">{selectedFilter === "All" ? "All training" : selectedFilter}</p>
+                  <h2 className="mt-1 text-3xl font-black text-[#020d24]">{selectedFilter === "Non-accredited" ? "Non-accredited courses" : selectedFilter === "Accredited" ? "Accredited courses" : "Available courses"}</h2>
+                </div>
+                <p className="text-sm font-bold text-[#53647c]">{filteredCourses.length} {filteredCourses.length === 1 ? "course" : "courses"}</p>
+              </div>
             <motion.div layout className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
               <AnimatePresence>
                 {filteredCourses.map((course) => (
@@ -173,6 +184,7 @@ export default function CoursesPage() {
                 ))}
               </AnimatePresence>
             </motion.div>
+            </div>
           ) : (
             <div className="rounded-[1.5rem] bg-white p-12 text-center shadow-sm">
               <Search size={32} className="mx-auto text-slate-400" />

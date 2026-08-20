@@ -34,6 +34,7 @@ import type { AdminUser } from "@/lib/admin";
 import type { AdminSnapshot } from "@/lib/admin-data";
 import type { AdminStudent } from "@/lib/admin-data";
 import { formatAssignmentStatus } from "@/lib/cpp20218";
+import { isAccreditedCourse } from "@/lib/courses";
 
 type AdminPortalProps = {
   admin: AdminUser;
@@ -103,7 +104,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [enrollmentView, setEnrollmentView] = useState<EnrollmentView>("all");
   const [editingStudent, setEditingStudent] = useState<AdminStudent | null>(null);
   const [editingCourse, setEditingCourse] = useState<AdminSnapshot["courses"][number] | null>(null);
-  const [courseView, setCourseView] = useState<"active" | "archived">("active");
+  const [courseView, setCourseView] = useState<"accredited" | "non-accredited" | "archived">("accredited");
+  const [paymentView, setPaymentView] = useState<"active" | "archived">("active");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -138,12 +140,15 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     [snapshot.courses],
   );
   const totalRevenue = snapshot.payments
-    .filter((payment) => payment.status === "paid")
+    .filter((payment) => !payment.archived_at && payment.status === "paid")
     .reduce((sum, payment) => sum + payment.amount_cents, 0) / 100;
   const activeEnrollments = snapshot.enrollments.filter((item) => item.status === "active").length;
   const completedCount = snapshot.enrollments.filter((item) => item.status === "completed").length;
   const filteredCourses = snapshot.courses.filter((course) => {
-    if (courseView === "active" ? !course.isActive : course.isActive) return false;
+    if (courseView === "archived") return !course.isActive;
+    if (!course.isActive) return false;
+    if (courseView === "accredited" && !isAccreditedCourse(course)) return false;
+    if (courseView === "non-accredited" && isAccreditedCourse(course)) return false;
     const value = `${course.title} ${course.code} ${course.category}`.toLowerCase();
     return value.includes(query.toLowerCase());
   });
@@ -230,7 +235,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const enrollmentRows = snapshot.enrollments.map((enrollment) => {
     const student = snapshot.students.find((item) => item.user_key === enrollment.user_key);
     const course = courseBySlug.get(enrollment.course_slug);
-    const relatedPayments = snapshot.payments.filter((payment) => payment.purpose === "course_enrollment" && (payment.enrollment_id === enrollment.id || (!payment.enrollment_id && payment.user_key === enrollment.user_key && payment.course_slug === enrollment.course_slug)));
+    const relatedPayments = snapshot.payments.filter((payment) => !payment.archived_at && payment.purpose === "course_enrollment" && (payment.enrollment_id === enrollment.id || (!payment.enrollment_id && payment.user_key === enrollment.user_key && payment.course_slug === enrollment.course_slug)));
     const paidFromPayments = relatedPayments.filter((payment) => payment.status === "paid").reduce((sum, payment) => sum + payment.amount_cents / 100, 0);
     const paid = Math.max(enrollment.amount_paid ?? 0, paidFromPayments);
     const expected = course?.priceAud ?? 0;
@@ -430,6 +435,21 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     }
 
     await runAction("restore-student", { id: student.id }, "Student restored.");
+  }
+
+  async function moveStudentToLeads(student: AdminStudent) {
+    if (!window.confirm(`Move ${studentDisplayName(student)} to Leads? Their student record and course access will be placed in the Recycle Bin.`)) return;
+    const moved = await runAction("move-student-to-leads", { id: student.id }, "Student moved to Leads; their original record is recoverable from the Recycle Bin.");
+    if (moved) setActive("leads");
+  }
+
+  async function archivePayment(id: string) {
+    if (!window.confirm("Remove this payment from the active list? The financial record will remain recoverable in the Payments Recycle Bin.")) return;
+    await runAction("archive-payment", { id }, "Payment moved to the Recycle Bin.");
+  }
+
+  async function restorePayment(id: string) {
+    await runAction("restore-payment", { id }, "Payment restored.");
   }
 
   function startAddingStudent() {
@@ -812,6 +832,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               onEdit={startEditingStudent}
               onArchive={archiveStudent}
               onRestore={restoreStudent}
+              onMoveToLeads={moveStudentToLeads}
               enrollments={snapshot.enrollments}
               courses={courseBySlug}
               onComplete={completeEnrollment}
@@ -931,7 +952,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             <div className="space-y-8">
               <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-6">
-                  <div><h1 className="text-3xl font-black">Courses</h1><div className="mt-3 flex gap-2">{(["active", "archived"] as const).map((view) => <button key={view} onClick={() => setCourseView(view)} className={`rounded-lg px-3 py-2 text-xs font-black capitalize ${courseView === view ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{view}</button>)}</div></div>
+                  <div><h1 className="text-3xl font-black">Courses</h1><p className="mt-1 text-sm font-bold text-slate-500">Accredited training and non-accredited SSTA programs are managed separately.</p><div className="mt-3 flex flex-wrap gap-2">{(["accredited", "non-accredited", "archived"] as const).map((view) => <button key={view} onClick={() => setCourseView(view)} className={`rounded-lg px-3 py-2 text-xs font-black capitalize ${courseView === view ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{view === "archived" ? "Recycle Bin" : view}</button>)}</div></div>
                   <button onClick={() => setEditingCourse(null)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1f7ac1] px-4 text-sm font-black text-white"><Plus size={18} /> New Course</button>
                 </div>
                 <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left"><thead className="bg-slate-50 text-xs font-black uppercase text-slate-500"><tr>{["Code","Title","Category","Price","Duration","Actions"].map((item) => <th key={item} className="px-6 py-4">{item}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{filteredCourses.map((course) => <tr key={course.slug} className="text-sm font-bold"><td className="px-6 py-4">{course.code}</td><td className="px-6 py-4 font-black">{course.title}</td><td className="px-6 py-4">{course.category}</td><td className="px-6 py-4">{money(course.priceAud)}</td><td className="px-6 py-4">{course.duration}</td><td className="px-6 py-4"><div className="flex gap-2">{course.isActive ? <><button type="button" onClick={() => setEditingCourse(course)} className="flex size-9 items-center justify-center rounded-lg border border-slate-200 text-[#1f7ac1]" aria-label={`Edit ${course.title}`}><Pencil size={16} /></button><button type="button" onClick={() => archiveCourse(course.slug)} className="flex size-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600" aria-label={`Archive ${course.title}`}><Trash2 size={16} /></button></> : <button type="button" onClick={() => restoreCourse(course.slug)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 px-3 text-xs font-black text-emerald-700"><RotateCcw size={15} /> Restore</button>}</div></td></tr>)}{!filteredCourses.length ? <tr><td colSpan={6} className="px-6 py-10 text-center text-sm font-bold text-slate-500">No {courseView} courses found.</td></tr> : null}</tbody></table></div>
@@ -1062,18 +1083,22 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
           ) : null}
 
           {active === "payments" ? (
-            <TableSection
+            <div className="space-y-4">
+              <div className="flex gap-2">{(["active", "archived"] as const).map((view) => <button key={view} type="button" onClick={() => setPaymentView(view)} className={`rounded-lg px-3 py-2 text-xs font-black ${paymentView === view ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-white text-slate-500"}`}>{view === "archived" ? "Recycle Bin" : "Active payments"}</button>)}</div>
+              <TableSection
               title="Stripe Payments"
-              columns={["Learner", "Course / Purpose", "Amount", "Status", "Provider status", "Date"]}
-              rows={snapshot.payments.map((payment) => [
+              columns={["Learner", "Course / Purpose", "Amount", "Status", "Provider status", "Date", "Actions"]}
+              rows={snapshot.payments.filter((payment) => paymentView === "archived" ? Boolean(payment.archived_at) : !payment.archived_at).map((payment) => [
                 payment.email ?? snapshot.students.find((student) => student.user_key === payment.user_key)?.email ?? "Learner",
                 `${courseBySlug.get(payment.course_slug)?.title ?? payment.course_slug} · ${payment.purpose.replace("_", " ")}`,
                 new Intl.NumberFormat("en-AU", { style: "currency", currency: payment.currency.toUpperCase() }).format(payment.amount_cents / 100),
                 payment.status,
                 payment.provider_status ?? "—",
                 new Date(payment.paid_at ?? payment.created_at).toLocaleString("en-AU"),
+                payment.archived_at ? <button key={payment.id} type="button" onClick={() => restorePayment(payment.id)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 px-3 text-xs font-black text-emerald-700"><RotateCcw size={15} /> Restore</button> : <button key={payment.id} type="button" onClick={() => archivePayment(payment.id)} title="Move payment to Recycle Bin" aria-label={`Remove payment ${payment.id}`} className="flex size-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600"><Trash2 size={16} /></button>,
               ])}
             />
+            </div>
           ) : null}
 
           {active === "assessments" ? (
@@ -1413,6 +1438,7 @@ function StudentTableSection({
   onEdit,
   onArchive,
   onRestore,
+  onMoveToLeads,
   enrollments,
   courses,
   onComplete,
@@ -1425,6 +1451,7 @@ function StudentTableSection({
   onEdit: (student: AdminStudent) => void;
   onArchive: (student: AdminStudent) => void;
   onRestore: (student: AdminStudent) => void;
+  onMoveToLeads: (student: AdminStudent) => void;
   enrollments: AdminSnapshot["enrollments"];
   courses: Map<string, AdminSnapshot["courses"][number]>;
   onComplete: (enrollmentId: string) => void;
@@ -1500,6 +1527,15 @@ function StudentTableSection({
                           className="flex size-9 items-center justify-center rounded-lg border border-slate-200 text-[#1f7ac1] hover:bg-[#eef5fb]"
                         >
                           <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onMoveToLeads(student)}
+                          title="Move student to Leads"
+                          aria-label={`Move ${studentDisplayName(student)} to Leads`}
+                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-amber-200 px-3 text-xs font-black text-amber-700 hover:bg-amber-50"
+                        >
+                          <UserPlus size={15} /> To Leads
                         </button>
                         <button
                           type="button"
