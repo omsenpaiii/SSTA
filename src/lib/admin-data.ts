@@ -66,6 +66,8 @@ export type AdminLead = {
   created_at: string;
   origin: "admin" | "import" | "self_enrolled";
   referred_by: string | null;
+  archived_at: string | null;
+  archived_by_email: string | null;
 };
 
 export type AdminPayment = {
@@ -315,11 +317,11 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           .order("created_at", { ascending: false }),
         supabase
           .from("enrollment_leads")
-          .select("id,first_name,last_name,email,phone,course_slug,disability_status,disability_details,payment_status,email_status,created_at,origin,referred_by")
+          .select("id,first_name,last_name,email,phone,course_slug,disability_status,disability_details,payment_status,email_status,created_at,origin,referred_by,archived_at,archived_by_email")
           .order("created_at", { ascending: false }),
         supabase
           .from("interest_leads")
-          .select("id,first_name,last_name,email,phone,course_slug,created_at,origin,referred_by")
+          .select("id,first_name,last_name,email,phone,course_slug,created_at,origin,referred_by,archived_at,archived_by_email")
           .order("created_at", { ascending: false }),
         supabase
           .from("payment_intents")
@@ -351,7 +353,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
     const payments = (paymentsResult.data ?? []) as AdminPayment[];
     const readKeys = new Set((readsResult.data ?? []).map((row) => String(row.event_key)));
     const notifications: AdminNotification[] = [
-      ...[...enrollmentLeads, ...interestLeads].map((lead) => ({
+      ...[...enrollmentLeads, ...interestLeads].filter((lead) => !lead.archived_at).map((lead) => ({
         eventKey: `lead:${lead.type}:${lead.id}`,
         kind: "lead" as const,
         title: lead.type === "enrollment" ? "New enrollment lead" : "New course enquiry",
@@ -889,6 +891,41 @@ export async function upsertAdminLead(input: unknown) {
   }
 
   return lead;
+}
+
+const leadLifecycleSchema = z.object({
+  leads: z.array(z.object({
+    id: z.string().uuid(),
+    type: z.enum(["enrollment", "interest"]),
+  })).min(1).max(500),
+});
+
+async function updateLeadArchiveState(input: unknown, archivedByEmail: string | null) {
+  const { leads } = leadLifecycleSchema.parse(input);
+  const supabase = requireSupabase();
+  const archivedAt = archivedByEmail ? new Date().toISOString() : null;
+  const enrollmentIds = leads.filter((lead) => lead.type === "enrollment").map((lead) => lead.id);
+  const interestIds = leads.filter((lead) => lead.type === "interest").map((lead) => lead.id);
+  const updates = [];
+
+  if (enrollmentIds.length) {
+    updates.push(supabase.from("enrollment_leads").update({ archived_at: archivedAt, archived_by_email: archivedByEmail }).in("id", enrollmentIds));
+  }
+  if (interestIds.length) {
+    updates.push(supabase.from("interest_leads").update({ archived_at: archivedAt, archived_by_email: archivedByEmail }).in("id", interestIds));
+  }
+
+  const results = await Promise.all(updates);
+  const failure = results.find((result) => result.error)?.error;
+  if (failure) throw new Error(failure.message);
+}
+
+export async function archiveAdminLeads(input: unknown, adminEmail: string) {
+  await updateLeadArchiveState(input, adminEmail);
+}
+
+export async function restoreAdminLeads(input: unknown) {
+  await updateLeadArchiveState(input, null);
 }
 
 export async function reviewAdminAssignment(input: unknown, reviewedBy: string) {

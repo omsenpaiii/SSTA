@@ -42,7 +42,7 @@ type AdminPortalProps = {
 };
 
 type Section = "dashboard" | "students" | "enrollments" | "add-student" | "completed" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel";
-type StudentView = "all" | "batch-1" | "batch-2" | "batch-3" | "completed" | "archived";
+type StudentView = "all" | `batch-${number}` | "completed" | "archived";
 type EnrollmentView = "all" | "paid" | "part-paid" | "unpaid" | "completed";
 type AssessmentStatusFilter =
   | "all"
@@ -104,12 +104,14 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [enrollmentView, setEnrollmentView] = useState<EnrollmentView>("all");
   const [editingStudent, setEditingStudent] = useState<AdminStudent | null>(null);
   const [editingCourse, setEditingCourse] = useState<AdminSnapshot["courses"][number] | null>(null);
-  const [courseView, setCourseView] = useState<"accredited" | "non-accredited" | "archived">("accredited");
+  const [courseView, setCourseView] = useState<"accredited" | "non-accredited" | "archived">("non-accredited");
   const [paymentView, setPaymentView] = useState<"active" | "archived">("active");
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [leadSource, setLeadSource] = useState<"all" | "Abu" | "JB">("all");
+  const [leadSource, setLeadSource] = useState("all");
+  const [leadView, setLeadView] = useState<"active" | "archived">("active");
+  const [selectedLeadKeys, setSelectedLeadKeys] = useState<Set<string>>(() => new Set());
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [assessmentQuery, setAssessmentQuery] = useState("");
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatusFilter>("all");
@@ -175,6 +177,12 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       return nameResult || studentNameCollator.compare(a.email ?? "", b.email ?? "");
     });
   const activeCourses = snapshot.courses.filter((course) => course.isActive);
+  const studentBatches = Array.from(new Set(snapshot.students.filter((student) => !student.archived_at).map((student) => student.batch_number))).sort((a, b) => a - b);
+  const leadSources = Array.from(new Set(snapshot.leads.filter((lead) => !lead.archived_at).map((lead) => lead.referred_by).filter((source): source is string => Boolean(source)))).sort((a, b) => a.localeCompare(b));
+  const visibleLeads = snapshot.leads.filter((lead) => {
+    if (leadView === "archived" ? !lead.archived_at : Boolean(lead.archived_at)) return false;
+    return leadSource === "all" || lead.referred_by === leadSource;
+  });
   const courseBreakdown = activeCourses.slice(0, 9).map((course) => {
     const count = snapshot.enrollments.filter((item) => item.course_slug === course.slug).length;
     return { course, count };
@@ -372,9 +380,50 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       `Lead added to ${source}.`,
     );
     if (saved) {
-      setLeadSource(source === "JB" ? "JB" : "Abu");
+      setLeadSource(source);
       setShowLeadForm(false);
     }
+  }
+
+  function leadKey(lead: AdminSnapshot["leads"][number]) {
+    return `${lead.type}:${lead.id}`;
+  }
+
+  function toggleLeadSelection(lead: AdminSnapshot["leads"][number]) {
+    const key = leadKey(lead);
+    setSelectedLeadKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function toggleAllVisibleLeads() {
+    const visibleKeys = visibleLeads.map(leadKey);
+    const allSelected = visibleKeys.length > 0 && visibleKeys.every((key) => selectedLeadKeys.has(key));
+    setSelectedLeadKeys((current) => {
+      const next = new Set(current);
+      for (const key of visibleKeys) {
+        if (allSelected) next.delete(key);
+        else next.add(key);
+      }
+      return next;
+    });
+  }
+
+  async function updateSelectedLeads(action: "archive-leads" | "restore-leads", leads = visibleLeads.filter((lead) => selectedLeadKeys.has(leadKey(lead)))) {
+    if (!leads.length) return;
+    const verb = action === "archive-leads" ? "remove" : "restore";
+    if (!window.confirm(`${verb === "remove" ? "Remove" : "Restore"} ${leads.length} selected lead${leads.length === 1 ? "" : "s"}? ${verb === "remove" ? "They can be recovered from the Leads Recycle Bin." : ""}`)) return;
+    const changed = await runAction(action, { leads: leads.map(({ id, type }) => ({ id, type })) }, action === "archive-leads" ? "Selected leads moved to the Recycle Bin." : "Selected leads restored.");
+    if (changed) setSelectedLeadKeys(new Set());
+  }
+
+  function emailSelectedLeads() {
+    const emails = Array.from(new Set(visibleLeads.filter((lead) => selectedLeadKeys.has(leadKey(lead))).map((lead) => lead.email).filter(Boolean)));
+    if (!emails.length) return;
+    window.location.href = `mailto:?bcc=${encodeURIComponent(emails.join(","))}`;
   }
 
   async function completeEnrollment(enrollmentId: string) {
@@ -821,12 +870,11 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               view={studentView}
               counts={{
                 all: snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key)).length,
-                "batch-1": snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === 1).length,
-                "batch-2": snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === 2).length,
-                "batch-3": snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === 3).length,
+                ...Object.fromEntries(studentBatches.map((batch) => [`batch-${batch}`, snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === batch).length])),
                 completed: snapshot.students.filter((student) => !student.archived_at && completedStudentKeys.has(student.user_key)).length,
                 archived: snapshot.students.filter((student) => Boolean(student.archived_at)).length,
               }}
+              batches={studentBatches}
               onViewChange={setStudentView}
               onAdd={startAddingStudent}
               onEdit={startEditingStudent}
@@ -952,7 +1000,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
             <div className="space-y-8">
               <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-6">
-                  <div><h1 className="text-3xl font-black">Courses</h1><p className="mt-1 text-sm font-bold text-slate-500">Accredited training and non-accredited SSTA programs are managed separately.</p><div className="mt-3 flex flex-wrap gap-2">{(["accredited", "non-accredited", "archived"] as const).map((view) => <button key={view} onClick={() => setCourseView(view)} className={`rounded-lg px-3 py-2 text-xs font-black capitalize ${courseView === view ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{view === "archived" ? "Recycle Bin" : view}</button>)}</div></div>
+                  <div><h1 className="text-3xl font-black">Courses</h1><p className="mt-1 text-sm font-bold text-slate-500">Accredited training and non-accredited SSTA programs are managed separately.</p><div className="mt-3 flex flex-wrap gap-2">{(["non-accredited", "accredited", "archived"] as const).map((view) => <button key={view} onClick={() => setCourseView(view)} className={`rounded-lg px-3 py-2 text-xs font-black capitalize ${courseView === view ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{view === "archived" ? "Recycle Bin" : view}</button>)}</div></div>
                   <button onClick={() => setEditingCourse(null)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1f7ac1] px-4 text-sm font-black text-white"><Plus size={18} /> New Course</button>
                 </div>
                 <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left"><thead className="bg-slate-50 text-xs font-black uppercase text-slate-500"><tr>{["Code","Title","Category","Price","Duration","Actions"].map((item) => <th key={item} className="px-6 py-4">{item}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{filteredCourses.map((course) => <tr key={course.slug} className="text-sm font-bold"><td className="px-6 py-4">{course.code}</td><td className="px-6 py-4 font-black">{course.title}</td><td className="px-6 py-4">{course.category}</td><td className="px-6 py-4">{money(course.priceAud)}</td><td className="px-6 py-4">{course.duration}</td><td className="px-6 py-4"><div className="flex gap-2">{course.isActive ? <><button type="button" onClick={() => setEditingCourse(course)} className="flex size-9 items-center justify-center rounded-lg border border-slate-200 text-[#1f7ac1]" aria-label={`Edit ${course.title}`}><Pencil size={16} /></button><button type="button" onClick={() => archiveCourse(course.slug)} className="flex size-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600" aria-label={`Archive ${course.title}`}><Trash2 size={16} /></button></> : <button type="button" onClick={() => restoreCourse(course.slug)} className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 px-3 text-xs font-black text-emerald-700"><RotateCcw size={15} /> Restore</button>}</div></td></tr>)}{!filteredCourses.length ? <tr><td colSpan={6} className="px-6 py-10 text-center text-sm font-bold text-slate-500">No {courseView} courses found.</td></tr> : null}</tbody></table></div>
@@ -1045,8 +1093,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                   <div><h1 className="text-3xl font-black">Lead Sources</h1><p className="mt-1 text-sm font-bold text-slate-500">Track where every lead came from.</p></div>
                   <button type="button" onClick={() => setShowLeadForm((current) => !current)} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1f7ac1] px-4 text-sm font-black text-white"><Plus size={18} /> Add Lead</button>
                 </div>
-                <div className="mt-5 flex gap-2" role="tablist" aria-label="Lead source">
-                  {(["all", "Abu", "JB"] as const).map((source) => <button key={source} type="button" role="tab" aria-selected={leadSource === source} onClick={() => setLeadSource(source)} className={`rounded-lg px-4 py-2 text-xs font-black ${leadSource === source ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{source === "all" ? `All ${snapshot.leads.length}` : `${source} ${snapshot.leads.filter((lead) => lead.referred_by === source).length}`}</button>)}
+                <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Lead source">
+                  {["all", ...leadSources].map((source) => <button key={source} type="button" role="tab" aria-selected={leadSource === source} onClick={() => { setLeadSource(source); setSelectedLeadKeys(new Set()); }} className={`rounded-lg px-4 py-2 text-xs font-black ${leadSource === source ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{source === "all" ? `All ${snapshot.leads.filter((lead) => !lead.archived_at).length}` : `${source} ${snapshot.leads.filter((lead) => !lead.archived_at && lead.referred_by === source).length}`}</button>)}
                 </div>
                 {showLeadForm ? <form action={handleLeadSubmit} className="mt-6 grid gap-4 border-t border-slate-100 pt-6 md:grid-cols-3">
                   <TextField name="firstName" label="First name" required />
@@ -1054,31 +1102,22 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                   <TextField name="email" label="Email" type="email" required />
                   <TextField name="phone" label="Phone" required />
                   <label className="grid gap-2 text-sm font-black text-slate-700">Course<select name="courseSlug" required className="h-12 rounded-xl border border-slate-200 px-4 font-bold"><option value="">Select course</option>{activeCourses.map((course) => <option key={course.slug} value={course.slug}>{course.title}</option>)}</select></label>
-                  <label className="grid gap-2 text-sm font-black text-slate-700">Lead source<select name="source" defaultValue={leadSource === "all" ? "Abu" : leadSource} className="h-12 rounded-xl border border-slate-200 px-4 font-bold"><option value="Abu">Abu</option><option value="JB">JB (Jash & Bella)</option></select></label>
+                  <label className="grid gap-2 text-sm font-black text-slate-700">Referred By / Lead source<input name="source" list="lead-source-options" defaultValue={leadSource === "all" ? "" : leadSource} placeholder="e.g. VEN, Abu, JB or a new source" required className="h-12 rounded-xl border border-slate-200 px-4 font-bold" /><datalist id="lead-source-options">{leadSources.map((source) => <option key={source} value={source} />)}</datalist></label>
                   <div className="flex gap-3 md:col-span-3"><SubmitButton label="Save Lead" /><button type="button" onClick={() => setShowLeadForm(false)} className="h-12 rounded-xl border border-slate-200 px-5 text-sm font-black text-slate-600">Cancel</button></div>
                 </form> : null}
               </section>
-              <TableSection
-              title={leadSource === "all" ? "Enrolment & Interest Leads" : `${leadSource} Leads`}
-              columns={["Type", "Name", "Email", "Phone", "Course", "Origin", "Referrer", "Support Needs", "Support Details", "Payment", "Created"]}
-              rows={snapshot.leads.filter((lead) => leadSource === "all" || lead.referred_by === leadSource).map((lead) => [
-                lead.type,
-                `${lead.first_name} ${lead.last_name}`,
-                lead.email,
-                lead.phone,
-                courseBySlug.get(lead.course_slug)?.title ?? lead.course_slug,
-                lead.origin.replace("_", " "),
-                lead.referred_by ?? "—",
-                lead.disability_status === "yes"
-                  ? "Yes"
-                  : lead.disability_status === "prefer_not_to_say"
-                    ? "Prefer not to say"
-                    : "No",
-                lead.disability_details ?? "—",
-                lead.payment_status ?? "—",
-                new Date(lead.created_at).toLocaleDateString("en-AU"),
-              ])}
-            />
+              <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-6">
+                  <div><h2 className="text-3xl font-black">{leadSource === "all" ? "Enrolment & Interest Leads" : `${leadSource} Leads`}</h2><div className="mt-3 flex gap-2">{(["active", "archived"] as const).map((view) => <button key={view} type="button" onClick={() => { setLeadView(view); setSelectedLeadKeys(new Set()); }} className={`rounded-lg px-3 py-2 text-xs font-black ${leadView === view ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500"}`}>{view === "active" ? "Active" : "Recycle Bin"}</button>)}</div></div>
+                  <div className="flex flex-wrap gap-2">
+                    {leadView === "active" ? <button type="button" onClick={emailSelectedLeads} disabled={!selectedLeadKeys.size} className="h-10 rounded-lg border border-[#1f7ac1]/30 px-4 text-xs font-black text-[#1f7ac1] disabled:opacity-40">Email selected</button> : null}
+                    <button type="button" onClick={() => updateSelectedLeads(leadView === "active" ? "archive-leads" : "restore-leads")} disabled={!selectedLeadKeys.size} className={`inline-flex h-10 items-center gap-2 rounded-lg border px-4 text-xs font-black disabled:opacity-40 ${leadView === "active" ? "border-rose-200 text-rose-600" : "border-emerald-200 text-emerald-700"}`}>{leadView === "active" ? <><Trash2 size={15} /> Remove selected</> : <><RotateCcw size={15} /> Restore selected</>}</button>
+                  </div>
+                </div>
+                <div className="overflow-x-auto"><table className="w-full min-w-[1250px] text-left"><thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.08em] text-slate-500"><tr><th className="px-4 py-4"><input type="checkbox" aria-label="Select all visible leads" checked={visibleLeads.length > 0 && visibleLeads.every((lead) => selectedLeadKeys.has(leadKey(lead)))} onChange={toggleAllVisibleLeads} /></th>{["Type", "Name", "Email", "Phone", "Course", "Origin", "Referred By", "Support", "Payment", "Created", "Actions"].map((column) => <th key={column} className="px-4 py-4">{column}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">
+                  {visibleLeads.length ? visibleLeads.map((lead) => <tr key={leadKey(lead)} className="text-sm font-bold text-slate-700"><td className="px-4 py-4"><input type="checkbox" aria-label={`Select ${lead.first_name} ${lead.last_name}`} checked={selectedLeadKeys.has(leadKey(lead))} onChange={() => toggleLeadSelection(lead)} /></td><td className="px-4 py-4 capitalize">{lead.type}</td><td className="px-4 py-4 font-black text-slate-900">{lead.first_name} {lead.last_name}</td><td className="px-4 py-4"><a href={`mailto:${lead.email}`} className="text-[#1f7ac1] hover:underline">{lead.email}</a></td><td className="px-4 py-4">{lead.phone}</td><td className="px-4 py-4">{courseBySlug.get(lead.course_slug)?.title ?? lead.course_slug}</td><td className="px-4 py-4 capitalize">{lead.origin.replace("_", " ")}</td><td className="px-4 py-4">{lead.referred_by ?? "—"}</td><td className="px-4 py-4">{lead.disability_status === "yes" ? lead.disability_details || "Yes" : lead.disability_status === "prefer_not_to_say" ? "Prefer not to say" : "No"}</td><td className="px-4 py-4 capitalize">{lead.payment_status ?? "—"}</td><td className="px-4 py-4">{new Date(lead.archived_at ?? lead.created_at).toLocaleDateString("en-AU")}</td><td className="px-4 py-4"><div className="flex gap-2">{leadView === "active" ? <><a href={`mailto:${lead.email}`} className="inline-flex h-9 items-center rounded-lg border border-[#1f7ac1]/30 px-3 text-xs font-black text-[#1f7ac1]">Email</a><button type="button" onClick={() => updateSelectedLeads("archive-leads", [lead])} className="flex size-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600" aria-label={`Remove ${lead.first_name} ${lead.last_name}`}><Trash2 size={15} /></button></> : <button type="button" onClick={() => updateSelectedLeads("restore-leads", [lead])} className="inline-flex h-9 items-center gap-2 rounded-lg border border-emerald-200 px-3 text-xs font-black text-emerald-700"><RotateCcw size={15} /> Restore</button>}</div></td></tr>) : <tr><td colSpan={12} className="px-6 py-10 text-center text-sm font-bold text-slate-500">No {leadView} leads found for this source.</td></tr>}
+                </tbody></table></div>
+              </section>
             </div>
           ) : null}
 
@@ -1433,6 +1472,7 @@ function StudentTableSection({
   students,
   view,
   counts,
+  batches,
   onViewChange,
   onAdd,
   onEdit,
@@ -1445,7 +1485,8 @@ function StudentTableSection({
 }: {
   students: AdminStudent[];
   view: StudentView;
-  counts: Record<StudentView, number>;
+  counts: Record<string, number>;
+  batches: number[];
   onViewChange: (view: StudentView) => void;
   onAdd: () => void;
   onEdit: (student: AdminStudent) => void;
@@ -1464,12 +1505,10 @@ function StudentTableSection({
           <div className="mt-4 flex gap-2" role="tablist" aria-label="Student status">
             {([
               ["all", "All"],
-              ["batch-1", "Batch 1"],
-              ["batch-2", "Batch 2"],
-              ["batch-3", "Batch 3"],
+              ...batches.map((batch) => [`batch-${batch}`, `Batch ${batch}`] as const),
               ["completed", "Completed"],
               ["archived", "Recycle Bin"],
-            ] as const).map(([value, label]) => (
+            ] as readonly (readonly [StudentView, string])[]).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
@@ -1480,7 +1519,7 @@ function StudentTableSection({
                   view === value ? "bg-[#eaf4fd] text-[#126fb8]" : "bg-slate-50 text-slate-500 hover:text-slate-800"
                 }`}
               >
-                {label} {counts[value]}
+                {label} {counts[value] ?? 0}
               </button>
             ))}
           </div>

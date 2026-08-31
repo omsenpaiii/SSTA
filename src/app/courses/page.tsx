@@ -27,7 +27,7 @@ function getCourseEnrollmentCta(course: Course) {
 
 export default function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("All");
+  const [selectedFilter, setSelectedFilter] = useState("Non-accredited");
   const [activeCourses, setActiveCourses] = useState<Course[]>(courses);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function CoursesPage() {
       });
   }, []);
 
-  const categories = ["All", "Accredited", "Non-accredited", ...courseCategories.map((category) => category.title)];
+  const categories = ["Non-accredited", "Accredited", "All", ...courseCategories.map((category) => category.title)];
   const filteredCourses = activeCourses.filter((course) => {
     const query = searchQuery.toLowerCase();
     const matchesSearch =
