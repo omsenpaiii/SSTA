@@ -68,6 +68,17 @@ export type AdminLead = {
   referred_by: string | null;
   archived_at: string | null;
   archived_by_email: string | null;
+  message?: string | null;
+  documents?: AdminLeadDocument[];
+};
+
+export type AdminLeadDocument = {
+  id: string;
+  interest_lead_id: string;
+  original_name: string;
+  mime_type: string;
+  file_size: number;
+  created_at: string;
 };
 
 export type AdminPayment = {
@@ -321,7 +332,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           .order("created_at", { ascending: false }),
         supabase
           .from("interest_leads")
-          .select("id,first_name,last_name,email,phone,course_slug,created_at,origin,referred_by,archived_at,archived_by_email")
+          .select("id,first_name,last_name,email,phone,course_slug,message,created_at,origin,referred_by,archived_at,archived_by_email")
           .order("created_at", { ascending: false }),
         supabase
           .from("payment_intents")
@@ -337,15 +348,31 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           : Promise.resolve({ data: [], error: null }),
       ]);
 
+    const interestLeadIds = (interestLeadsResult.data ?? []).map((lead) => String(lead.id));
+    const interestDocumentsResult = interestLeadIds.length
+      ? await supabase
+        .from("interest_lead_documents")
+        .select("id,interest_lead_id,original_name,mime_type,file_size,created_at")
+        .in("interest_lead_id", interestLeadIds)
+        .order("created_at", { ascending: true })
+      : { data: [], error: null };
+    const documentsByLeadId = new Map<string, AdminLeadDocument[]>();
+    for (const document of (interestDocumentsResult.data ?? []) as AdminLeadDocument[]) {
+      const documents = documentsByLeadId.get(document.interest_lead_id) ?? [];
+      documents.push(document);
+      documentsByLeadId.set(document.interest_lead_id, documents);
+    }
+
     const enrollmentLeads = ((enrollmentLeadsResult.data ?? []) as Omit<AdminLead, "type">[]).map(
       (lead) => ({ ...lead, type: "enrollment" as const }),
     );
     const interestLeads = ((interestLeadsResult.data ?? []) as Omit<AdminLead, "type">[]).map(
       (lead) => ({
-        ...lead,
-        type: "interest" as const,
-        disability_status: null,
-        disability_details: null,
+      ...lead,
+      type: "interest" as const,
+      disability_status: null,
+      disability_details: null,
+      documents: documentsByLeadId.get(String(lead.id)) ?? [],
       }),
     );
 

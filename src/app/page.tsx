@@ -101,7 +101,16 @@ export default function Home() {
               >
                 <Play size={18} fill="currentColor" /> Browse Courses
               </a>
+              <Link
+                href="/enquire"
+                className="inline-flex h-14 items-center justify-center gap-3 rounded-full border border-[#f5b800]/50 bg-[#f5b800] px-8 text-base font-black text-[#020d24] shadow-[0_16px_36px_rgba(245,184,0,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ffd56b]"
+              >
+                Enquire <ArrowRight size={19} />
+              </Link>
             </div>
+            <Link href="/sign-in?redirect_url=%2Fdashboard" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#d9f1ff] underline decoration-[#f5b800]/70 underline-offset-4 transition hover:text-white lg:mx-auto">
+              Already a student? Open Student Portal <ArrowRight size={16} />
+            </Link>
             <div className="mt-10 max-w-2xl rounded-[1.5rem] border border-white/15 bg-white/10 p-5 backdrop-blur-md lg:mx-auto">
               <p className="text-sm font-black uppercase tracking-[0.24em] text-[#ffd56b]">
                 Practical in-person learning

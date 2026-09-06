@@ -35,6 +35,7 @@ export const primaryLinks = [
   { label: "Home", href: "/" },
   { label: "About Us", href: "/about-us" },
   { label: "Courses", href: "/courses" },
+  { label: "Enquire", href: "/enquire" },
   { label: "Contact", href: "/contact" },
 ];
 

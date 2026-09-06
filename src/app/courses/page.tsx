@@ -178,6 +178,12 @@ export default function CoursesPage() {
                             Contact Us
                           </Link>
                         )}
+                        <Link
+                          href={`/enquire?course=${encodeURIComponent(course.slug)}`}
+                          className="inline-flex h-11 items-center justify-center rounded-full px-3 text-sm font-black text-[#53647c] transition hover:bg-[#eef8ff] hover:text-[#0067b1]"
+                        >
+                          Enquire
+                        </Link>
                       </div>
                     </div>
                   </motion.article>

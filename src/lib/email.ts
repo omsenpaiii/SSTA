@@ -110,6 +110,7 @@ export async function sendInterestEmail(lead: InterestLead) {
     ["Email", lead.email],
     ["Phone", lead.phone],
     ["Course of Interest", course?.title ?? lead.course_slug],
+    ["Message", lead.message || "No message supplied"],
     ["Lead ID", lead.id],
     ["Type", lead.isMock ? "Mock Lead (Local Dev)" : "Official Lead"],
   ];

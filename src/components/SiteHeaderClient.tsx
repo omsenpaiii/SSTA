@@ -24,9 +24,8 @@ type SiteHeaderClientProps = {
 
 export function SiteHeaderClient({ user, enrolmentForm }: SiteHeaderClientProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const navigationLinks = user
-    ? [{ label: "Student Portal", href: user.dashboardHref }, ...primaryLinks]
-    : primaryLinks;
+  const studentPortalHref = user?.dashboardHref ?? "/sign-in?redirect_url=%2Fdashboard";
+  const navigationLinks = primaryLinks;
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-[0_12px_40px_rgba(0,74,143,0.08)]">
@@ -128,6 +127,12 @@ export function SiteHeaderClient({ user, enrolmentForm }: SiteHeaderClientProps)
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <Link
+            href={studentPortalHref}
+            className="rounded-full border border-[#0067b1]/25 bg-[#eef8ff] px-4 py-3 text-sm font-black text-[#0067b1] transition hover:-translate-y-0.5 hover:bg-[#d9f1ff]"
+          >
+            Student Portal
+          </Link>
           {user ? (
             <>
               <Link
@@ -190,6 +195,13 @@ export function SiteHeaderClient({ user, enrolmentForm }: SiteHeaderClientProps)
             className="overflow-hidden border-t border-[#18aee5]/12 bg-white lg:hidden"
           >
             <div className="mx-auto grid max-w-7xl gap-2 px-5 py-5">
+              <Link
+                href={studentPortalHref}
+                onClick={() => setIsOpen(false)}
+                className="rounded-2xl bg-[#eef8ff] px-4 py-3 text-base font-black text-[#0067b1]"
+              >
+                Student Portal
+              </Link>
               {navigationLinks.map((link) => (
                 <Link
                   key={link.label}
