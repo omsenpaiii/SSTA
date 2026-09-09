@@ -69,36 +69,9 @@ export function SiteHeaderClient({ user, enrolmentForm }: SiteHeaderClientProps)
                   Courses <ChevronDown size={16} />
                 </Link>
                 <div className="pointer-events-none absolute left-1/2 top-full max-h-[72vh] w-[min(1100px,calc(100vw-64px))] -translate-x-1/2 translate-y-4 overflow-y-auto rounded-2xl border border-[#18aee5]/14 bg-white p-4 opacity-0 shadow-[0_28px_80px_rgba(0,74,143,0.16)] transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-                  <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-4">
-                    {courseMenu.map((category) => (
-                      <div key={category.slug} className="rounded-2xl bg-[#eef8ff] p-4">
-                        <Link
-                          href={`/${category.slug}`}
-                          className="text-sm font-black uppercase tracking-[0.18em] text-[#0067b1]"
-                        >
-                          {category.title}
-                        </Link>
-                        <div className="mt-3 grid gap-2">
-                          {category.courses.slice(0, 3).map((course) => (
-                            <Link
-                              key={course.slug}
-                              href={`/course/${course.slug}`}
-                              className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-[#020d24] transition hover:text-[#0067b1]"
-                            >
-                              {course.title}
-                            </Link>
-                          ))}
-                          {category.courses.length > 3 ? (
-                            <Link
-                              href={`/${category.slug}`}
-                              className="px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-[#0067b1]"
-                            >
-                              View all {category.courses.length}
-                            </Link>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Link href="/courses?type=accredited" className="rounded-2xl bg-[#eef8ff] p-5 transition hover:bg-[#dff4ff]"><span className="text-base font-black text-[#0067b1]">Accredited Courses</span><span className="mt-2 block text-sm font-bold leading-6 text-[#53647c]">Nationally recognised qualifications and skill sets.</span></Link>
+                    <Link href="/courses?type=non-accredited" className="rounded-2xl bg-[#eef8ff] p-5 transition hover:bg-[#dff4ff]"><span className="text-base font-black text-[#0067b1]">Non Accredited Courses</span><span className="mt-2 block text-sm font-bold leading-6 text-[#53647c]">Practical short courses and professional development.</span></Link>
                   </div>
                 </div>
               </div>
