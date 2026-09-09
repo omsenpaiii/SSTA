@@ -189,7 +189,7 @@ export async function getStudentCppAssignments(userKey: string): Promise<Student
       source: accessRow?.source ?? null,
       lockReason: accessRow?.reason ?? null,
       status: statusFor(unlocked, submission),
-      resources: resources.get(assignment.assignment_key) ?? [],
+      resources: unlocked ? resources.get(assignment.assignment_key) ?? [] : [],
       submission,
     };
   });
@@ -300,9 +300,17 @@ export async function getAssignmentResourceForStudent(input: {
     .maybeSingle();
 
   if (!access) return null;
+  const { data: enrollment } = await supabase.from("course_enrollments").select("id")
+    .eq("user_key", input.userKey).eq("course_slug", row.course_slug).eq("status", "active").maybeSingle();
+  if (!enrollment) return null;
 
-  const wantsPdfDownload = input.mode === "download" && input.format === "pdf";
-  const usesOriginal = row.kind === "video" || (input.mode === "download" && !wantsPdfDownload);
+  const pdfOnly = row.course_slug === CPP20218_COURSE_SLUG && input.mode === "download";
+  if (pdfOnly && input.format === "docx") return null;
+  const wantsPdfDownload = pdfOnly || (input.mode === "download" && input.format === "pdf");
+  const originalPdf = row.original_mime_type === "application/pdf";
+  const previewPdf = row.preview_mime_type === "application/pdf";
+  const usesOriginal = wantsPdfDownload ? !previewPdf && originalPdf : row.kind === "video" || input.mode === "download";
+  if (wantsPdfDownload && !previewPdf && !originalPdf) return null;
   const bucket = usesOriginal ? row.original_bucket : row.preview_bucket;
   const path = usesOriginal ? row.original_path : row.preview_path;
   const mimeType = usesOriginal ? row.original_mime_type : row.preview_mime_type;

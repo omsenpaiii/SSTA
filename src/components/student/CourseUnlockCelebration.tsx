@@ -97,14 +97,19 @@ export function CourseUnlockCelebration({
               Access unlocked
             </p>
             <h2 className="mt-3 text-3xl font-black tracking-tight text-[#081221] sm:text-4xl">
-              {isCpp20218 ? "CPP20218 clusters are unlocked" : `${courseTitle} is unlocked`}
+              {isCpp20218 ? "Your Security cluster is unlocked" : `${courseTitle} is unlocked`}
             </h2>
             <p className="mx-auto mt-4 max-w-md text-sm font-semibold leading-6 text-[#5d7389]">
               {isCpp20218
-                ? "You can now open the remaining clusters, review the resources, and keep moving through your assessments."
+                ? "Your payment is confirmed. Your learning helper will guide you through the next steps."
                 : "Your course workspace is ready. You can start learning from here."}
             </p>
 
+            {isCpp20218 && <div className="mt-5 grid gap-3 text-left sm:grid-cols-3">{[
+              ["🤖 1. Watch", "Watch the presentation to learn the key ideas."],
+              ["📖 2. Learn", "Read the learner PDF and download it for study."],
+              ["✍️ 3. Complete", "Download and print the assessment PDF. Write answers by hand, then scan and upload."],
+            ].map(([title, copy]) => <div key={title} className="rounded-xl bg-sky-50 p-3"><h3 className="text-sm font-black">{title}</h3><p className="mt-2 text-xs leading-5 text-slate-600">{copy}</p></div>)}</div>}
             <button
               type="button"
               onClick={closeCelebration}

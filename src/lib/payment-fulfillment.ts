@@ -1,3 +1,4 @@
+import { sendSecurityPaymentEmail } from "@/lib/email";
 import type Stripe from "stripe";
 import { grantCourseAccess } from "@/lib/access";
 import { CPP20218_COURSE_SLUG, setStudentAssignmentAccess } from "@/lib/cpp20218";
@@ -155,7 +156,21 @@ async function fulfillPaidIntent(intent: PaymentIntentRecord, session: Stripe.Ch
   }
 
   if (intent.purpose === "assignment_unlock" && intent.course_slug === CPP20218_COURSE_SLUG) {
-    await unlockCpp20218Assignments(intent);
+    if (intent.assignment_key === "assignment-1") {
+      const db = getSupabaseAdmin()!;
+      const fulfilled = await db.rpc("fulfill_security_cluster_one", { p_intent_id: intent.id });
+      if (fulfilled.error) throw fulfilled.error;
+      const notification = await db.from("payment_intents").select("admin_notified_at").eq("id", intent.id).single();
+      if (notification.error) throw notification.error;
+      if (!notification.data.admin_notified_at) {
+        await sendSecurityPaymentEmail({ email: intent.email ?? "Student", amountCents: intent.amount_cents, paymentId: intent.id });
+        const saved = await db.from("payment_intents").update({ admin_notified_at: new Date().toISOString() }).eq("id", intent.id);
+        if (saved.error) throw saved.error;
+      }
+    } else {
+      // Honor historical checkout sessions purchased under the former all-clusters price.
+      await unlockCpp20218Assignments(intent);
+    }
   }
 }
 
@@ -167,6 +182,11 @@ export async function fulfillStripeCheckoutSession(input: {
 
   if (!intent) {
     return { fulfilled: false, reason: "payment_intent_not_found", session: input.session };
+  }
+
+  if (input.session.payment_status === "paid" &&
+      (input.session.amount_total !== intent.amount_cents || input.session.currency?.toLowerCase() !== intent.currency.toLowerCase())) {
+    throw new Error("Checkout amount or currency does not match the payment intent.");
   }
 
   const paymentIntentId = getPaymentIntentId(input.session);

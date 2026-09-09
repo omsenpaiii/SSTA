@@ -54,7 +54,7 @@ export function SiteFooter() {
                 </Link>
               ))}
               <Link href="/enroll" className="text-sm font-bold text-sky-100/75 hover:text-white">
-                Enrol Now
+                Security enrollment form
               </Link>
             </div>
           </div>

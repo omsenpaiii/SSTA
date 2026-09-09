@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, BookMarked, Clock3, FileStack, ShieldCheck } from "lucide-react";
 import { ActivityCompletionButton } from "@/components/student/ActivityCompletionButton";
 import { getCurrentUser } from "@/lib/auth";
@@ -17,6 +17,7 @@ type ActivityPageProps = {
 
 export default async function ActivityDetailPage({ params }: ActivityPageProps) {
   const { slug, activityId } = await params;
+  if (slug === "certificate-ii-security-operations") redirect(`/dashboard/course/${slug}?tab=activities`);
   const user = await getCurrentUser();
 
   if (!user) {

@@ -1,3 +1,4 @@
+import { linkSecurityEnrollment } from "@/lib/security-enrollment";
 import { getSupabaseAdmin, isSupabaseAuthConfigured } from "@/lib/supabase";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { getAdminEmails, getInitials, isAdminEmail, manualStudentKey, normalizeEmail } from "@/lib/auth-shared";
@@ -68,7 +69,7 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   const avatarUrl =
     typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : null;
 
-  return {
+  const appUser: AppUser = {
     id: user.id,
     email,
     name,
@@ -78,6 +79,8 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     avatarUrl,
     initials: getInitials(name, email || phone || "Student"),
   };
+  await linkSecurityEnrollment(appUser);
+  return appUser;
 }
 
 export async function syncStudentProfileFromUser(user: AuthUser | null | undefined) {

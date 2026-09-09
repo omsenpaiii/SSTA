@@ -20,7 +20,7 @@ type FormValues = z.infer<typeof formSchema>;
 type Props = { initialCourseSlug?: string; courses: Course[]; initialValues?: Partial<FormValues> };
 
 export function EnrollmentForm({ initialCourseSlug = "", courses, initialValues = {} }: Props) {
-  const available = courses.filter(isCourseAvailableForEnrollment);
+  const available = courses.filter((course) => course.slug !== "certificate-ii-security-operations" && isCourseAvailableForEnrollment(course));
   const initialCourse = available.some((course) => course.slug === initialCourseSlug) ? initialCourseSlug : "";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);

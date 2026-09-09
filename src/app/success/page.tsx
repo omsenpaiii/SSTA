@@ -38,12 +38,12 @@ function getSuccessDetails(input: {
 
   if ((purpose === "assignment_unlock" || !purpose) && courseSlug === CPP20218_COURSE_SLUG) {
     return {
-      destinationHref: `/dashboard/course/${CPP20218_COURSE_SLUG}?tab=activities&unlocked=1`,
+      destinationHref: `/dashboard/course/${CPP20218_COURSE_SLUG}?tab=activities${input.fulfilled ? "&unlocked=1" : ""}`,
       ctaLabel: "Open unlocked course",
-      heading: input.fulfilled ? "CPP20218 unlocked" : "Payment received",
+      heading: input.fulfilled ? "Security cluster unlocked" : "Awaiting payment confirmation",
       message: input.fulfilled
-        ? "Your payment has been confirmed. The remaining CPP20218 clusters are ready in your course workspace."
-        : "Stripe received your payment. Your CPP20218 access will update as soon as confirmation finishes.",
+        ? "Your payment has been confirmed. Your paid cluster is ready in your course workspace. SSTA manages access to later clusters."
+        : "Your access will update after Stripe confirms a successful payment.",
     };
   }
 

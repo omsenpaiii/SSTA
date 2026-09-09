@@ -33,10 +33,7 @@ function TabLink({ href, label, active }: { href: string; label: string; active:
   );
 }
 
-function getCppUnlockAmountCents() {
-  const amount = Number(process.env.CPP20218_ASSIGNMENT_UNLOCK_AMOUNT_CENTS ?? 0);
-  return Number.isFinite(amount) && amount > 0 ? Math.round(amount) : null;
-}
+function getCppUnlockAmountCents() { return 15000; }
 
 export default async function CourseWorkspacePage({
   params,

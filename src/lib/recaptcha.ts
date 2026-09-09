@@ -19,10 +19,6 @@ export async function verifyRecaptchaToken(token: string) {
     throw new Error("reCAPTCHA secret key is not configured.");
   }
 
-  if (token === "mock-captcha-token") {
-    return { success: true };
-  }
-
   const body = new URLSearchParams({
     secret,
     response: token,

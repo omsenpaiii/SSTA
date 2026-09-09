@@ -25,6 +25,7 @@ export async function updateStudentActivityProgress(input: {
   completed: boolean;
   progressSeconds?: number;
 }) {
+  if (input.courseSlug === "certificate-ii-security-operations") throw new Error("Security assessments must be submitted as handwritten work for trainer review.");
   const user = await getCurrentUser();
   const supabase = getSupabaseAdmin();
 

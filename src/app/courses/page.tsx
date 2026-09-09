@@ -1,4 +1,5 @@
 "use client";
+import { CPP20218_COURSE_SLUG } from "@/lib/cpp20218";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -19,6 +20,13 @@ import {
 } from "@/lib/courses";
 
 function getCourseEnrollmentCta(course: Course) {
+  if (course.slug === CPP20218_COURSE_SLUG) {
+    return {
+      href: "/enroll?course=certificate-ii-security-operations",
+      label: "Free enrollment form",
+    };
+  }
+
   return {
     href: `/enroll?course=${course.slug}`,
     label: "Enrol Now",

@@ -39,6 +39,8 @@ export async function POST(request: Request) {
     );
   }
 
+  if (parsed.data.courseId === "certificate-ii-security-operations") return NextResponse.json({ error: "Submit the free Word enrollment form at /enrolment-application." }, { status: 400 });
+
   try {
     const lead = await createEnrollmentLead({
       ...parsed.data,

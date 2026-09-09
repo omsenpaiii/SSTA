@@ -63,9 +63,9 @@ export async function sendEnrollmentEmail(lead: EnrollmentLead) {
     ["Student", fullName],
     ["Email", lead.email],
     ["Phone", lead.phone],
-    ["Date of birth", lead.date_of_birth ?? "Completed after payment"],
-    ["USI", lead.usi ?? "Completed after payment"],
-    ["Address", lead.address ?? "Completed after payment"],
+    ["Date of birth", lead.date_of_birth ?? "See enrollment document"],
+    ["USI", lead.usi ?? "See enrollment document"],
+    ["Address", lead.address ?? "See enrollment document"],
     ["Course", course?.title ?? lead.course_slug],
     ["Payment status", lead.payment_status],
     ["Enrolment ID", lead.id],
@@ -198,5 +198,17 @@ export async function sendBalancePaymentEmail(input: {
     subject: `SSTA payment summary — ${input.courseTitle}`,
     text,
     html: `<div style="font-family:Arial,sans-serif;color:#020d24;max-width:680px"><h1>Payment summary</h1><p>Hello ${escapeHtml(input.studentName)},</p><p>Your initial payment has been received. The SSTA team will contact you about the next payment.</p><table style="border-collapse:collapse;width:100%"><tr><td style="padding:10px;border-bottom:1px solid #ddd;font-weight:700">Course</td><td style="padding:10px;border-bottom:1px solid #ddd">${escapeHtml(input.courseTitle)}</td></tr><tr><td style="padding:10px;border-bottom:1px solid #ddd;font-weight:700">Course fee</td><td style="padding:10px;border-bottom:1px solid #ddd">${amount(input.courseFee)}</td></tr><tr><td style="padding:10px;border-bottom:1px solid #ddd;font-weight:700">Paid</td><td style="padding:10px;border-bottom:1px solid #ddd">${amount(input.paidAmount)}</td></tr><tr><td style="padding:10px;font-weight:700">Remaining balance</td><td style="padding:10px;font-weight:700">${amount(input.balance)}</td></tr></table><p>Questions? Call Joseph/SSTA on <a href="tel:+61431696558">+61 431 696 558</a>.</p></div>`,
+  });
+}
+
+export async function sendSecurityPaymentEmail(input: { email: string; amountCents: number; paymentId: string }) {
+  const transporter = getTransporter();
+  if (!transporter) throw new Error("SMTP is not configured yet.");
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: process.env.ENROLLMENT_TO_EMAIL,
+    messageId: `<security-payment-${input.paymentId}@ssta.net.au>`,
+    subject: "SSTA Security Cluster 1 payment confirmed",
+    text: `Student: ${input.email}\nCourse: CPP20218 Certificate II in Security Operations\nPaid: AUD ${(input.amountCents / 100).toFixed(2)}\nCluster 1 access is now enabled. Manage later clusters in the admin portal.\nPayment reference: ${input.paymentId}`,
   });
 }

@@ -475,7 +475,7 @@ export function buildCpp20218LlnUrl(
     params.set("assignmentKey", assignmentKey);
   }
 
-  return `/dashboard/lln/cpp20218?${params.toString()}`;
+  return `/lln/security?${params.toString()}`;
 }
 
 export function gradeCpp20218LlnAnswers(answers: Record<string, string>) {

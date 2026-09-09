@@ -54,6 +54,8 @@ export type AdminEnrollment = {
 export type AdminLead = {
   id: string;
   type: "enrollment" | "interest";
+  document_name?: string | null;
+  address?: string | null;
   first_name: string;
   last_name: string;
   email: string;
@@ -328,7 +330,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
           .order("created_at", { ascending: false }),
         supabase
           .from("enrollment_leads")
-          .select("id,first_name,last_name,email,phone,course_slug,disability_status,disability_details,payment_status,email_status,created_at,origin,referred_by,archived_at,archived_by_email")
+          .select("id,document_name,address,first_name,last_name,email,phone,course_slug,disability_status,disability_details,payment_status,email_status,created_at,origin,referred_by,archived_at,archived_by_email")
           .order("created_at", { ascending: false }),
         supabase
           .from("interest_leads")

@@ -1,3 +1,4 @@
+import { CPP20218_COURSE_SLUG } from "@/lib/cpp20218";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
@@ -54,6 +55,10 @@ export async function POST(request: Request) {
 
     if (!course) {
       return NextResponse.json({ error: "Course not found." }, { status: 404 });
+    }
+
+    if (course.slug === CPP20218_COURSE_SLUG) {
+      return NextResponse.json({ error: "Security enrollment and LLN are free. Pay for Cluster 1 from your student portal.", courseUrl: `/dashboard/course/${course.slug}?tab=activities` }, { status: 409 });
     }
 
     if (!isCourseAvailableForEnrollment(course)) {

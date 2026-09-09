@@ -222,7 +222,7 @@ const baseCourses: Course[] = [
     category: "Security",
     label: "Most popular",
     priceAud: 1295,
-    enrolmentFee: 500,
+    enrolmentFee: 0,
     duration: "291 nominal hours",
     description:
       "The core SSTA pathway for unarmed guard and crowd controller licensing outcomes.",

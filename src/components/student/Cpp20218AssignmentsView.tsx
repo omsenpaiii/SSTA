@@ -50,12 +50,12 @@ const sectionCopy: Record<SectionKey, { title: string; description: string; icon
   },
   learning: {
     title: "Learning Resource",
-    description: "Read the learner guide online, or download the PDF or Word version.",
+    description: "Read the learner guide and download the PDF for study.",
     icon: FileText,
   },
   assessment: {
     title: "Assessment",
-    description: "Preview the assessment workbook, download it, then upload your completed work.",
+    description: "Download the assessment PDF, print it, and complete your answers by hand. Scan and upload your handwritten work.",
     icon: FileCheck2,
   },
 };
@@ -168,7 +168,7 @@ function DownloadButtons({ resource }: { resource: CppAssignmentResource }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {resource.preview_path ? (
+      {((resource.preview_path && resource.preview_mime_type === "application/pdf") || (resource.original_path && resource.original_mime_type === "application/pdf")) ? (
         <Link
           href={`/api/student/resources/${resource.id}?mode=download&format=pdf`}
           className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0f6eb8] px-3 text-sm font-black text-white"
@@ -177,15 +177,7 @@ function DownloadButtons({ resource }: { resource: CppAssignmentResource }) {
           PDF
         </Link>
       ) : null}
-      {resource.original_path ? (
-        <Link
-          href={`/api/student/resources/${resource.id}?mode=download&format=docx`}
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#dbe3ec] bg-white px-3 text-sm font-black text-[#0f6eb8]"
-        >
-          <Download size={15} />
-          Word
-        </Link>
-      ) : null}
+
     </div>
   );
 }
@@ -197,7 +189,7 @@ function LockedPanel({
   assignment: StudentCppAssignment;
   unlockAmountCents?: number | null;
 }) {
-  const paymentsEnabled = Boolean(unlockAmountCents && unlockAmountCents > 0);
+  const paymentsEnabled = Boolean(assignment.assignmentKey === "assignment-1" && unlockAmountCents && unlockAmountCents > 0);
 
   return (
     <div className="rounded-xl border border-dashed border-[#cbd8e6] bg-[#fbfdff] p-5">
@@ -207,17 +199,17 @@ function LockedPanel({
         </span>
         <div>
           <h4 className="text-base font-black text-[#081221]">
-            {paymentsEnabled ? "Unlock remaining CPP20218 clusters" : "Payment gateway integration coming soon"}
+            {paymentsEnabled ? "Start Cluster 1 — AUD $150" : "SSTA manages this cluster"}
           </h4>
           <p className="mt-2 text-sm font-semibold leading-6 text-[#5d7389]">
             {assignment.lockReason ??
-              "This cluster is locked for now. SSTA will enable payment and unlock access shortly."}
+              "Complete your free enrollment and LLN before starting Cluster 1. Contact SSTA for access to later clusters."}
           </p>
-          <AssignmentUnlockPaymentButton
+          {paymentsEnabled && <AssignmentUnlockPaymentButton
             assignmentKey={assignment.assignmentKey}
             enabled={paymentsEnabled}
             amountCents={unlockAmountCents}
-          />
+          />}
         </div>
       </div>
     </div>
