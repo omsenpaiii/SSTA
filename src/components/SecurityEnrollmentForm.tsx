@@ -98,7 +98,7 @@ export function SecurityEnrollmentForm({ email = "" }: { email?: string }) {
             minLength={10}
             maxLength={1000}
             rows={3}
-            className="rounded-lg border border-slate-300 p-3 font-normal"
+            className="min-w-0 w-full rounded-lg border border-slate-300 p-3 font-normal"
           />
         </label>
         <label className="grid gap-2 font-bold">
@@ -108,7 +108,7 @@ export function SecurityEnrollmentForm({ email = "" }: { email?: string }) {
             type="file"
             accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             required
-            className="rounded-lg border border-slate-300 p-3 font-normal"
+            className="min-w-0 w-full rounded-lg border border-slate-300 p-3 font-normal"
           />
         </label>
         <p className="text-sm text-slate-600">
