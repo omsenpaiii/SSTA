@@ -32,9 +32,9 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
       </div>
       <nav
         aria-label="Main navigation"
-        className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8"
+        className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8"
       >
-        <Link href="/" className="flex min-w-0 items-center gap-3" onClick={() => setIsOpen(false)}>
+        <Link href="/" className="flex shrink-0 items-center gap-3" onClick={() => setIsOpen(false)}>
           <span className="relative block size-14 shrink-0 overflow-hidden rounded-full border border-[#18aee5]/20 bg-white p-1 shadow-sm">
             <Image
               src="/ssta.jpg"
@@ -56,7 +56,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-8 lg:flex">
+        <div className="hidden min-w-0 items-center gap-4 whitespace-nowrap xl:flex">
           {navigationLinks.map((link) =>
             link.label === "Courses" ? (
               <div key={link.label} className="group relative">
@@ -83,22 +83,22 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
               </Link>
             ),
           )}
-          <Link href="/enrolment-application" onClick={() => setIsOpen(false)} className="rounded-xl px-3 py-3 text-sm font-black text-[#0067b1]">Enrolment Form</Link>
+          <Link href="/enrolment-application" onClick={() => setIsOpen(false)} className="rounded-xl px-2 py-3 text-sm font-black text-[#0067b1]">Enrolment Form</Link>
         </div>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-2 whitespace-nowrap xl:flex">
           {user ? (
             <>
               <Link
                 href={user.dashboardHref}
-                className="inline-flex items-center gap-3 rounded-full border border-[#18aee5]/20 bg-white px-3 py-2 text-left shadow-sm"
+                className="inline-flex max-w-[200px] items-center gap-2 rounded-full border border-[#18aee5]/20 bg-white px-3 py-2 text-left shadow-sm"
               >
-                <span className="flex size-10 items-center justify-center rounded-full bg-[#0067b1] text-sm font-black text-white">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#0067b1] text-sm font-black text-white">
                   {user.initials}
                 </span>
-                <span>
-                  <span className="block text-sm font-black text-[#020d24]">{user.name}</span>
-                  <span className="block text-xs font-bold text-[#53647c]">{user.email || user.phone || "Student"}</span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-black text-[#020d24]">{user.name}</span>
+                  <span className="block truncate text-xs font-bold text-[#53647c]">{user.email || user.phone || "Student"}</span>
                 </span>
               </Link>
               <SignOutButton className="rounded-full px-4 py-3 text-sm font-black text-[#0067b1] transition hover:bg-[#eef8ff] disabled:cursor-wait disabled:opacity-70">
@@ -131,7 +131,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
 
         <button
           type="button"
-          className="inline-flex size-11 items-center justify-center rounded-full border border-[#18aee5]/25 bg-white text-[#0067b1] lg:hidden"
+          className="inline-flex size-11 items-center justify-center rounded-full border border-[#18aee5]/25 bg-white text-[#0067b1] xl:hidden"
           aria-label={isOpen ? "Close menu" : "Open menu"}
           aria-expanded={isOpen}
           onClick={() => setIsOpen((open) => !open)}
@@ -146,7 +146,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-[#18aee5]/12 bg-white lg:hidden"
+            className="overflow-hidden border-t border-[#18aee5]/12 bg-white xl:hidden"
           >
             <div className="mx-auto grid max-w-7xl gap-2 px-5 py-5">
               {navigationLinks.map((link) => (
@@ -159,7 +159,7 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
                   {link.label}
                 </Link>
               ))}
-              <Link href="/enrolment-application" onClick={() => setIsOpen(false)} className="rounded-xl px-3 py-3 text-sm font-black text-[#0067b1]">Enrolment Form</Link>
+              <Link href="/enrolment-application" onClick={() => setIsOpen(false)} className="rounded-xl px-2 py-3 text-sm font-black text-[#0067b1]">Enrolment Form</Link>
               <div className="rounded-2xl bg-[#eef8ff] p-4">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0067b1]">
                   Course areas

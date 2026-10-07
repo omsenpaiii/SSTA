@@ -153,7 +153,7 @@ export default function Home() {
                   <div className={`p-6 sm:p-8 ${accredited ? "bg-[#0067b1] text-white" : "bg-[#f5b800] text-[#020d24]"}`}>
                     <p className="text-xs font-black uppercase tracking-[0.18em]">{accredited ? "Recognised training pathways" : "Skills & professional development"}</p>
                     <h3 className="mt-3 text-3xl font-black sm:text-4xl">{title}</h3>
-                    <p className="mt-4 text-sm font-semibold leading-6">{accredited ? "Explore qualifications, units and skill sets with nationally recognised course codes." : "Build practical skills through focused short courses and additional learning programs."}</p>
+                    <p className="mt-4 text-sm font-semibold leading-6">{accredited ? "Explore accredited qualifications, units, skill sets and training pathways." : "Build practical skills through focused short courses and additional learning programs."}</p>
                   </div>
                   <div className="p-6 sm:p-8">
                     <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#53647c]">Explore courses</p>

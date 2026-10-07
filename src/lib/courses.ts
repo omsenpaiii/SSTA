@@ -60,13 +60,16 @@ export type CourseCategory = {
   image: string;
 };
 
-/**
- * Nationally recognised training products use an official code such as
- * CPP20218, HLTAID011 or CPCWHS1001. SSTA-created and additional courses use
- * descriptive/internal codes and are displayed separately as non-accredited.
- */
-export function isAccreditedCourse(course: Pick<Course, "code">) {
-  return /^[A-Z]{3,}[A-Z0-9]*\d{3,}[A-Z0-9]*$/i.test(course.code.trim());
+// SSTA's course grouping uses the four designated non-accredited programs.
+const nonAccreditedCourseSlugs = new Set([
+  "criminal-justice-and-criminology",
+  "ai-productivity-masterclass",
+  "counselling-skills",
+  "communication-skills",
+]);
+
+export function isAccreditedCourse(course: Pick<Course, "slug">) {
+  return !nonAccreditedCourseSlugs.has(course.slug);
 }
 
 const previewVideo = "https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0";

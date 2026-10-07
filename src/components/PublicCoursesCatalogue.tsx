@@ -69,7 +69,7 @@ export default function PublicCoursesCatalogue({ initialFilter = "All" }: { init
   });
 
   const courseGroups = [
-    { title: "Accredited courses", accredited: true, description: "Qualifications, units and skill sets with nationally recognised course codes." },
+    { title: "Accredited courses", accredited: true, description: "Explore accredited qualifications, units, skill sets and training pathways." },
     { title: "Non-accredited courses", accredited: false, description: "Practical short courses and professional development for building specific skills." },
   ].map((group) => ({ ...group, courses: filteredCourses.filter((course) => isAccreditedCourse(course) === group.accredited) }))
     .filter((group) => group.courses.length > 0);
