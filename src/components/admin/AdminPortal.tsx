@@ -93,7 +93,7 @@ function matchesAssessmentStatus(status: string, filter: AssessmentStatusFilter)
 const studentNameCollator = new Intl.Collator("en-AU", { sensitivity: "base", numeric: true });
 
 function studentDisplayName(student: AdminStudent) {
-  return `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim() || student.email || "Unnamed";
+  return [student.first_name, student.last_name].map((name) => name?.trim()).filter(Boolean).join(" ") || student.email?.trim() || "Unnamed";
 }
 
 export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalProps) {
@@ -1502,6 +1502,7 @@ function StudentTableSection({
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-6">
         <div>
           <h1 className="text-3xl font-black tracking-normal">Students</h1>
+          <p className="mt-2 text-sm font-semibold text-slate-500">Sorted by name, A–Z</p>
           <div className="mt-4 flex gap-2" role="tablist" aria-label="Student status">
             {([
               ["all", "All"],
@@ -1540,7 +1541,7 @@ function StudentTableSection({
                 "Origin / Referrer",
                 view === "archived" ? "Archived" : "Created",
                 "Actions",
-              ].map((column) => <th key={column} className="px-6 py-4">{column}</th>)}
+              ].map((column) => <th key={column} aria-sort={column === "Name" ? "ascending" : undefined} className="px-6 py-4">{column}</th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

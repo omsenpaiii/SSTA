@@ -16,7 +16,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { InterestModal } from "@/components/InterestModal";
 import { benefits, faqs, josephProfile, testimonials } from "@/lib/site-content";
-import { courseCategories, courses, isCourseAvailableForEnrollment, type Course, type CourseLesson } from "@/lib/courses";
+import { courses, isAccreditedCourse, isCourseAvailableForEnrollment, type Course, type CourseLesson } from "@/lib/courses";
 import { getVideoEmbedUrl } from "@/lib/video-embeds";
 
 const reveal = {
@@ -140,37 +140,38 @@ export default function Home() {
               Industry-ready training with clear pathways.
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-base font-bold leading-7 text-[#53647c]">
-              Explore SSTA programs with clear categories, transparent pathways, practical requirements, and additional learning options.
+              Choose your pathway: accredited training or non-accredited skills development. Each has its own clearly separated course collection.
             </p>
           </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {courseCategories.map((category, index) => (
-              <motion.article
-                key={category.slug}
-                initial={{ opacity: 0, y: 36 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.55, delay: index * 0.08 }}
-                className="group overflow-hidden rounded-[1.25rem] border border-[#18aee5]/14 bg-white shadow-[0_24px_70px_rgba(0,74,143,0.1)] transition duration-500 hover:-translate-y-2"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <Image src={category.image} alt={category.title} fill sizes="(min-width:1024px) 25vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#020d24]/80 via-[#0067b1]/20 to-transparent" />
-                  <h3 className="absolute bottom-4 left-4 right-4 text-2xl font-black text-white">
-                    {category.title}
-                  </h3>
-                </div>
-                <div className="p-5">
-                  <p className="min-h-24 text-sm font-bold leading-6 text-[#53647c]">
-                    {category.description}
-                  </p>
-                  <Link href={`/${category.slug}`} className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#0067b1]">
-                    Learn More <ArrowRight size={16} />
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            {[true, false].map((accredited) => {
+              const pathwayCourses = activeCourses.filter((course) => isAccreditedCourse(course) === accredited);
+              const title = accredited ? "Accredited courses" : "Non-accredited courses";
+              return (
+                <section key={title} aria-label={title} className={`overflow-hidden rounded-3xl border ${accredited ? "border-[#0067b1]/20 bg-[#eef8ff]" : "border-[#f5b800]/30 bg-[#fffbef]"}`}>
+                  <div className={`p-6 sm:p-8 ${accredited ? "bg-[#0067b1] text-white" : "bg-[#f5b800] text-[#020d24]"}`}>
+                    <p className="text-xs font-black uppercase tracking-[0.18em]">{accredited ? "Recognised training pathways" : "Skills & professional development"}</p>
+                    <h3 className="mt-3 text-3xl font-black sm:text-4xl">{title}</h3>
+                    <p className="mt-4 text-sm font-semibold leading-6">{accredited ? "Explore qualifications, units and skill sets with nationally recognised course codes." : "Build practical skills through focused short courses and additional learning programs."}</p>
+                  </div>
+                  <div className="p-6 sm:p-8">
+                    <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#53647c]">Explore courses</p>
+                    <div className="divide-y divide-[#020d24]/10">
+                      {pathwayCourses.slice(0, 5).map((course) => (
+                        <Link key={course.slug} href={`/course/${course.slug}`} className="group flex items-center justify-between gap-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0067b1]">
+                          <span><span className="block text-base font-bold text-[#020d24] group-hover:text-[#0067b1]">{course.title}</span><span className="mt-1 block text-xs font-semibold text-[#53647c]">{course.category}</span></span>
+                          <ArrowRight size={18} className="shrink-0 text-[#0067b1] transition-transform group-hover:translate-x-1" />
+                        </Link>
+                      ))}
+                    </div>
+                    <Link href={`/courses?type=${accredited ? "accredited" : "non-accredited"}`} className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#020d24] px-6 py-3 text-sm font-black text-white transition hover:bg-[#0067b1]">
+                      View all {accredited ? "accredited" : "non-accredited"} courses <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </div>
       </section>
