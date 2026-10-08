@@ -35,6 +35,7 @@ import type { AdminSnapshot } from "@/lib/admin-data";
 import type { AdminStudent } from "@/lib/admin-data";
 import { formatAssignmentStatus } from "@/lib/cpp20218";
 import { isAccreditedCourse } from "@/lib/courses";
+import { matchesStudentBatch, matchesStudentSearch } from "@/lib/student-search";
 
 type AdminPortalProps = {
   admin: AdminUser;
@@ -107,6 +108,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [courseView, setCourseView] = useState<"accredited" | "non-accredited" | "archived">("non-accredited");
   const [paymentView, setPaymentView] = useState<"active" | "archived">("active");
   const [query, setQuery] = useState("");
+  const [studentBatchQuery, setStudentBatchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [leadSource, setLeadSource] = useState("all");
@@ -168,10 +170,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       if (studentView.startsWith("batch-")) return student.batch_number === Number(studentView.replace("batch-", "")) && !completedStudentKeys.has(student.user_key);
       return !completedStudentKeys.has(student.user_key);
     })
-    .filter((student) => {
-      const value = `${student.first_name ?? ""} ${student.last_name ?? ""} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase();
-      return value.includes(query.trim().toLowerCase());
-    })
+    .filter((student) => matchesStudentBatch(student.batch_number, studentBatchQuery))
+    .filter((student) => matchesStudentSearch(student, query))
     .sort((a, b) => {
       const nameResult = studentNameCollator.compare(studentDisplayName(a), studentDisplayName(b));
       return nameResult || studentNameCollator.compare(a.email ?? "", b.email ?? "");
@@ -277,7 +277,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     })),
   );
   const universalResults = query.trim() ? [
-    ...snapshot.students.filter((student) => `${studentDisplayName(student)} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5).map((student) => ({ label: studentDisplayName(student), meta: student.email ?? "Student", section: "students" as Section })),
+    ...snapshot.students.filter((student) => matchesStudentSearch(student, query)).slice(0, 5).map((student) => ({ label: studentDisplayName(student), meta: `Batch ${student.batch_number} · ${student.email ?? "Student"}`, section: "students" as Section })),
     ...snapshot.courses.filter((course) => `${course.title} ${course.code} ${course.slug}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5).map((course) => ({ label: course.title, meta: course.code, section: "courses" as Section })),
     ...snapshot.leads.filter((lead) => `${lead.first_name} ${lead.last_name} ${lead.email}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4).map((lead) => ({ label: `${lead.first_name} ${lead.last_name}`, meta: `Lead · ${lead.email}`, section: "leads" as Section })),
     ...enrollmentSearchResults.filter((item) => item.haystack.includes(query.toLowerCase())).slice(0, 4),
@@ -686,7 +686,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                   setSearchOpen(false);
                 }
               }}
-              placeholder="Search students, courses, leads, payments..."
+              placeholder={active === "students" ? "Search name, email, phone, or Batch 2..." : "Search students, courses, leads, payments..."}
               className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold outline-none transition focus:border-[#2392ee] focus:bg-white"
             />
             {searchOpen && query.trim() ? (
@@ -875,7 +875,15 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 archived: snapshot.students.filter((student) => Boolean(student.archived_at)).length,
               }}
               batches={studentBatches}
-              onViewChange={setStudentView}
+              batchQuery={studentBatchQuery}
+              onBatchQueryChange={(value) => {
+                setStudentBatchQuery(value);
+                if (studentView.startsWith("batch-")) setStudentView("all");
+              }}
+              onViewChange={(view) => {
+                setStudentView(view);
+                setStudentBatchQuery("");
+              }}
               onAdd={startAddingStudent}
               onEdit={startEditingStudent}
               onArchive={archiveStudent}
@@ -1471,6 +1479,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 function StudentTableSection({
   students,
   view,
+  batchQuery,
+  onBatchQueryChange,
   counts,
   batches,
   onViewChange,
@@ -1485,6 +1495,8 @@ function StudentTableSection({
 }: {
   students: AdminStudent[];
   view: StudentView;
+  batchQuery: string;
+  onBatchQueryChange: (value: string) => void;
   counts: Record<string, number>;
   batches: number[];
   onViewChange: (view: StudentView) => void;
@@ -1503,7 +1515,7 @@ function StudentTableSection({
         <div>
           <h1 className="text-3xl font-black tracking-normal">Students</h1>
           <p className="mt-2 text-sm font-semibold text-slate-500">Sorted by name, A–Z</p>
-          <div className="mt-4 flex gap-2" role="tablist" aria-label="Student status">
+          <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Student status">
             {([
               ["all", "All"],
               ...batches.map((batch) => [`batch-${batch}`, `Batch ${batch}`] as const),
@@ -1528,6 +1540,25 @@ function StudentTableSection({
         <button onClick={onAdd} className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#1f7ac1] px-4 text-sm font-black text-white">
           <Plus size={18} /> Add Student
         </button>
+      </div>
+      <div className="flex flex-wrap items-end gap-4 border-b border-slate-100 p-6">
+        <label className="grid w-full gap-2 text-sm font-bold text-slate-700 sm:max-w-sm">
+          Search by batch
+          <span className="relative">
+            <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={batchQuery}
+              onChange={(event) => onBatchQueryChange(event.target.value)}
+              placeholder="e.g. Batch 1, Batch 2, or 3"
+              aria-describedby="student-batch-search-help"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 font-semibold outline-none focus-visible:border-[#1f7ac1] focus-visible:ring-2 focus-visible:ring-[#1f7ac1]/20"
+            />
+          </span>
+        </label>
+        {batchQuery ? <button type="button" onClick={() => onBatchQueryChange("")} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold text-[#1f7ac1] hover:bg-slate-50">Clear batch search</button> : null}
+        <p aria-live="polite" className="py-3 text-sm font-semibold text-slate-500">{students.length} {students.length === 1 ? "student" : "students"} shown</p>
+        <p id="student-batch-search-help" className="w-full text-xs font-semibold text-slate-500">Enter a batch number or “Batch 2”. Use the search above to narrow by student name, email or phone.</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-left">
@@ -1613,7 +1644,7 @@ function StudentTableSection({
             )) : (
               <tr>
                 <td className="px-6 py-10 text-center text-sm font-bold text-slate-500" colSpan={7}>
-                  No {view} students found.
+                  No students match the current filters. Clear the batch search or choose another view.
                 </td>
               </tr>
             )}
