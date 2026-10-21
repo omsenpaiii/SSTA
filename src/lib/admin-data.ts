@@ -2,6 +2,7 @@ import { z } from "zod";
 import { manualStudentKey } from "@/lib/admin";
 import { getAdminCourses, getCourses } from "@/lib/course-repository";
 import {
+  CPP20218_COURSE_SLUG,
   getAdminCppAssignmentSnapshot,
   reviewAssignmentSubmission,
   setStudentAssignmentAccess,
@@ -391,7 +392,7 @@ export async function getAdminSnapshot(adminEmail = ""): Promise<AdminSnapshot> 
         section: "leads" as const,
         read: readKeys.has(`lead:${lead.type}:${lead.id}`),
       })),
-      ...cpp20218.students.flatMap((student) => student.assignments
+      ...cpp20218.students.filter((student) => student.enrollmentStatus === "active").flatMap((student) => student.assignments
         .filter((assignment) => assignment.submission?.status === "submitted")
         .map((assignment) => ({
           eventKey: `assessment:${assignment.submission!.id}`,
@@ -1108,4 +1109,16 @@ export function normalizeCoursePayload(form: Record<string, FormDataEntryValue>)
     unitSummary: String(form.unitSummary ?? ""),
     availability: String(form.availability ?? "open"),
   };
+}
+
+/** Remove only CPP20218 access, retaining submissions and the student profile. */
+export async function setAdminAssessmentEnrollment(input: unknown) {
+  const { userKey, active } = z.object({ userKey: z.string().trim().min(1), active: z.boolean() }).parse(input);
+  const db = requireSupabase();
+  const { data, error } = await db.from("course_enrollments")
+    .update({ status: active ? "active" : "archived", updated_at: new Date().toISOString() })
+    .eq("user_key", userKey).eq("course_slug", CPP20218_COURSE_SLUG)
+    .eq("status", active ? "archived" : "active").select("id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("The enrolment has changed. Refresh and try again.");
 }

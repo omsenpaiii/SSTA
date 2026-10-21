@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { uploadAssessmentFile } from "@/lib/assignment-upload-client";
 import { useRef, useState } from "react";
 import { Loader2, UploadCloud } from "lucide-react";
 
@@ -12,6 +14,7 @@ export function AssignmentUploadForm({
   assignmentKey,
   hasSubmission,
 }: AssignmentUploadFormProps) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [studentComment, setStudentComment] = useState("");
   const [pending, setPending] = useState(false);
@@ -32,28 +35,17 @@ export function AssignmentUploadForm({
       return;
     }
 
-    const formData = new FormData();
-    formData.set("file", file);
-    formData.set("studentComment", studentComment);
-
-    const response = await fetch(`/api/student/assignments/${assignmentKey}/submit`, {
-      method: "POST",
-      body: formData,
-    });
-    const payload = await response.json();
-
-    if (!response.ok) {
-      setError(payload.error ?? "Upload failed.");
+    try {
+      await uploadAssessmentFile(`/api/student/assignments/${assignmentKey}/submit`, file, { studentComment });
+      setMessage("Assessment uploaded. SSTA can now review your latest submission.");
+      if (inputRef.current) inputRef.current.value = "";
+      setStudentComment("");
+      router.refresh();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Upload failed. Check your connection and retry.");
+    } finally {
       setPending(false);
-      return;
     }
-
-    setMessage("Assessment uploaded. SSTA can now review your latest submission.");
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
-    setStudentComment("");
-    setPending(false);
   }
 
   return (
@@ -67,6 +59,7 @@ export function AssignmentUploadForm({
           className="block w-full rounded-[8px] border border-[#dbe3ec] bg-white px-3 py-2 text-sm font-semibold text-[#475569] file:mr-4 file:rounded-[7px] file:border-0 file:bg-[#eef5ff] file:px-3 file:py-2 file:text-sm file:font-black file:text-[#0f6eb8]"
         />
       </label>
+      <p className="mt-2 text-xs font-semibold text-[#6b7f95]">Maximum file size: 50MB.</p>
       <label className="mt-4 grid gap-2 text-sm font-black text-[#081221]">
         Comment for assessor <span className="font-semibold text-[#6b7f95]">(optional)</span>
         <textarea

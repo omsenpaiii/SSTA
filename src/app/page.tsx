@@ -282,7 +282,7 @@ export default function Home() {
                 About SSTA
               </p>
               <h2 className="text-4xl font-black tracking-normal sm:text-5xl">
-                Joseph brings three decades of security and risk leadership.
+                Joseph brings four decades of security and risk leadership.
               </h2>
               <p className="mt-5 text-base font-bold leading-7 text-[#53647c]">
                 {josephProfile.summary}

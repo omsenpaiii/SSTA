@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/admin";
 import {
   archiveAdminStudent,
+  setAdminAssessmentEnrollment,
   archiveAdminLeads,
   archiveAdminPayment,
   completeAdminEnrollment,
@@ -93,6 +94,8 @@ export async function POST(request: Request) {
       );
     } else if (action === "review-assignment") {
       await reviewAdminAssignment(payload, admin.email);
+    } else if (action === "set-assessment-enrollment") {
+      await setAdminAssessmentEnrollment(payload);
     } else if (action === "update-assignment-access") {
       await updateAdminAssignmentAccess(payload, admin.email);
     } else if (action === "review-enrollment-application") {

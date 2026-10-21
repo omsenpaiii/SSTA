@@ -23,7 +23,7 @@ export const josephProfile = {
   name: "Joseph",
   title: "Training Manager",
   summary:
-    "Joseph is the Training Manager of SSTA and a senior security and risk management professional with over 30 years of experience across major events, corporate security, executive protection, security training, risk assessment, and compliance.",
+    "Joseph is the Training Manager of SSTA and a senior security and risk management professional with over 40 years of experience across major events, corporate security, executive protection, security training, risk assessment, and compliance.",
   details: [
     "Joseph has led and overseen large-scale, high-risk security operations for some of Australia's most complex and high-profile events, including the Formula 1 Grand Prix, Melbourne Cup Carnival, Australian Open, MotoGP, as well as major concerts and festivals.",
     "His experience spans close collaboration with Victoria Police, emergency services, government agencies, corporate clients, and venue operators, delivering security outcomes that are safe, compliant, and operationally efficient.",

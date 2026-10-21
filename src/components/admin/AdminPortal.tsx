@@ -35,15 +35,16 @@ import type { AdminSnapshot } from "@/lib/admin-data";
 import type { AdminStudent } from "@/lib/admin-data";
 import { formatAssignmentStatus } from "@/lib/cpp20218";
 import { isAccreditedCourse } from "@/lib/courses";
-import { matchesStudentBatch, matchesStudentSearch } from "@/lib/student-search";
+import { uploadAssessmentFile } from "@/lib/assignment-upload-client";
+import { matchesStudentSearch } from "@/lib/student-search";
 
 type AdminPortalProps = {
   admin: AdminUser;
   snapshot: AdminSnapshot;
 };
 
-type Section = "dashboard" | "students" | "enrollments" | "add-student" | "completed" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel";
-type StudentView = "all" | `batch-${number}` | "completed" | "archived";
+type Section = "dashboard" | "students" | "enrollments" | "add-student" | "completed" | "courses" | "lessons" | "assessments" | "leads" | "payments" | "excel" | "my-details";
+type StudentView = "all" | "completed" | "archived";
 type EnrollmentView = "all" | "paid" | "part-paid" | "unpaid" | "completed";
 type AssessmentStatusFilter =
   | "all"
@@ -62,6 +63,7 @@ const navItems: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: "courses", label: "Courses", icon: GraduationCap },
   { id: "lessons", label: "Lessons", icon: BookOpen },
   { id: "assessments", label: "Assessments", icon: ClipboardCheck },
+  { id: "my-details", label: "My Details", icon: Users },
   { id: "leads", label: "Leads", icon: Database },
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "excel", label: "Excel", icon: FileSpreadsheet },
@@ -108,13 +110,13 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
   const [courseView, setCourseView] = useState<"accredited" | "non-accredited" | "archived">("non-accredited");
   const [paymentView, setPaymentView] = useState<"active" | "archived">("active");
   const [query, setQuery] = useState("");
-  const [studentBatchQuery, setStudentBatchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [leadSource, setLeadSource] = useState("all");
   const [leadView, setLeadView] = useState<"active" | "archived">("active");
   const [selectedLeadKeys, setSelectedLeadKeys] = useState<Set<string>>(() => new Set());
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const [assessmentRoster, setAssessmentRoster] = useState("active");
   const [assessmentQuery, setAssessmentQuery] = useState("");
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatusFilter>("all");
   const [assessmentCluster, setAssessmentCluster] = useState("all");
@@ -167,17 +169,15 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       if (studentView === "archived") return Boolean(student.archived_at);
       if (student.archived_at) return false;
       if (studentView === "completed") return completedStudentKeys.has(student.user_key);
-      if (studentView.startsWith("batch-")) return student.batch_number === Number(studentView.replace("batch-", "")) && !completedStudentKeys.has(student.user_key);
       return !completedStudentKeys.has(student.user_key);
     })
-    .filter((student) => matchesStudentBatch(student.batch_number, studentBatchQuery))
     .filter((student) => matchesStudentSearch(student, query))
     .sort((a, b) => {
       const nameResult = studentNameCollator.compare(studentDisplayName(a), studentDisplayName(b));
       return nameResult || studentNameCollator.compare(a.email ?? "", b.email ?? "");
     });
   const activeCourses = snapshot.courses.filter((course) => course.isActive);
-  const studentBatches = Array.from(new Set(snapshot.students.filter((student) => !student.archived_at).map((student) => student.batch_number))).sort((a, b) => a - b);
+
   const leadSources = Array.from(new Set(snapshot.leads.filter((lead) => !lead.archived_at).map((lead) => lead.referred_by).filter((source): source is string => Boolean(source)))).sort((a, b) => a.localeCompare(b));
   const visibleLeads = snapshot.leads.filter((lead) => {
     if (leadView === "archived" ? !lead.archived_at : Boolean(lead.archived_at)) return false;
@@ -201,6 +201,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     new Set(snapshot.cpp20218.students.map((student) => student.batchNumber ?? 2)),
   ).sort((a, b) => a - b);
   const filteredCppStudents = snapshot.cpp20218.students
+    .filter((student) => (student.enrollmentStatus ?? "active") === assessmentRoster)
     .map((student) => {
       const name = `${student.firstName ?? ""} ${student.lastName ?? ""}`.trim() || student.email || student.userKey;
       const haystack = `${name} ${student.email ?? ""} ${student.phone ?? ""}`.toLowerCase();
@@ -268,7 +269,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
       section: "students" as Section,
     };
   });
-  const assessmentSearchResults = snapshot.cpp20218.students.flatMap((student) =>
+  const assessmentSearchResults = snapshot.cpp20218.students.filter((student) => student.enrollmentStatus === "active").flatMap((student) =>
     student.assignments.map((assignment) => ({
       label: `${student.firstName ?? ""} ${student.lastName ?? ""}`.trim() || student.email || "Learner",
       meta: `Assessment · Cluster ${assignment.position} · ${assignment.status.replaceAll("_", " ")}`,
@@ -277,7 +278,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
     })),
   );
   const universalResults = query.trim() ? [
-    ...snapshot.students.filter((student) => matchesStudentSearch(student, query)).slice(0, 5).map((student) => ({ label: studentDisplayName(student), meta: `Batch ${student.batch_number} · ${student.email ?? "Student"}`, section: "students" as Section })),
+    ...snapshot.students.filter((student) => matchesStudentSearch(student, query)).slice(0, 5).map((student) => ({ label: studentDisplayName(student), meta: student.email ?? "Student", section: "students" as Section })),
     ...snapshot.courses.filter((course) => `${course.title} ${course.code} ${course.slug}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5).map((course) => ({ label: course.title, meta: course.code, section: "courses" as Section })),
     ...snapshot.leads.filter((lead) => `${lead.first_name} ${lead.last_name} ${lead.email}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4).map((lead) => ({ label: `${lead.first_name} ${lead.last_name}`, meta: `Lead · ${lead.email}`, section: "leads" as Section })),
     ...enrollmentSearchResults.filter((item) => item.haystack.includes(query.toLowerCase())).slice(0, 4),
@@ -574,19 +575,17 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 
   async function handleAdminAssignmentUpload(formData: FormData) {
     setNotice(null);
-    const response = await fetch("/api/admin/assignments/upload", {
-      method: "POST",
-      body: formData,
-    });
-    const json = await response.json();
-
-    if (!response.ok) {
-      setNotice({ type: "error", text: json.error ?? "Unable to upload assessment." });
-      return;
+    try {
+      const file = formData.get("file");
+      if (!(file instanceof File)) throw new Error("Choose an assessment file.");
+      const json = await uploadAssessmentFile("/api/admin/assignments/upload", file, {
+        userKey: String(formData.get("userKey") ?? ""), assignmentKey: String(formData.get("assignmentKey") ?? ""), studentComment: String(formData.get("studentComment") ?? ""),
+      });
+      setSnapshot(json.snapshot);
+      setNotice({ type: "success", text: "Assessment uploaded for learner." });
+    } catch (error) {
+      setNotice({ type: "error", text: error instanceof Error ? error.message : "Unable to upload assessment." });
     }
-
-    setSnapshot(json.snapshot);
-    setNotice({ type: "success", text: "Assessment uploaded for learner." });
   }
 
   return (
@@ -686,7 +685,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                   setSearchOpen(false);
                 }
               }}
-              placeholder={active === "students" ? "Search name, email, phone, or Batch 2..." : "Search students, courses, leads, payments..."}
+              placeholder={active === "students" ? "Search name, email or phone..." : "Search students, courses, leads, payments..."}
               className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-bold outline-none transition focus:border-[#2392ee] focus:bg-white"
             />
             {searchOpen && query.trim() ? (
@@ -870,20 +869,11 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               view={studentView}
               counts={{
                 all: snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key)).length,
-                ...Object.fromEntries(studentBatches.map((batch) => [`batch-${batch}`, snapshot.students.filter((student) => !student.archived_at && !completedStudentKeys.has(student.user_key) && student.batch_number === batch).length])),
+
                 completed: snapshot.students.filter((student) => !student.archived_at && completedStudentKeys.has(student.user_key)).length,
                 archived: snapshot.students.filter((student) => Boolean(student.archived_at)).length,
               }}
-              batches={studentBatches}
-              batchQuery={studentBatchQuery}
-              onBatchQueryChange={(value) => {
-                setStudentBatchQuery(value);
-                if (studentView.startsWith("batch-")) setStudentView("all");
-              }}
-              onViewChange={(view) => {
-                setStudentView(view);
-                setStudentBatchQuery("");
-              }}
+              onViewChange={setStudentView}
               onAdd={startAddingStudent}
               onEdit={startEditingStudent}
               onArchive={archiveStudent}
@@ -951,7 +941,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 <TextField name="dob" label="Date of birth (optional)" type="date" defaultValue={editingStudent?.date_of_birth ?? ""} />
                 <TextField name="usi" label="USI (optional, 10 characters)" defaultValue={editingStudent?.usi ?? ""} />
                 <TextField name="address" label="Residential address (optional)" defaultValue={editingStudent?.residential_address ?? ""} />
-                <TextField name="batchNumber" label="Batch number" type="number" defaultValue={String(editingStudent?.batch_number ?? 2)} />
+                <input type="hidden" name="batchNumber" value={editingStudent?.batch_number ?? 2} />
                 <TextField name="referredBy" label="Referred by (optional)" defaultValue={editingStudent?.referred_by ?? ""} />
                 <label className="grid gap-2 text-sm font-black text-slate-700">
                   Origin
@@ -1153,10 +1143,15 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
               <div>
                 <h1 className="text-4xl font-black tracking-normal">CPP20218 Cluster Reviews</h1>
                 <p className="mt-2 text-lg font-bold text-slate-500">
-                  Review learner submissions, manage cluster access, and open assessor answer keys.
+                  Open a student’s name to review submissions and manage access. Use “Unlock cluster” to give access immediately.
                 </p>
               </div>
 
+              <label className="inline-flex items-center gap-3 text-sm font-bold">Student list
+                <select aria-label="Assessment student list" value={assessmentRoster} onChange={(event) => setAssessmentRoster(event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-4">
+                  <option value="active">Active students</option><option value="archived">Removed students</option>
+                </select>
+              </label>
               <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="grid gap-3 xl:grid-cols-[1.5fr_repeat(4,minmax(150px,1fr))]">
                   <label className="relative block">
@@ -1164,11 +1159,13 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                     <input
                       value={assessmentQuery}
                       onChange={(event) => setAssessmentQuery(event.target.value)}
+                      aria-label="Search assessment students"
                       placeholder="Search student, email, or phone..."
                       className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-bold outline-none focus:border-[#1f7ac1] focus:bg-white"
                     />
                   </label>
                   <select
+                    aria-label="Assessment status"
                     value={assessmentStatus}
                     onChange={(event) => setAssessmentStatus(event.target.value as AssessmentStatusFilter)}
                     className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
@@ -1181,6 +1178,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                     <option value="locked">Locked</option>
                   </select>
                   <select
+                    aria-label="Assessment cluster"
                     value={assessmentCluster}
                     onChange={(event) => setAssessmentCluster(event.target.value)}
                     className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
@@ -1193,6 +1191,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                     ))}
                   </select>
                   <select
+                    aria-label="Assessment source"
                     value={assessmentSource}
                     onChange={(event) => setAssessmentSource(event.target.value)}
                     className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
@@ -1203,6 +1202,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                     ))}
                   </select>
                   <select
+                    aria-label="Assessment batch"
                     value={assessmentBatch}
                     onChange={(event) => setAssessmentBatch(event.target.value)}
                     className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
@@ -1244,7 +1244,8 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 {filteredCppStudents.length ? filteredCppStudents.map((student) => {
                   const name = student.displayName;
                   return (
-                    <section key={student.userKey} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <details key={student.userKey} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                      <summary className="cursor-pointer rounded-xl px-6 py-5 text-lg font-black focus-visible:outline-2 focus-visible:outline-[#1f7ac1]">{name}</summary>
                       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-6">
                         <div>
                           <h2 className="text-2xl font-black">{name}</h2>
@@ -1252,9 +1253,14 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                             {student.email ?? "No email"} · {student.phone ?? "No phone"} · Source: {student.source ?? "Unknown"} · Batch {student.batchNumber ?? 2}
                           </p>
                         </div>
-                        <span className="rounded-full bg-[#eef4fb] px-4 py-2 text-sm font-black text-[#1f7ac1]">
-                          {student.assignments.filter((assignment) => assignment.unlocked).length}/{student.assignments.length} unlocked
-                        </span>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="rounded-full bg-[#eef4fb] px-4 py-2 text-sm font-black text-[#1f7ac1]">{student.assignments.filter((assignment) => assignment.unlocked).length}/{student.assignments.length} unlocked</span>
+                          <button type="button" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-[#1f7ac1]" onClick={async () => {
+                            const restoring = student.enrollmentStatus === "archived";
+                            if (!window.confirm(restoring ? `Restore CPP20218 access for ${name}? Previous cluster permissions will apply.` : `Remove ${name} from assessments and suspend CPP20218 course access? Their files and other courses are retained. Restore them from Removed students.`)) return;
+                            await runAction("set-assessment-enrollment", { userKey: student.userKey, active: restoring }, restoring ? "Student restored to assessments." : "Student removed from assessments; files retained.");
+                          }}>{student.enrollmentStatus === "archived" ? "Restore student" : "Remove from assessments"}</button>
+                        </div>
                       </div>
                       <div className="divide-y divide-slate-100">
                         {student.assignments.map((assignment) => (
@@ -1281,6 +1287,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                               </span>
                               <button
                                 type="button"
+                                disabled={student.enrollmentStatus === "archived"}
                                 onClick={() => toggleAssignmentAccess(student.userKey, assignment.assignmentKey, !assignment.unlocked)}
                                 className="block h-10 rounded-xl border border-slate-200 px-4 text-sm font-black text-[#1f7ac1]"
                               >
@@ -1367,7 +1374,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                                       </button>
                                     </div>
                                   </form>
-                                  {assignment.unlocked ? (
+                                  {assignment.unlocked && student.enrollmentStatus !== "archived" ? (
                                     <form action={handleAdminAssignmentUpload} className="rounded-xl border border-dashed border-slate-200 bg-white p-4">
                                       <input type="hidden" name="userKey" value={student.userKey} />
                                       <input type="hidden" name="assignmentKey" value={assignment.assignmentKey} />
@@ -1397,7 +1404,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                                   <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
                                     No submission yet.
                                   </div>
-                                  {assignment.unlocked ? (
+                                  {assignment.unlocked && student.enrollmentStatus !== "archived" ? (
                                     <form action={handleAdminAssignmentUpload} className="rounded-xl border border-dashed border-slate-200 bg-white p-4">
                                       <input type="hidden" name="userKey" value={student.userKey} />
                                       <input type="hidden" name="assignmentKey" value={assignment.assignmentKey} />
@@ -1422,7 +1429,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                                     </form>
                                   ) : (
                                     <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-black text-slate-500">
-                                      Unlock this cluster before uploading on behalf of the learner.
+                                      {student.enrollmentStatus === "archived" ? "Restore this student before uploading an assessment." : "Unlock this cluster before uploading on behalf of the learner."}
                                     </div>
                                   )}
                                 </div>
@@ -1431,7 +1438,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                           </div>
                         ))}
                       </div>
-                    </section>
+                    </details>
                   );
                 }) : (
                   <section className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-500">
@@ -1440,6 +1447,13 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 )}
               </div>
             </div>
+          ) : null}
+
+          {active === "my-details" ? (
+            <FormSection title="My Details" description="These details belong to the account currently signed in. Use your own account so actions are recorded under your name.">
+              <dl className="grid gap-5 sm:grid-cols-2"><div><dt className="text-sm font-bold text-slate-500">Name</dt><dd className="mt-2 text-lg font-bold">{admin.name}</dd></div><div><dt className="text-sm font-bold text-slate-500">Email</dt><dd className="mt-2 text-lg font-bold">{admin.email}</dd></div></dl>
+              <p className="mt-6 text-sm font-semibold text-slate-600">If these are someone else’s details, sign out and sign in with your own SSTA admin account. Contact SSTA support if your account needs updating.</p>
+            </FormSection>
           ) : null}
 
           {active === "excel" ? (
@@ -1479,10 +1493,7 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
 function StudentTableSection({
   students,
   view,
-  batchQuery,
-  onBatchQueryChange,
   counts,
-  batches,
   onViewChange,
   onAdd,
   onEdit,
@@ -1495,10 +1506,7 @@ function StudentTableSection({
 }: {
   students: AdminStudent[];
   view: StudentView;
-  batchQuery: string;
-  onBatchQueryChange: (value: string) => void;
   counts: Record<string, number>;
-  batches: number[];
   onViewChange: (view: StudentView) => void;
   onAdd: () => void;
   onEdit: (student: AdminStudent) => void;
@@ -1518,7 +1526,6 @@ function StudentTableSection({
           <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Student status">
             {([
               ["all", "All"],
-              ...batches.map((batch) => [`batch-${batch}`, `Batch ${batch}`] as const),
               ["completed", "Completed"],
               ["archived", "Recycle Bin"],
             ] as readonly (readonly [StudentView, string])[]).map(([value, label]) => (
@@ -1541,25 +1548,7 @@ function StudentTableSection({
           <Plus size={18} /> Add Student
         </button>
       </div>
-      <div className="flex flex-wrap items-end gap-4 border-b border-slate-100 p-6">
-        <label className="grid w-full gap-2 text-sm font-bold text-slate-700 sm:max-w-sm">
-          Search by batch
-          <span className="relative">
-            <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="search"
-              value={batchQuery}
-              onChange={(event) => onBatchQueryChange(event.target.value)}
-              placeholder="e.g. Batch 1, Batch 2, or 3"
-              aria-describedby="student-batch-search-help"
-              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 font-semibold outline-none focus-visible:border-[#1f7ac1] focus-visible:ring-2 focus-visible:ring-[#1f7ac1]/20"
-            />
-          </span>
-        </label>
-        {batchQuery ? <button type="button" onClick={() => onBatchQueryChange("")} className="h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold text-[#1f7ac1] hover:bg-slate-50">Clear batch search</button> : null}
-        <p aria-live="polite" className="py-3 text-sm font-semibold text-slate-500">{students.length} {students.length === 1 ? "student" : "students"} shown</p>
-        <p id="student-batch-search-help" className="w-full text-xs font-semibold text-slate-500">Enter a batch number or “Batch 2”. Use the search above to narrow by student name, email or phone.</p>
-      </div>
+      <p aria-live="polite" className="px-6 py-3 text-sm font-semibold text-slate-500">{students.length} {students.length === 1 ? "student" : "students"} shown · Search by name, email or phone above.</p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-left">
           <thead className="bg-slate-50 text-xs font-black uppercase tracking-[0.08em] text-slate-500">
@@ -1568,7 +1557,6 @@ function StudentTableSection({
                 "Name",
                 "Email",
                 "Phone",
-                "Batch",
                 "Origin / Referrer",
                 view === "archived" ? "Archived" : "Created",
                 "Actions",
@@ -1581,7 +1569,6 @@ function StudentTableSection({
                 <td className="px-6 py-4 font-black text-slate-900">{studentDisplayName(student)}</td>
                 <td className="px-6 py-4">{student.email || "—"}</td>
                 <td className="px-6 py-4">{student.phone || "—"}</td>
-                <td className="px-6 py-4">Batch {student.batch_number ?? 2}</td>
                 <td className="px-6 py-4"><span className="rounded-full bg-[#eef5fb] px-3 py-1 text-xs font-black capitalize text-[#1f7ac1]">{student.origin.replace("_", " ")}</span>{student.referred_by ? <span className="ml-2 text-xs font-bold text-slate-500">{student.referred_by}</span> : null}</td>
                 <td className="px-6 py-4">
                   {new Date(view === "archived" ? student.archived_at! : student.created_at).toLocaleDateString("en-AU")}
@@ -1643,8 +1630,8 @@ function StudentTableSection({
               </tr>
             )) : (
               <tr>
-                <td className="px-6 py-10 text-center text-sm font-bold text-slate-500" colSpan={7}>
-                  No students match the current filters. Clear the batch search or choose another view.
+                <td className="px-6 py-10 text-center text-sm font-bold text-slate-500" colSpan={6}>
+                  No students match the current filters. Clear the search or choose another view.
                 </td>
               </tr>
             )}

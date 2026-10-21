@@ -92,6 +92,7 @@ export type StudentCppAssignment = {
 };
 
 export type AdminCppStudent = {
+  enrollmentStatus: "active" | "archived";
   userKey: string;
   firstName: string | null;
   lastName: string | null;
@@ -218,12 +219,13 @@ export async function getAdminCppAssignmentSnapshot(): Promise<{
     supabase
       .from("student_profiles")
       .select("user_key,first_name,last_name,email,phone,batch_number")
+      .is("archived_at", null)
       .order("first_name", { ascending: true }),
     supabase
       .from("course_enrollments")
-      .select("user_key,source")
+      .select("user_key,source,status")
       .eq("course_slug", CPP20218_COURSE_SLUG)
-      .eq("status", "active"),
+      .in("status", ["active", "archived"]),
     supabase
       .from("course_assignment_resources")
       .select("*")
@@ -233,8 +235,8 @@ export async function getAdminCppAssignmentSnapshot(): Promise<{
   ]);
 
   const enrolled = new Map(
-    ((enrollmentsResult.data ?? []) as { user_key: string; source: string | null }[]).map(
-      (row) => [row.user_key, row.source],
+    ((enrollmentsResult.data ?? []) as { user_key: string; source: string | null; status: "active" | "archived" }[]).map(
+      (row) => [row.user_key, row],
     ),
   );
   const profiles = ((profilesResult.data ?? []) as Array<{
@@ -254,7 +256,8 @@ export async function getAdminCppAssignmentSnapshot(): Promise<{
       email: profile.email,
       phone: profile.phone,
       batchNumber: profile.batch_number ?? 2,
-      source: enrolled.get(profile.user_key) ?? null,
+      source: enrolled.get(profile.user_key)?.source ?? null,
+      enrollmentStatus: enrolled.get(profile.user_key)!.status,
       assignments: await getStudentCppAssignments(profile.user_key),
     })),
   );
