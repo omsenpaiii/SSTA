@@ -940,8 +940,16 @@ export function AdminPortal({ admin, snapshot: initialSnapshot }: AdminPortalPro
                 <TextField name="phone" label="Phone number (email or phone required)" defaultValue={editingStudent?.phone ?? ""} />
                 <TextField name="dob" label="Date of birth (optional)" type="date" defaultValue={editingStudent?.date_of_birth ?? ""} />
                 <TextField name="usi" label="USI (optional, 10 characters)" defaultValue={editingStudent?.usi ?? ""} />
+                <TextField
+                  name="batchNumber"
+                  label="Batch number"
+                  type="number"
+                  min={1}
+                  step={1}
+                  required
+                  defaultValue={String(editingStudent?.batch_number ?? 2)}
+                />
                 <TextField name="address" label="Residential address (optional)" defaultValue={editingStudent?.residential_address ?? ""} />
-                <input type="hidden" name="batchNumber" value={editingStudent?.batch_number ?? 2} />
                 <TextField name="referredBy" label="Referred by (optional)" defaultValue={editingStudent?.referred_by ?? ""} />
                 <label className="grid gap-2 text-sm font-black text-slate-700">
                   Origin
@@ -1708,6 +1716,8 @@ function TextField({
   required,
   defaultValue,
   readOnly,
+  min,
+  step,
 }: {
   name: string;
   label: string;
@@ -1715,6 +1725,8 @@ function TextField({
   required?: boolean;
   defaultValue?: string;
   readOnly?: boolean;
+  min?: number;
+  step?: number;
 }) {
   return (
     <label className="grid gap-2 text-sm font-black text-slate-700">
@@ -1725,6 +1737,8 @@ function TextField({
         required={required}
         defaultValue={defaultValue}
         readOnly={readOnly}
+        min={min}
+        step={step}
         className="h-12 rounded-xl border border-slate-200 px-4 font-bold outline-none focus:border-[#1f7ac1]"
       />
     </label>
