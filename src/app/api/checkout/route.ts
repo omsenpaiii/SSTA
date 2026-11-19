@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     if (course.slug === CPP20218_COURSE_SLUG) {
-      return NextResponse.json({ error: "Security enrollment and LLN are free. Pay for Cluster 1 from your student portal.", courseUrl: `/dashboard/course/${course.slug}?tab=activities` }, { status: 409 });
+      return NextResponse.json({ error: "Start Cluster 1 from your student portal. Contact SSTA if you need course access.", courseUrl: `/dashboard/course/${course.slug}?tab=activities` }, { status: 409 });
     }
 
     if (!isCourseAvailableForEnrollment(course)) {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
-      const signInReturnTo = `/enroll?course=${course.slug}`;
+      const signInReturnTo = `/course/${course.slug}`;
 
       return NextResponse.json(
         {
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
       description: "Compulsory initial payment. The SSTA team will contact you about enrolment and the remaining course balance.",
       customerEmail: email,
       successPath: `/success?course=${course.slug}`,
-      cancelPath: `/enroll?course=${course.slug}`,
+      cancelPath: `/course/${course.slug}`,
       metadata,
     });
 

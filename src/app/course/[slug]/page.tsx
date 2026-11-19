@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, CheckCircle2, Clock, DollarSign, FileText, Lock, Mail, Phone, Play, ShieldCheck } from "lucide-react";
+import { FohsCoursePage } from "@/components/FohsCoursePage";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -37,6 +38,8 @@ export default async function CoursePage({ params }: CoursePageProps) {
   if (!course) {
     notFound();
   }
+
+  if (course.slug === "front-of-house-security") return <FohsCoursePage course={course} />;
 
   const previewLesson = course.lessons.find((lesson) => lesson.isPreview) ?? course.lessons[0];
   const previewVideoUrl = previewLesson
@@ -77,12 +80,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
               ) : isOpenForEnrollment ? (
                 <>
                   <CheckoutButton courseSlug={course.slug} />
-                  <Link
-                    href={`/enroll?course=${course.slug}`}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#18aee5]/35 bg-white px-5 text-sm font-black text-[#0067b1]"
-                  >
-                    Enrol Form <ArrowRight size={16} />
-                  </Link>
+
                 </>
               ) : (
                 <Link

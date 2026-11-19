@@ -57,11 +57,7 @@ export async function linkSecurityEnrollment(user: AppUser) {
         },
         { onConflict: "user_key" },
       ),
-    db
-      .from("lln_attempts")
-      .update({ user_key: user.id, email: user.email })
-      .eq("user_key", guest)
-      .eq("course_slug", CPP20218_COURSE_SLUG),
+
   ]);
   for (const result of results) if (result.error) throw result.error;
   // Ignore existing enrollment rows so a repeated visit cannot undo an admin decision or payment.

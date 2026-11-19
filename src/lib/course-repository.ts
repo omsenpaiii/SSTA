@@ -1,3 +1,4 @@
+import { resolveCourseImage } from "@/lib/course-image-updates";
 import { unstable_noStore as noStore } from "next/cache";
 import {
   courses as fallbackCourses,
@@ -166,7 +167,7 @@ function mapRowsToCourses(
         duration: row.duration ?? fallback?.duration ?? "",
         description: row.description,
         overview: row.overview ?? fallback?.overview ?? row.description,
-        image: row.image_url ?? fallback?.image ?? "/hero.jpeg",
+        image: resolveCourseImage(row.slug, row.image_url, fallback?.image ?? "/hero.jpeg"),
         externalVideoUrl: row.external_video_url ?? fallback?.externalVideoUrl ?? "",
         deliveryModes: asStringArray(row.delivery_modes, fallback?.deliveryModes),
         entryRequirements: asStringArray(row.entry_requirements, fallback?.entryRequirements),
@@ -251,11 +252,19 @@ export async function getCourses() {
       return fallbackCourses;
     }
 
-    return mapRowsToCourses(
-      courseRows as unknown as CourseRow[],
+    const rows = courseRows as unknown as CourseRow[];
+    const mapped = mapRowsToCourses(
+      rows,
       (lessonRows ?? []) as unknown as LessonRow[],
       (unitRows ?? []) as unknown as UnitRow[],
     );
+    // New specialist training remains discoverable before a database course is added.
+    // An existing inactive row still controls visibility.
+    if (!rows.some((row) => row.slug === "front-of-house-security")) {
+      const fohs = getFallbackCourse("front-of-house-security");
+      if (fohs) mapped.push({ ...fohs, isActive: true, archivedAt: null, archivedByEmail: null });
+    }
+    return mapped;
   } catch {
     return fallbackCourses;
   }

@@ -90,10 +90,10 @@ export default function Home() {
             </p>
             <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row lg:justify-center">
               <a
-                href="/enroll"
+                href="/enquire"
                 className="inline-flex h-14 items-center justify-center gap-3 rounded-full bg-[#020d24] px-8 text-base font-black text-white shadow-[0_22px_45px_rgba(2,13,36,0.16)] transition hover:-translate-y-0.5 hover:bg-[#0067b1]"
               >
-                Enrol Now <ArrowRight size={20} />
+                Enquire Now <ArrowRight size={20} />
               </a>
               <a
                 href="#courses"

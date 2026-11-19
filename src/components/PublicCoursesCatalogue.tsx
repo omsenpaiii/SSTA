@@ -1,11 +1,11 @@
 "use client";
-import { CPP20218_COURSE_SLUG } from "@/lib/cpp20218";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Clock, Search, ShieldCheck } from "lucide-react";
+import { FohsComingSoonButton } from "@/components/FohsComingSoonButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Input } from "@/components/ui/input";
@@ -20,17 +20,7 @@ import {
 } from "@/lib/courses";
 
 function getCourseEnrollmentCta(course: Course) {
-  if (course.slug === CPP20218_COURSE_SLUG) {
-    return {
-      href: "/enroll?course=certificate-ii-security-operations",
-      label: "Free enrollment form",
-    };
-  }
-
-  return {
-    href: `/enroll?course=${course.slug}`,
-    label: "Enrol Now",
-  };
+  return { href: `/enquire?course=${encodeURIComponent(course.slug)}`, label: "Enquire now" };
 }
 
 export default function PublicCoursesCatalogue({ initialFilter = "All" }: { initialFilter?: string }) {
@@ -181,7 +171,9 @@ export default function PublicCoursesCatalogue({ initialFilter = "All" }: { init
                         >
                           Learn More <ArrowRight size={16} />
                         </Link>
-                        {isContactFirstCourse(course) ? null : isCourseAvailableForEnrollment(course) ? (
+                        {course.slug === "front-of-house-security" ? (
+                          <FohsComingSoonButton className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]">Enquire</FohsComingSoonButton>
+                        ) : isContactFirstCourse(course) ? null : isCourseAvailableForEnrollment(course) ? (
                           <Link
                             href={getCourseEnrollmentCta(course).href}
                             className="inline-flex h-11 items-center justify-center rounded-full border border-[#18aee5]/35 px-5 text-sm font-black text-[#0067b1]"
@@ -196,12 +188,12 @@ export default function PublicCoursesCatalogue({ initialFilter = "All" }: { init
                             Contact Us
                           </Link>
                         )}
-                        <Link
+                        {course.slug !== "front-of-house-security" ? <Link
                           href={`/enquire?course=${encodeURIComponent(course.slug)}`}
                           className="inline-flex h-11 items-center justify-center rounded-full px-3 text-sm font-black text-[#53647c] transition hover:bg-[#eef8ff] hover:text-[#0067b1]"
                         >
                           Enquire
-                        </Link>
+                        </Link> : null}
                       </div>
                     </div>
                   </motion.article>

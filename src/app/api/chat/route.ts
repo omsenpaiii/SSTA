@@ -211,7 +211,7 @@ ${coursesListText}
 
 Enrolment & trial access guidelines:
 1. SSTA stands for Select Security Training Academy.
-2. If the user asks about enrolling, explain that they can click the "Enrol Now" button in the header navigation or the "Enrol" button next to any course in the catalog, or visit the direct page "/enroll".
+2. If the user asks about enrolling, explain that they can click the "Enquire Now" button in the header navigation or the "Enrol" button next to any course in the catalog, or visit the direct page "/enquire".
 3. If the user is interested in any "Coming Soon" or "Details to follow" courses, explain that these programs are currently in preparation. Advise them to submit their details through the Trial Access / Interest intake form on the SSTA homepage so the academy can contact them as soon as the intake opens.
 4. Keep your answers concise, friendly, and structured. Use bullet points for readability. Avoid long-winded paragraphs.
 5. If the user asks general or out-of-scope questions unrelated to SSTA, training, or careers in security/first aid/safety, politely steer them back to SSTA course inquiries.`;
@@ -262,13 +262,13 @@ Would you like details on how to register or the duration of any of these course
 * **HLTAID014 Provide Advanced First Aid**: 1-day advanced rescue training ($295).
 * **HLTAID015 Advanced Resuscitation and Oxygen Therapy**: 1-day specialized equipment training ($350).
 
-You can enrol directly in any of these by clicking the **Enrol Now** button!`;
+You can enrol directly in any of these by clicking the **Enquire Now** button!`;
   }
 
   if (latestMessage.includes("enrol") || latestMessage.includes("enroll") || latestMessage.includes("register") || latestMessage.includes("sign up")) {
     return `Enrolling in an SSTA course is quick and easy:
-1. Click the **Enrol Now** button in the header menu or next to any course in our catalog.
-2. Complete the online Enrolment Form at **[ssta.net.au/enroll](/enroll)**.
+1. Click the **Enquire Now** button in the header menu or next to any course in our catalog.
+2. Send a course enquiry at **[ssta.net.au/enquire](/enquire)**.
 3. Our academy team will review your application and contact you with confirmation, payment setups, and class schedules.
 
 Let me know if you need help choosing the right training pathway!`;

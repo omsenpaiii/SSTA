@@ -51,7 +51,8 @@ export function PublicEnquiryForm({ initialCourseSlug = "" }: { initialCourseSlu
     }
 
     setIsSubmitting(true);
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     formData.set("captchaToken", captchaToken);
     documents.forEach((document) => formData.append("documents", document));
 
@@ -60,7 +61,7 @@ export function PublicEnquiryForm({ initialCourseSlug = "" }: { initialCourseSlu
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Unable to send your enquiry.");
       setSuccess(true);
-      event.currentTarget.reset();
+      form.reset();
       setDocuments([]);
       setCourseSlug("");
     } catch (submissionError) {
@@ -72,13 +73,17 @@ export function PublicEnquiryForm({ initialCourseSlug = "" }: { initialCourseSlu
     }
   }
 
+  if (courseSlug === "front-of-house-security") {
+    return <div className="rounded-3xl border border-[#18aee5]/20 bg-white p-8"><h2 className="text-3xl font-black text-[#020d24]">FOHS website coming soon</h2><p className="mt-4 text-base font-semibold leading-7 text-[#53647c]">The dedicated FOHS website is not live yet. Further course and website details will be shared here when available.</p><button type="button" onClick={() => setCourseSlug("")} className="mt-6 rounded-full bg-[#0067b1] px-6 py-3 font-black text-white">Choose another course</button></div>;
+  }
+
   if (success) {
     return <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-8 text-center"><CheckCircle2 className="mx-auto text-emerald-600" size={46} /><h2 className="mt-4 text-2xl font-black text-[#020d24]">Enquiry received</h2><p className="mx-auto mt-3 max-w-lg font-bold leading-7 text-slate-600">Thank you. The SSTA team will contact you using the email or phone number you provided.</p></div>;
   }
 
   return (
     <form onSubmit={handleSubmit} className="rounded-[1.5rem] border border-[#18aee5]/20 bg-white p-6 shadow-[0_24px_70px_rgba(0,74,143,0.1)] sm:p-8">
-      <div className="mb-7 flex items-start gap-3"><span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#eef8ff] text-[#0067b1]"><ShieldCheck size={22} /></span><div><p className="text-xs font-black uppercase tracking-[0.2em] text-[#0067b1]">Start with SSTA</p><h2 className="mt-1 text-2xl font-black text-[#020d24]">Tell us how we can help</h2><p className="mt-2 text-sm font-bold leading-6 text-[#53647c]">This is an enquiry only. Course access and the formal enrolment form remain available after the required payment step.</p></div></div>
+      <div className="mb-7 flex items-start gap-3"><span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#eef8ff] text-[#0067b1]"><ShieldCheck size={22} /></span><div><p className="text-xs font-black uppercase tracking-[0.2em] text-[#0067b1]">Start with SSTA</p><h2 className="mt-1 text-2xl font-black text-[#020d24]">Tell us how we can help</h2><p className="mt-2 text-sm font-bold leading-6 text-[#53647c]">Tell us which course interests you. Our team will explain the next steps and help with course access.</p></div></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="First name" name="firstName" required />
         <Field label="Last name" name="lastName" required />

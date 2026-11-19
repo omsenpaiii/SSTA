@@ -83,7 +83,6 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
               </Link>
             ),
           )}
-          <Link href="/enrolment-application" onClick={() => setIsOpen(false)} className="rounded-xl px-2 py-3 text-sm font-black text-[#0067b1]">Enrolment Form</Link>
         </div>
 
         <div className="hidden shrink-0 items-center gap-2 whitespace-nowrap xl:flex">
@@ -159,7 +158,6 @@ export function SiteHeaderClient({ user }: SiteHeaderClientProps) {
                   {link.label}
                 </Link>
               ))}
-              <Link href="/enrolment-application" onClick={() => setIsOpen(false)} className="rounded-xl px-2 py-3 text-sm font-black text-[#0067b1]">Enrolment Form</Link>
               <div className="rounded-2xl bg-[#eef8ff] p-4">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0067b1]">
                   Course areas

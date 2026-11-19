@@ -1,5 +1,4 @@
 "use client";
-import { CPP20218_COURSE_SLUG } from "@/lib/cpp20218";
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -15,11 +14,8 @@ export function CheckoutButton({
   className,
   children = "Enrol Now",
 }: CheckoutButtonProps) {
-  const isCpp20218 = courseSlug === CPP20218_COURSE_SLUG;
-  const href = isCpp20218
-    ? "/enroll?course=certificate-ii-security-operations"
-    : `/enroll?course=${courseSlug}`;
-  const label = isCpp20218 ? "Free enrollment form" : children;
+  const href = `/enquire?course=${encodeURIComponent(courseSlug)}`;
+  const label = children === "Enrol Now" ? "Enquire about this course" : children;
 
   return (
     <Link

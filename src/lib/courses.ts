@@ -60,12 +60,13 @@ export type CourseCategory = {
   image: string;
 };
 
-// SSTA's course grouping uses the four designated non-accredited programs.
+// Professional development courses are listed separately from accredited programs.
 const nonAccreditedCourseSlugs = new Set([
   "criminal-justice-and-criminology",
   "ai-productivity-masterclass",
   "counselling-skills",
   "communication-skills",
+  "front-of-house-security",
 ]);
 
 export function isAccreditedCourse(course: Pick<Course, "slug">) {
@@ -1086,8 +1087,7 @@ const baseCourses: Course[] = [
       "Individual support training information will be added soon for learners exploring care and support pathways.",
     overview:
       "Select Security Training Academy is preparing Certificate III in Individual Support details, with course structure, delivery and enrolment information to follow.",
-    image:
-      "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=900&q=80",
+    image: "/images/courses/individual-support.png",
     externalVideoUrl: "https://www.pexels.com/video/a-caregiver-smiling-with-an-elderly-woman-7551627/",
     deliveryModes: ["Details to follow"],
     entryRequirements: ["Course details to follow"],
@@ -1111,8 +1111,7 @@ const baseCourses: Course[] = [
       "Certificate IV in Disability information will be shared once the full course details are finalised.",
     overview:
       "This upcoming disability pathway is planned for learners seeking advanced support training, with delivery, units and enrolment details still to follow.",
-    image:
-      "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=900&q=80",
+    image: "/images/courses/disability-support.png",
     externalVideoUrl: "https://www.pexels.com/video/elderly-man-and-caregiver-talking-in-a-living-room-6953805/",
     deliveryModes: ["Details to follow"],
     entryRequirements: ["Course details to follow"],
@@ -1409,8 +1408,7 @@ const baseCourses: Course[] = [
       "Carpentry training and practical skills information will be added soon for residential and commercial building pathways.",
     overview:
       "Select Security Training Academy is preparing Certificate III in Carpentry details, covering timber framing, hand and power tools, and worksite safety practices.",
-    image:
-      "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80",
+    image: "/images/courses/carpentry.png",
     externalVideoUrl: "",
     deliveryModes: ["Details to follow"],
     entryRequirements: ["Course details to follow"],
@@ -1459,8 +1457,7 @@ const baseCourses: Course[] = [
       "Community services leadership and practice training for case managers, group leaders, and support coordinators.",
     overview:
       "Select Security Training Academy is preparing Diploma of Community Services details, focusing on case management, community development, and service delivery.",
-    image:
-      "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=900&q=80",
+    image: "/images/courses/community-services.png",
     externalVideoUrl: "",
     deliveryModes: ["Details to follow"],
     entryRequirements: ["Course details to follow"],
@@ -1509,8 +1506,7 @@ const baseCourses: Course[] = [
       "Basic fire safety, extinguisher operation, and workplace fire warden compliance procedures.",
     overview:
       "Select Security Training Academy is preparing Fire Extinguisher & Fire Warden Training details, focusing on safe equipment operation, evacuation coordination, and emergency response.",
-    image:
-      "https://images.unsplash.com/photo-1505489304219-85ce17010209?auto=format&fit=crop&w=900&q=80",
+    image: "/images/courses/fire-warden.png",
     externalVideoUrl: "",
     deliveryModes: ["Details to follow"],
     entryRequirements: ["Course details to follow"],
@@ -1546,6 +1542,28 @@ const baseCourses: Course[] = [
     availability: "coming-soon",
     priceLabel: "Coming soon",
     statusNote: "Food Safety Auditor details are coming soon.",
+  },
+  {
+    slug: "front-of-house-security",
+    code: "FOHS",
+    title: "Front of House Security",
+    category: "Security",
+    label: "Non-accredited short course",
+    priceAud: 0,
+    duration: "Course details coming soon",
+    description: "Specialist face-to-face training for concert and major-event security teams, with a focus on crowd welfare and front-of-stage readiness.",
+    overview: "Develop practical judgement for front-of-house security work, from preparing an event space to recognising crowd risks and communicating with your team. This is non-accredited professional development with a certificate of participation.",
+    image: "/images/courses/front-of-house-security.png",
+    externalVideoUrl: "",
+    deliveryModes: ["Face to face"],
+    entryRequirements: ["Contact SSTA to discuss suitability and any role-specific requirements."],
+    careerOutcomes: ["Professional development for event security workers", "Support for further training pathways"],
+    unitSummary: "Non-accredited professional development. No nationally recognised units or security licence are awarded.",
+    units: [],
+    lessons: [],
+    availability: "coming-soon",
+    priceLabel: "Website coming soon",
+    statusNote: "The dedicated FOHS website is coming soon. Course dates, fees and availability will be shared once confirmed.",
   },
 ];
 
@@ -1592,6 +1610,9 @@ export function getStartTodayAmount(course: Course) {
 }
 
 export function getStartTodayDisplay(course: Course) {
+  if (!isCourseAvailableForEnrollment(course)) {
+    return getCoursePriceDisplay(course);
+  }
   return `$${getStartTodayAmount(course)} to start`;
 }
 
