@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { CPP20218_COURSE_SLUG, getStudentCppAssignments } from "@/lib/cpp20218";
-import { buildCpp20218LlnUrl, hasPassedCpp20218Lln } from "@/lib/lln";
 import { createPaymentIntent } from "@/lib/payments";
 import { createStripeCheckoutSession, getStripeUserMessage, isStripeConfigured } from "@/lib/stripe";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
@@ -63,29 +62,13 @@ export async function POST(request: Request) {
     const db = getSupabaseAdmin();
     const leadResult = await db!.from("enrollment_leads").select("id")
       .eq("security_user_key", user.id).eq("course_slug", CPP20218_COURSE_SLUG)
-      .not("document_path", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (leadResult.error) throw leadResult.error;
-    if (!leadResult.data) return NextResponse.json({ error: "Submit your free enrollment form first at /enroll." }, { status: 403 });
-    const enrollmentId = leadResult.data.id;
+    const enrollmentId = leadResult.data?.id ?? null;
     const enrollmentResult = await db!.from("course_enrollments").select("status").eq("user_key", user.id).eq("course_slug", CPP20218_COURSE_SLUG).maybeSingle();
     if (enrollmentResult.error) throw enrollmentResult.error;
     if (enrollmentResult.data?.status !== "active") return NextResponse.json({ error: "Please contact SSTA about your course access." }, { status: 403 });
     if (body.data.assignmentKey && body.data.assignmentKey !== "assignment-1") return NextResponse.json({ error: "SSTA manages access to later clusters. Contact your trainer." }, { status: 403 });
-
-    const hasPassedLln = await hasPassedCpp20218Lln(user.id);
-
-    if (!hasPassedLln) {
-      const returnTo = `/dashboard/course/${CPP20218_COURSE_SLUG}?tab=activities`;
-
-      return NextResponse.json(
-        {
-          error: "Please complete the CPP20218 LLN prerequisite before starting Cluster 1.",
-          llnRequired: true,
-          llnUrl: buildCpp20218LlnUrl(returnTo, "unlock", "assignment-1"),
-        },
-        { status: 403 },
-      );
-    }
 
     const assignments = await getStudentCppAssignments(user.id);
     const lockedAssignments = assignments.filter((assignment) => assignment.assignmentKey === "assignment-1" && !assignment.unlocked);
@@ -102,7 +85,7 @@ export async function POST(request: Request) {
       courseSlug: CPP20218_COURSE_SLUG,
       assignmentKey: "assignment-1",
       purpose: "assignment_unlock",
-      enrollmentId,
+      enrollmentId: enrollmentId ?? "",
     };
     const session = await createStripeCheckoutSession({
       amountCents,

@@ -11,7 +11,6 @@ import {
   BriefcaseBusiness,
   CalendarCheck,
   CheckSquare,
-  CircleHelp,
   GraduationCap,
   Home,
   LayoutDashboard,
@@ -40,7 +39,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/browse-courses", label: "Browse Courses", icon: BriefcaseBusiness },
   { href: "/dashboard/my-courses", label: "My Courses", icon: GraduationCap },
-  { href: "/dashboard/lln", label: "LLN", icon: CircleHelp },
   { href: "/dashboard/contact", label: "Contact", icon: Bell },
   { href: "/dashboard/verify-certificate", label: "Verify Certificate", icon: ScanSearch },
 ];

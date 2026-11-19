@@ -203,7 +203,7 @@ function LockedPanel({
           </h4>
           <p className="mt-2 text-sm font-semibold leading-6 text-[#5d7389]">
             {assignment.lockReason ??
-              "Complete your free enrollment and LLN before starting Cluster 1. Contact SSTA for access to later clusters."}
+              "Start Cluster 1 from your student portal. Contact SSTA for access to later clusters."}
           </p>
           {paymentsEnabled && <AssignmentUnlockPaymentButton
             assignmentKey={assignment.assignmentKey}

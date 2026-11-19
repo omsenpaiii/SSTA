@@ -1,2 +1,5 @@
 import { redirect } from "next/navigation";
-export default function LegacySecurityLlnPage() { redirect("/lln/security"); }
+
+export default function RetiredPage() {
+  redirect("/dashboard");
+}

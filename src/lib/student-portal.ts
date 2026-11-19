@@ -502,8 +502,8 @@ export async function getStudentPortalData(user: AppUser): Promise<StudentPortal
       deliveryModes: course.deliveryModes,
       enrolled: Boolean(enrolled),
       progressPercent: enrolled?.progressPercent ?? null,
-      actionHref: enrolled ? `/dashboard/course/${course.slug}` : `/enroll?course=${course.slug}`,
-      actionLabel: enrolled ? "Open workspace" : "Enrol now",
+      actionHref: enrolled ? `/dashboard/course/${course.slug}` : `/enquire?course=${course.slug}`,
+      actionLabel: enrolled ? "Open workspace" : "Enquire now",
     } satisfies CourseCatalogCard;
   });
 

@@ -39,8 +39,6 @@ export function AssignmentUnlockPaymentButton({
         url?: string;
         error?: string;
         signInUrl?: string;
-        llnRequired?: boolean;
-        llnUrl?: string;
       }>(response);
 
       if (response.status === 401 && result.signInUrl) {
@@ -48,10 +46,7 @@ export function AssignmentUnlockPaymentButton({
         return;
       }
 
-      if (response.status === 403 && result.llnRequired && result.llnUrl) {
-        window.location.assign(result.llnUrl);
-        return;
-      }
+
 
       if (!response.ok || !result.url) {
         throw new Error(result.error ?? "Unable to start payment.");

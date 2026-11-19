@@ -80,7 +80,7 @@ export const faqs = [
   {
     question: "How do I start a security course with SSTA?",
     answer:
-      "Choose the course that matches your goal, complete the enrolment form, and SSTA will guide you through payment, access and any licensing-related requirements.",
+      "Choose the course that matches your goal, send a course enquiry, and SSTA will guide you through payment, access and any licensing-related requirements.",
   },
   {
     question: "How do students access additional external courses?",

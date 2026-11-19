@@ -49,12 +49,12 @@ function getSuccessDetails(input: {
 
   if ((purpose === "course_enrollment" || !purpose) && courseSlug) {
     return {
-      destinationHref: `/enrolment-application?course=${courseSlug}`,
-      ctaLabel: "Complete enrolment application",
+      destinationHref: `/dashboard/course/${courseSlug}`,
+      ctaLabel: "Open course workspace",
       heading: input.fulfilled ? "$150 payment confirmed" : "Payment received",
       message: input.fulfilled
-        ? "Your place has been started. Complete the enrolment application now; the SSTA team will then review it and contact you by phone or email."
-        : "Stripe received your payment. You can complete the enrolment application as soon as confirmation finishes.",
+        ? "Your payment has been confirmed. Open your course workspace or contact SSTA for help with your training."
+        : "Your course access will update after Stripe confirms your payment.",
     };
   }
 
