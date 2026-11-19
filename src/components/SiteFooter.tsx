@@ -93,7 +93,7 @@ export function SiteFooter() {
           <p>Copyright {new Date().getFullYear()} SSTA. All rights reserved.</p>
           <p className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-sky-100/75">
             <span>Powered and managed by <a href="https://willshoot.au" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-white">Willshoot.au</a></span>
-            <a href={siteInfo.itSupport.phoneHref} className="hover:text-white">{siteInfo.itSupport.name}: {siteInfo.itSupport.phone}</a>
+            <a href={siteInfo.itSupport.phoneHref} className="hover:text-white">{siteInfo.itSupport.name} · {siteInfo.itSupport.phone}</a>
           </p>
         </div>
       </div>
