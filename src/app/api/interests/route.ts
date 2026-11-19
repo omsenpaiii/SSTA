@@ -76,6 +76,10 @@ export async function POST(request: Request) {
     );
   }
 
+  if (parsed.data.courseSlug === "front-of-house-security") {
+    return NextResponse.json({ error: "The FOHS website is coming soon. Further course and website details will be shared here when available.", comingSoon: true }, { status: 409 });
+  }
+
   const documentError = validateDocuments(documents);
   if (documentError) return NextResponse.json({ error: documentError }, { status: 400 });
   if (!isRecaptchaConfigured()) return NextResponse.json({ error: "reCAPTCHA is not configured yet." }, { status: 503 });

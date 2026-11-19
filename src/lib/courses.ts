@@ -1550,7 +1550,7 @@ const baseCourses: Course[] = [
     category: "Security",
     label: "Non-accredited short course",
     priceAud: 0,
-    duration: "Short course — enquire for schedule",
+    duration: "Course details coming soon",
     description: "Specialist face-to-face training for concert and major-event security teams, with a focus on crowd welfare and front-of-stage readiness.",
     overview: "Develop practical judgement for front-of-house security work, from preparing an event space to recognising crowd risks and communicating with your team. This is non-accredited professional development with a certificate of participation.",
     image: "/images/courses/front-of-house-security.png",
@@ -1561,9 +1561,9 @@ const baseCourses: Course[] = [
     unitSummary: "Non-accredited professional development. No nationally recognised units or security licence are awarded.",
     units: [],
     lessons: [],
-    availability: "details-to-follow",
-    priceLabel: "Enquire for fees",
-    statusNote: "Contact SSTA for course dates, venue, fees and availability. Certificate of participation. Employment is not guaranteed.",
+    availability: "coming-soon",
+    priceLabel: "Website coming soon",
+    statusNote: "The dedicated FOHS website is coming soon. Course dates, fees and availability will be shared once confirmed.",
   },
 ];
 
